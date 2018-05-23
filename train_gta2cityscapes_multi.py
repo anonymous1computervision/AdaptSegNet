@@ -38,7 +38,7 @@ LEARNING_RATE = 2.5e-4
 MOMENTUM = 0.9
 NUM_CLASSES = 19
 NUM_STEPS = 250000
-NUM_STEPS_STOP = 80000  # early stopping
+NUM_STEPS_STOP = 100000  # early stopping
 POWER = 0.9
 RANDOM_SEED = 1234
 RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_init-f81d91e8.pth'
@@ -286,7 +286,7 @@ def main():
 
             # train with source
 
-            _, batch = trainloader_iter.next()
+            _, batch = trainloader_iter.__next__()
             images, labels, _, _ = batch
             images = Variable(images).cuda(args.gpu)
 
@@ -301,12 +301,12 @@ def main():
             # proper normalization
             loss = loss / args.iter_size
             loss.backward()
-            loss_seg_value1 += loss_seg1.data.cpu().numpy()[0] / args.iter_size
-            loss_seg_value2 += loss_seg2.data.cpu().numpy()[0] / args.iter_size
+            loss_seg_value1 += loss_seg1.data.cpu().numpy() / args.iter_size
+            loss_seg_value2 += loss_seg2.data.cpu().numpy() / args.iter_size
 
             # train with target
 
-            _, batch = targetloader_iter.next()
+            _, batch = targetloader_iter.__next__()
             images, _, _ = batch
             images = Variable(images).cuda(args.gpu)
 
@@ -328,8 +328,8 @@ def main():
             loss = args.lambda_adv_target1 * loss_adv_target1 + args.lambda_adv_target2 * loss_adv_target2
             loss = loss / args.iter_size
             loss.backward()
-            loss_adv_target_value1 += loss_adv_target1.data.cpu().numpy()[0] / args.iter_size
-            loss_adv_target_value2 += loss_adv_target2.data.cpu().numpy()[0] / args.iter_size
+            loss_adv_target_value1 += loss_adv_target1.data.cpu().numpy() / args.iter_size
+            loss_adv_target_value2 += loss_adv_target2.data.cpu().numpy() / args.iter_size
 
             # train D
 
@@ -359,8 +359,8 @@ def main():
             loss_D1.backward()
             loss_D2.backward()
 
-            loss_D_value1 += loss_D1.data.cpu().numpy()[0]
-            loss_D_value2 += loss_D2.data.cpu().numpy()[0]
+            loss_D_value1 += loss_D1.data.cpu().numpy()
+            loss_D_value2 += loss_D2.data.cpu().numpy()
 
             # train with target
             pred_target1 = pred_target1.detach()
@@ -381,8 +381,8 @@ def main():
             loss_D1.backward()
             loss_D2.backward()
 
-            loss_D_value1 += loss_D1.data.cpu().numpy()[0]
-            loss_D_value2 += loss_D2.data.cpu().numpy()[0]
+            loss_D_value1 += loss_D1.data.cpu().numpy()
+            loss_D_value2 += loss_D2.data.cpu().numpy()
 
         optimizer.step()
         optimizer_D1.step()
@@ -394,14 +394,14 @@ def main():
             i_iter, args.num_steps, loss_seg_value1, loss_seg_value2, loss_adv_target_value1, loss_adv_target_value2, loss_D_value1, loss_D_value2))
 
         if i_iter >= args.num_steps_stop - 1:
-            print 'save model ...'
+            print('save model ...')
             torch.save(model.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps) + '.pth'))
             torch.save(model_D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps) + '_D1.pth'))
             torch.save(model_D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps) + '_D2.pth'))
             break
 
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
-            print 'taking snapshot ...'
+            print('taking snapshot ...')
             torch.save(model.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
             torch.save(model_D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
             torch.save(model_D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))

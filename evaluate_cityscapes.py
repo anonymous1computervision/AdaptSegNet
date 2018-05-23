@@ -98,7 +98,7 @@ def main():
 
     for index, batch in enumerate(testloader):
         if index % 100 == 0:
-            print '%d processd' % index
+            print('%d processd' % index)
         image, _, name = batch
         output1, output2 = model(Variable(image, volatile=True).cuda(gpu0))
         output = interp(output2).cpu().data[0].numpy()

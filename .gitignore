@@ -2,3 +2,9 @@
 *.pth
 *.png
 *.jpg
+/lables
+/data
+/result
+/result_multi
+/model/GTA2Cityscapes_multi
+/model/GTA2Cityscapes_single
