@@ -1,0 +1,92 @@
+=========================
+*discriminator          *
+=========================
+default leaky relu epoch 65000
+===>road:       84.56
+===>sidewalk:   12.97
+===>building:   79.44
+===>wall:       26.96
+===>fence:      17.99
+===>pole:       26.68
+===>light:      30.97
+===>sign:       17.56
+===>vegetation: 81.92
+===>terrain:    26.71
+===>sky:        73.25
+===>person:     51.87
+===>rider:      29.56
+===>car:        73.19
+===>truck:      29.15
+===>bus:        38.29
+===>train:      4.91
+===>motocycle:  29.65
+===>bicycle:    16.9
+===> mIoU: 39.61
+
+leaky relu epoch 50000
+===>road:       80.18
+===>sidewalk:   10.86
+===>building:   75.38
+===>wall:       22.11
+===>fence:      21.22
+===>pole:       23.38
+===>light:      31.81
+===>sign:       16.02
+===>vegetation: 79.67
+===>terrain:    22.87
+===>sky:        74.16
+===>person:     55.75
+===>rider:      29.84
+===>car:        68.21
+===>truck:      35.91
+===>bus:        42.82
+===>train:      1.76
+===>motocycle:  33.05
+===>bicycle:    22.9
+===> mIoU: 39.36
+
+
+relu epoch 50000
+===>road:       83.46
+===>sidewalk:   16.25
+===>building:   78.41
+===>wall:       26.54
+===>fence:      18.07
+===>pole:       22.89
+===>light:      32.59
+===>sign:       18.21
+===>vegetation: 81.29
+===>terrain:    18.24
+===>sky:        72.67
+===>person:     53.77
+===>rider:      27.4
+===>car:        70.18
+===>truck:      21.27
+===>bus:        41.39
+===>train:      4.25
+===>motocycle:  25.22
+===>bicycle:    13.6
+===> mIoU: 38.19
+
+
+selu epoch 50000
+===>road:       68.43
+===>sidewalk:   21.81
+===>building:   76.42
+===>wall:       28.88
+===>fence:      22.25
+===>pole:       24.98
+===>light:      29.5
+===>sign:       15.27
+===>vegetation: 81.0
+===>terrain:    14.72
+===>sky:        72.5
+===>person:     51.43
+===>rider:      27.19
+===>car:        43.87
+===>truck:      22.04
+===>bus:        28.5
+===>train:      1.33
+===>motocycle:  25.16
+===>bicycle:    24.21
+===> mIoU: 35.76
