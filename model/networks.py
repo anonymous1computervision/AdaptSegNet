@@ -290,30 +290,32 @@ class ResBlock(nn.Module):
 
 class ResBlockProjection(nn.Module):
     def __init__(self, input_dim, output_dim, downsample=None, norm='none', activation='relu', pad_type='zero'):
-        super(ResBlockDownsample, self).__init__()
+        super(ResBlockProjection, self).__init__()
 
         model = []
         model += [Conv2dBlockActivateFirst(input_dim, input_dim, 3, 1, 1, norm=norm, activation=activation, pad_type=pad_type)]
         model += [Conv2dBlockActivateFirst(input_dim, output_dim, 3, 1, 1, norm=norm, activation=activation, pad_type=pad_type)]
         self.model = nn.Sequential(*model)
+        self.c_sc = Conv2dBlockActivateFirst(input_dim, output_dim, 3, 1, 1, norm=norm, activation=activation, pad_type=pad_type)
+
 
         self.downsample = downsample
 
     def forward(self, x):
         residual = x
-        if self.downsample is not None:
-            residual = self.downsample(x)
+        residual = self.model(residual)
+        shortcut = self.c_sc(x)
+        if self.downsample != 'none':
+            return self.downsample(shortcut) + self.downsample(residual)
 
-        out = self.model(x)
-        out += residual
-        return out
+        return shortcut + residual
 
 
 
 class Conv2dBlockActivateFirst(nn.Module):
     def __init__(self, input_dim ,output_dim, kernel_size, stride,
                  padding=0, norm='none', activation='relu', pad_type='zero'):
-        super(Conv2dBlock, self).__init__()
+        super(Conv2dBlockActivateFirst, self).__init__()
         self.use_bias = True
         # initialize padding
         if pad_type == 'reflect':
@@ -360,9 +362,10 @@ class Conv2dBlockActivateFirst(nn.Module):
         self.conv = nn.Conv2d(input_dim, output_dim, kernel_size, stride, bias=self.use_bias)
 
     def forward(self, x):
+
         if self.activation:
-            x = self.activation(x)
-        x = self.conv(self.pad(x))
+            x = self.activation(self.pad(x))
+        x = self.conv(x)
         if self.norm:
             x = self.norm(x)
 

@@ -14,12 +14,9 @@ import os
 import os.path as osp
 import matplotlib.pyplot as plt
 import random
-from PIL import Image
 
-# from model.deeplab_multi import Res_Deeplab
-from model.deeplab_multi_xiao import Res_Deeplab_xiao
-
-# from model.discriminator import FCDiscriminator
+from model.deeplab_multi import Res_Deeplab
+from model.discriminator import FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from utils.loss import CrossEntropy2d
 from dataset.gta5_dataset import GTA5DataSet
@@ -58,23 +55,7 @@ LAMBDA_ADV_TARGET2 = 0.001
 
 TARGET = 'cityscapes'
 SET = 'train'
-palette = [128, 64, 128, 244, 35, 232, 70, 70, 70, 102, 102, 156, 190, 153, 153, 153, 153, 153, 250, 170, 30,
-           220, 220, 0, 107, 142, 35, 152, 251, 152, 70, 130, 180, 220, 20, 60, 255, 0, 0, 0, 0, 142, 0, 0, 70,
-           0, 60, 100, 0, 80, 100, 0, 0, 230, 119, 11, 32]
-def colorize_mask(mask):
-    # mask: numpy array of the mask
-    new_mask = Image.fromarray(mask.astype(np.uint8)).convert('P')
-    new_mask.putpalette(palette)
 
-    return new_mask
-def colorize_image(image):
-# todo: enable function
-    return None
-    image = image.cpu().data[0].numpy()
-    image = image.transpose(1, 2, 0)
-    image = np.asarray(np.argmax(image, axis=2), dtype=np.uint8)
-    output_col = colorize_mask(image)
-    return output_col
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -201,8 +182,7 @@ def main():
 
     # Create network
     if args.model == 'DeepLab':
-        # model = Res_Deeplab(num_classes=args.num_classes)
-        model = Res_Deeplab_xiao(num_classes=args.num_classes)
+        model = Res_Deeplab(num_classes=args.num_classes)
         if args.restore_from[:4] == 'http' :
             saved_state_dict = model_zoo.load_url(args.restore_from)
         else:
@@ -225,13 +205,13 @@ def main():
 
     # init D
     model_D1 = XiaoDiscriminator(num_classes=args.num_classes)
+    # model_D2 = XiaoDiscriminator(num_classes=args.num_classes)
+
     model_D1.train()
     model_D1.cuda(args.gpu)
 
-    model_D2 = XiaoDiscriminator(num_classes=args.num_classes)
-    model_D2.train()
-    model_D2.cuda(args.gpu)
-
+    # model_D2.train()
+    # model_D2.cuda(args.gpu)
 
     if not os.path.exists(args.snapshot_dir):
         os.makedirs(args.snapshot_dir)
@@ -264,13 +244,13 @@ def main():
     optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
     optimizer_D1.zero_grad()
 
-    optimizer_D2 = optim.Adam(model_D2.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
-    optimizer_D2.zero_grad()
+    # optimizer_D2 = optim.Adam(model_D2.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    # optimizer_D2.zero_grad()
 
     bce_loss = torch.nn.BCEWithLogitsLoss()
 
-    interp = nn.Upsample(size=(input_size[1], input_size[0]), mode='bilinear')
-    interp_target = nn.Upsample(size=(input_size_target[1], input_size_target[0]), mode='bilinear')
+    interp = nn.Upsample(size=(input_size[1], input_size[0]), align_corners=False, mode='bilinear')
+    interp_target = nn.Upsample(size=(input_size_target[1], input_size_target[0]), align_corners=False, mode='bilinear')
 
     # labels for adversarial training
     source_label = 0
@@ -281,19 +261,20 @@ def main():
         loss_seg_value1 = 0
         loss_adv_target_value1 = 0
         loss_D_value1 = 0
-
-        loss_seg_value2 = 0
-        loss_adv_target_value2 = 0
-        loss_D_value2 = 0
+        loss_source_1 = 0
+        loss_target_1 = 0
+        #
+        # loss_seg_value2 = 0
+        # loss_adv_target_value2 = 0
+        # loss_D_value2 = 0
 
         optimizer.zero_grad()
         adjust_learning_rate(optimizer, i_iter)
 
         optimizer_D1.zero_grad()
+        # optimizer_D2.zero_grad()
         adjust_learning_rate_D(optimizer_D1, i_iter)
-
-        optimizer_D2.zero_grad()
-        adjust_learning_rate_D(optimizer_D2, i_iter)
+        # adjust_learning_rate_D(optimizer_D2, i_iter)
 
         for sub_i in range(args.iter_size):
 
@@ -303,8 +284,8 @@ def main():
             for param in model_D1.parameters():
                 param.requires_grad = False
 
-            for param in model_D2.parameters():
-                param.requires_grad = False
+            # for param in model_D2.parameters():
+            #     param.requires_grad = False
 
             # train with source
 
@@ -313,19 +294,26 @@ def main():
             images = Variable(images).cuda(args.gpu)
 
             pred1, pred2 = model(images)
+
+            # resize to source size
             pred1 = interp(pred1)
             pred2 = interp(pred2)
 
-            #sementic segmentaion part
-            loss_seg1 = loss_calc(pred1, labels, args.gpu)
-            loss_seg2 = loss_calc(pred2, labels, args.gpu)
-            loss = loss_seg2 + args.lambda_seg * loss_seg1
-            #
-            # # proper normalization
+            D_out1 = model_D1(F.softmax(pred1), label=labels)
+            # D_out2 = model_D2(F.softmax(pred2), label=labels)
+            # loss_adv_source2 = D_out2
+            loss_adv_source1 = bce_loss(D_out1,
+                                        Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(
+                                            args.gpu))
+
+            # proper normalization
+            # loss = args.lambda_adv_source1 * loss_adv_source1 + args.lambda_adv_source2 * loss_adv_source2
+            loss = args.lambda_seg * loss_adv_source1
             loss = loss / args.iter_size
+            loss_source_1 += loss_adv_source1.data.cpu().numpy() / args.iter_size
+
             loss.backward()
-            loss_seg_value1 += loss_seg1.data.cpu().numpy() / args.iter_size
-            loss_seg_value2 += loss_seg2.data.cpu().numpy() / args.iter_size
+            # loss_source_2 = loss_adv_source2.data.cpu().numpy() / args.iter_size
 
             # train with target
 
@@ -333,113 +321,101 @@ def main():
             images, _, _ = batch
             images = Variable(images).cuda(args.gpu)
 
-            # get last 2 layer predict image x1, x2
             pred_target1, pred_target2 = model(images)
 
-            # resize image to origin size
+            # resize to targey size
             pred_target1 = interp_target(pred_target1)
             pred_target2 = interp_target(pred_target2)
 
 
-            # discrimator and cGan c-> add predict colorful image
-            D_out1 = model_D1(F.softmax(pred_target1), colorize_image(pred_target1))
-            D_out2 = model_D2(F.softmax(pred_target2), colorize_image(pred_target2))
-
+            D_out1 = model_D1(F.softmax(pred_target1))
+            # D_out2 = model_D2(F.softmax(pred_target2))
             loss_adv_target1 = bce_loss(D_out1,
-                                       Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(
-                                           args.gpu))
-
-            loss_adv_target2 = bce_loss(D_out2,
-                                        Variable(torch.FloatTensor(D_out2.data.size()).fill_(source_label)).cuda(
+                                        Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(
                                             args.gpu))
 
-            loss = args.lambda_adv_target1 * loss_adv_target1 + args.lambda_adv_target2 * loss_adv_target2
+            # loss_adv_target2 = D_out2
 
+            # loss = args.lambda_adv_target1 * loss_adv_target1 + args.lambda_adv_target2 * loss_adv_target2
+            loss = args.lambda_adv_target1 * loss_adv_target1
             loss = loss / args.iter_size
             loss.backward()
-            loss_adv_target_value1 += loss_adv_target1.data.cpu().numpy() / args.iter_size
-            loss_adv_target_value2 += loss_adv_target2.data.cpu().numpy() / args.iter_size
+            loss_target_1 += loss_adv_target1.data.cpu().numpy() / args.iter_size
+            # loss_target_2 = loss_adv_target2.data.cpu().numpy() / args.iter_size
 
             # train D
 
             # bring back requires_grad
             for param in model_D1.parameters():
                 param.requires_grad = True
-
-            for param in model_D2.parameters():
-                param.requires_grad = True
+            #
+            # for param in model_D2.parameters():
+            #     param.requires_grad = True
 
             # train with source
             pred1 = pred1.detach()
             pred2 = pred2.detach()
-            # discrimator and cGan c-> add predict colorful image
 
-            D_out1 = model_D1(F.softmax(pred1), labels)
-            D_out2 = model_D2(F.softmax(pred2), labels)
+            D_out1 = model_D1(F.softmax(pred1), label=labels)
+            # D_out2 = model_D2(F.softmax(pred2), label=labels)
 
             loss_D1 = bce_loss(D_out1,
                               Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(args.gpu))
 
-            loss_D2 = bce_loss(D_out2,
-                               Variable(torch.FloatTensor(D_out2.data.size()).fill_(source_label)).cuda(args.gpu))
+            # loss_D2 = bce_loss(D_out2,
+            #                    Variable(torch.FloatTensor(D_out2.data.size()).fill_(source_label)).cuda(args.gpu))
 
             loss_D1 = loss_D1 / args.iter_size / 2
-            loss_D2 = loss_D2 / args.iter_size / 2
+            # loss_D2 = loss_D2 / args.iter_size / 2
 
             loss_D1.backward()
-            loss_D2.backward()
-
             loss_D_value1 += loss_D1.data.cpu().numpy()
-            loss_D_value2 += loss_D2.data.cpu().numpy()
+
+            # loss_D2.backward()
 
             # train with target
             pred_target1 = pred_target1.detach()
-            pred_target2 = pred_target2.detach()
+            # pred_target2 = pred_target2.detach()
 
-            D_out1 = model_D1(F.softmax(pred_target1), colorize_image(pred1))
-            D_out2 = model_D2(F.softmax(pred_target2), colorize_image(pred2))
+            D_out1 = model_D1(F.softmax(pred_target1))
+            # D_out2 = model_D2(F.softmax(pred_target2))
 
             loss_D1 = bce_loss(D_out1,
                               Variable(torch.FloatTensor(D_out1.data.size()).fill_(target_label)).cuda(args.gpu))
 
-            loss_D2 = bce_loss(D_out2,
-                               Variable(torch.FloatTensor(D_out2.data.size()).fill_(target_label)).cuda(args.gpu))
+            # loss_D2 = bce_loss(D_out2,
+            #                    Variable(torch.FloatTensor(D_out2.data.size()).fill_(target_label)).cuda(args.gpu))
 
             loss_D1 = loss_D1 / args.iter_size / 2
-            loss_D2 = loss_D2 / args.iter_size / 2
+            # loss_D2 = loss_D2 / args.iter_size / 2
 
             loss_D1.backward()
-            loss_D2.backward()
+            # loss_D2.backward()
 
-            loss_D_value1 += loss_D1.data.cpu().numpy()
-            loss_D_value2 += loss_D2.data.cpu().numpy()
 
         optimizer.step()
         optimizer_D1.step()
-        optimizer_D2.step()
+        # optimizer_D2.step()
 
         print('exp = {}'.format(args.snapshot_dir))
-        print(
-            'iter = {0:8d}/{1:8d}, loss_seg1 = {2:.3f} loss_seg2 = {3:.3f} loss_adv1 = {4:.3f}, loss_adv2 = {5:.3f} loss_D1 = {6:.3f} loss_D2 = {7:.3f}'.format(
-                i_iter, args.num_steps, loss_seg_value1, loss_seg_value2, loss_adv_target_value1,
-                loss_adv_target_value2, loss_D_value1, loss_D_value2))
-
         # print(
-        # 'iter = {0:8d}/{1:8d}, loss_adv1 = {4:.3f}, loss_adv2 = {5:.3f} loss_D1 = {6:.3f} loss_D2 = {7:.3f}'.format(
-        #     i_iter, args.num_steps, loss_adv_target_value1, loss_adv_target_value2, loss_D_value1, loss_D_value2))
+        # 'iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_source_2 = {3:.3f} loss_G_adv1 = {4:.3f}, loss_G_adv2 = {5:.3f} loss_D1 = {6:.3f} loss_D2 = {7:.3f}'.format(
+        #     i_iter, args.num_steps, loss_source_1, loss_source_2, loss_target_1, loss_target_2, loss_D_value1, loss_D_value2))
+        print("iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
+                i_iter, args.num_steps, loss_source_1, loss_target_1, loss_D_value1))
 
         if i_iter >= args.num_steps_stop - 1:
             print('save model ...')
             torch.save(model.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps) + '.pth'))
             torch.save(model_D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps) + '_D1.pth'))
-            torch.save(model_D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps) + '_D2.pth'))
+            # torch.save(model_D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(args.num_steps) + '_D2.pth'))
             break
 
         if i_iter % args.save_pred_every == 0 and i_iter != 0:
             print('taking snapshot ...')
             torch.save(model.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
             torch.save(model_D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
-            torch.save(model_D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
+            # torch.save(model_D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
 
 
 if __name__ == '__main__':
