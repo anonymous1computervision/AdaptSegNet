@@ -17,6 +17,8 @@ import random
 
 from model.deeplab_multi import Res_Deeplab
 from model.discriminator import FCDiscriminator
+from model.xiao_discriminator import XiaoDiscriminator
+
 from utils.loss import CrossEntropy2d
 from dataset.gta5_dataset import GTA5DataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
@@ -205,6 +207,8 @@ def main():
     # init D
     model_D1 = FCDiscriminator(num_classes=args.num_classes)
     model_D2 = FCDiscriminator(num_classes=args.num_classes)
+    # model_D1 = XiaoDiscriminator(num_classes=args.num_classes)
+    # model_D2 = XiaoDiscriminator(num_classes=args.num_classes)
 
     model_D1.train()
     model_D1.cuda(args.gpu)
@@ -331,58 +335,61 @@ def main():
             loss_adv_target_value1 += loss_adv_target1.data.cpu().numpy() / args.iter_size
             loss_adv_target_value2 += loss_adv_target2.data.cpu().numpy() / args.iter_size
 
-            # train D
 
-            # bring back requires_grad
-            for param in model_D1.parameters():
-                param.requires_grad = True
+            for _ in range(5):
 
-            for param in model_D2.parameters():
-                param.requires_grad = True
+                # train D
 
-            # train with source
-            pred1 = pred1.detach()
-            pred2 = pred2.detach()
+                # bring back requires_grad
+                for param in model_D1.parameters():
+                    param.requires_grad = True
 
-            D_out1 = model_D1(F.softmax(pred1))
-            D_out2 = model_D2(F.softmax(pred2))
+                for param in model_D2.parameters():
+                    param.requires_grad = True
 
-            loss_D1 = bce_loss(D_out1,
-                              Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(args.gpu))
+                # train with source
+                pred1 = pred1.detach()
+                pred2 = pred2.detach()
 
-            loss_D2 = bce_loss(D_out2,
-                               Variable(torch.FloatTensor(D_out2.data.size()).fill_(source_label)).cuda(args.gpu))
+                D_out1 = model_D1(F.softmax(pred1))
+                D_out2 = model_D2(F.softmax(pred2))
 
-            loss_D1 = loss_D1 / args.iter_size / 2
-            loss_D2 = loss_D2 / args.iter_size / 2
+                loss_D1 = bce_loss(D_out1,
+                                  Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(args.gpu))
 
-            loss_D1.backward()
-            loss_D2.backward()
+                loss_D2 = bce_loss(D_out2,
+                                   Variable(torch.FloatTensor(D_out2.data.size()).fill_(source_label)).cuda(args.gpu))
 
-            loss_D_value1 += loss_D1.data.cpu().numpy()
-            loss_D_value2 += loss_D2.data.cpu().numpy()
+                loss_D1 = loss_D1 / args.iter_size / 2
+                loss_D2 = loss_D2 / args.iter_size / 2
 
-            # train with target
-            pred_target1 = pred_target1.detach()
-            pred_target2 = pred_target2.detach()
+                loss_D1.backward()
+                loss_D2.backward()
 
-            D_out1 = model_D1(F.softmax(pred_target1))
-            D_out2 = model_D2(F.softmax(pred_target2))
+                loss_D_value1 += loss_D1.data.cpu().numpy()
+                loss_D_value2 += loss_D2.data.cpu().numpy()
 
-            loss_D1 = bce_loss(D_out1,
-                              Variable(torch.FloatTensor(D_out1.data.size()).fill_(target_label)).cuda(args.gpu))
+                # train with target
+                pred_target1 = pred_target1.detach()
+                pred_target2 = pred_target2.detach()
 
-            loss_D2 = bce_loss(D_out2,
-                               Variable(torch.FloatTensor(D_out2.data.size()).fill_(target_label)).cuda(args.gpu))
+                D_out1 = model_D1(F.softmax(pred_target1))
+                D_out2 = model_D2(F.softmax(pred_target2))
 
-            loss_D1 = loss_D1 / args.iter_size / 2
-            loss_D2 = loss_D2 / args.iter_size / 2
+                loss_D1 = bce_loss(D_out1,
+                                  Variable(torch.FloatTensor(D_out1.data.size()).fill_(target_label)).cuda(args.gpu))
 
-            loss_D1.backward()
-            loss_D2.backward()
+                loss_D2 = bce_loss(D_out2,
+                                   Variable(torch.FloatTensor(D_out2.data.size()).fill_(target_label)).cuda(args.gpu))
 
-            loss_D_value1 += loss_D1.data.cpu().numpy()
-            loss_D_value2 += loss_D2.data.cpu().numpy()
+                loss_D1 = loss_D1 / args.iter_size / 2
+                loss_D2 = loss_D2 / args.iter_size / 2
+
+                loss_D1.backward()
+                loss_D2.backward()
+
+                loss_D_value1 += loss_D1.data.cpu().numpy()
+                loss_D_value2 += loss_D2.data.cpu().numpy()
 
         optimizer.step()
         optimizer_D1.step()

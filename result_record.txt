@@ -90,3 +90,70 @@ selu epoch 50000
 ===>motocycle:  25.16
 ===>bicycle:    24.21
 ===> mIoU: 35.76
+
+
+pelu epoch 50000
+===>road:       77.97
+===>sidewalk:   16.21
+===>building:   78.44
+===>wall:       18.2
+===>fence:      18.26
+===>pole:       24.24
+===>light:      29.83
+===>sign:       13.14
+===>vegetation: 81.08
+===>terrain:    14.96
+===>sky:        76.12
+===>person:     54.18
+===>rider:      25.75
+===>car:        60.33
+===>truck:      23.97
+===>bus:        37.22
+===>train:      0.93
+===>motocycle:  25.94
+===>bicycle:    14.69
+===> mIoU: 36.39
+
+relu-deep-dis epoch 50000
+===>road:       85.1
+===>sidewalk:   27.95
+===>building:   79.82
+===>wall:       28.79
+===>fence:      19.05
+===>pole:       23.1
+===>light:      27.84
+===>sign:       14.04
+===>vegetation: 80.01
+===>terrain:    24.0
+===>sky:        75.56
+===>person:     51.84
+===>rider:      19.54
+===>car:        63.89
+===>truck:      25.29
+===>bus:        34.13
+===>train:      3.13
+===>motocycle:  30.99
+===>bicycle:    18.92
+===> mIoU: 38.58
+
+discriminator 5 times epoch 50000
+===>road:       73.29
+===>sidewalk:   22.75
+===>building:   70.84
+===>wall:       27.43
+===>fence:      19.81
+===>pole:       20.46
+===>light:      29.5
+===>sign:       12.31
+===>vegetation: 81.94
+===>terrain:    23.62
+===>sky:        69.15
+===>person:     51.08
+===>rider:      23.01
+===>car:        53.72
+===>truck:      18.91
+===>bus:        35.34
+===>train:      0.53
+===>motocycle:  26.18
+===>bicycle:    9.17
+===> mIoU: 35.21

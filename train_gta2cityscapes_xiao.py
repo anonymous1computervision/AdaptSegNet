@@ -51,7 +51,8 @@ WEIGHT_DECAY = 0.0005
 LEARNING_RATE_D = 1e-4
 LAMBDA_SEG = 0.1
 LAMBDA_ADV_TARGET1 = 0.0002
-LAMBDA_ADV_TARGET2 = 0.001
+LAMBDA_ADV_TARGET2 = 0.0002
+LAMBDA_ADV_SOURCE1 = 0.0002
 
 TARGET = 'cityscapes'
 SET = 'train'
@@ -251,6 +252,7 @@ def main():
 
     interp = nn.Upsample(size=(input_size[1], input_size[0]), align_corners=False, mode='bilinear')
     interp_target = nn.Upsample(size=(input_size_target[1], input_size_target[0]), align_corners=False, mode='bilinear')
+    inter_mini = nn.Upsample(size=(224, 224), align_corners=False, mode='bilinear')
 
     # labels for adversarial training
     source_label = 0
@@ -292,25 +294,31 @@ def main():
             _, batch = trainloader_iter.__next__()
             images, labels, _, _ = batch
             images = Variable(images).cuda(args.gpu)
+            label = Variable(labels).cuda(args.gpu)
 
-            pred1, pred2 = model(images)
+            pred1, _ = model(images)
 
             # resize to source size
-            pred1 = interp(pred1)
-            pred2 = interp(pred2)
+            # pred1 = interp(pred1)
+            # pred2 = interp(pred2)
 
-            D_out1 = model_D1(F.softmax(pred1), label=labels)
+            mini_pred1 = inter_mini(pred1)
+            mini_label = inter_mini(label)
+
+            D_out1 = model_D1(F.softmax(mini_pred1), label=mini_label)
+
+            # D_out1 = model_D1(F.softmax(pred1), label=None)
             # D_out2 = model_D2(F.softmax(pred2), label=labels)
             # loss_adv_source2 = D_out2
             loss_adv_source1 = bce_loss(D_out1,
-                                        Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(
-                                            args.gpu))
+                                        Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label), requires_grad=False).cuda(args.gpu))
 
             # proper normalization
             # loss = args.lambda_adv_source1 * loss_adv_source1 + args.lambda_adv_source2 * loss_adv_source2
-            loss = args.lambda_seg * loss_adv_source1
+            loss = 0.001  * loss_adv_source1
             loss = loss / args.iter_size
-            loss_source_1 += loss_adv_source1.data.cpu().numpy() / args.iter_size
+
+            # loss_source_1 = loss_adv_source1.data[0].cpu().numpy() / args.iter_size
 
             loss.backward()
             # loss_source_2 = loss_adv_source2.data.cpu().numpy() / args.iter_size
@@ -321,14 +329,14 @@ def main():
             images, _, _ = batch
             images = Variable(images).cuda(args.gpu)
 
-            pred_target1, pred_target2 = model(images)
+            pred_target1, _ = model(images)
 
             # resize to targey size
-            pred_target1 = interp_target(pred_target1)
-            pred_target2 = interp_target(pred_target2)
+            # pred_target1 = interp_target(pred_target1)
+            # pred_target2 = interp_target(pred_target2)
 
-
-            D_out1 = model_D1(F.softmax(pred_target1))
+            mini_target1 = inter_mini(pred_target1)
+            D_out1 = model_D1(F.softmax(inter_mini(pred_target1)))
             # D_out2 = model_D2(F.softmax(pred_target2))
             loss_adv_target1 = bce_loss(D_out1,
                                         Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(
@@ -340,7 +348,7 @@ def main():
             loss = args.lambda_adv_target1 * loss_adv_target1
             loss = loss / args.iter_size
             loss.backward()
-            loss_target_1 += loss_adv_target1.data.cpu().numpy() / args.iter_size
+            # loss_target_1 = loss_adv_target1.data[0].cpu().numpy() / args.iter_size
             # loss_target_2 = loss_adv_target2.data.cpu().numpy() / args.iter_size
 
             # train D
@@ -354,7 +362,7 @@ def main():
 
             # train with source
             pred1 = pred1.detach()
-            pred2 = pred2.detach()
+            # pred2 = pred2.detach()
 
             D_out1 = model_D1(F.softmax(pred1), label=labels)
             # D_out2 = model_D2(F.softmax(pred2), label=labels)
@@ -369,7 +377,7 @@ def main():
             # loss_D2 = loss_D2 / args.iter_size / 2
 
             loss_D1.backward()
-            loss_D_value1 += loss_D1.data.cpu().numpy()
+            # loss_D_value1 = loss_D1.data[0].cpu().numpy()
 
             # loss_D2.backward()
 

@@ -289,23 +289,32 @@ class ResBlock(nn.Module):
 
 
 class ResBlockProjection(nn.Module):
-    def __init__(self, input_dim, output_dim, downsample=None, norm='none', activation='relu', pad_type='zero'):
+    def __init__(self, input_dim, output_dim, downsample='none', norm='none', activation='relu', pad_type='zero'):
         super(ResBlockProjection, self).__init__()
 
         model = []
-        model += [Conv2dBlockActivateFirst(input_dim, input_dim, 3, 1, 1, norm=norm, activation=activation, pad_type=pad_type)]
-        model += [Conv2dBlockActivateFirst(input_dim, output_dim, 3, 1, 1, norm=norm, activation=activation, pad_type=pad_type)]
+        model += [Conv2dBlockActivateFirst(input_dim, input_dim, kernel_size=3, stride=1, padding=1, norm=norm, activation=activation, pad_type=pad_type)]
+        model += [Conv2dBlockActivateFirst(input_dim, output_dim, kernel_size=3, stride=1, padding=1, norm=norm, activation=activation, pad_type=pad_type)]
         self.model = nn.Sequential(*model)
-        self.c_sc = Conv2dBlockActivateFirst(input_dim, output_dim, 3, 1, 1, norm=norm, activation=activation, pad_type=pad_type)
+        self.learnable_sc = (input_dim != output_dim) or downsample != 'none'
+        self.c_sc = Conv2dBlockActivateFirst(input_dim, output_dim, kernel_size=1, stride=1, padding=0, norm=norm, activation='none', pad_type=pad_type)
 
-
-        self.downsample = downsample
+        if downsample == 'avg':
+            self.downsample = nn.AvgPool2d(3, stride=2)
+        else:
+            self.downsample = None
 
     def forward(self, x):
+
         residual = x
         residual = self.model(residual)
-        shortcut = self.c_sc(x)
-        if self.downsample != 'none':
+
+        shortcut = x
+
+        if self.learnable_sc:
+            shortcut = self.c_sc(shortcut)
+
+        if self.downsample:
             return self.downsample(shortcut) + self.downsample(residual)
 
         return shortcut + residual
@@ -362,12 +371,12 @@ class Conv2dBlockActivateFirst(nn.Module):
         self.conv = nn.Conv2d(input_dim, output_dim, kernel_size, stride, bias=self.use_bias)
 
     def forward(self, x):
-
-        if self.activation:
-            x = self.activation(self.pad(x))
-        x = self.conv(x)
+        x = self.pad(x)
         if self.norm:
             x = self.norm(x)
+        if self.activation:
+            x = self.activation(x)
+        x = self.conv(x)
 
         return x
 
