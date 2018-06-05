@@ -157,3 +157,26 @@ discriminator 5 times epoch 50000
 ===>motocycle:  26.18
 ===>bicycle:    9.17
 ===> mIoU: 35.21
+
+DA *1
+
+===>road:       74.7
+===>sidewalk:   16.89
+===>building:   76.76
+===>wall:       22.37
+===>fence:      19.39
+===>pole:       21.43
+===>light:      30.61
+===>sign:       13.99
+===>vegetation: 81.11
+===>terrain:    15.54
+===>sky:        76.59
+===>person:     55.22
+===>rider:      25.25
+===>car:        48.19
+===>truck:      22.68
+===>bus:        41.75
+===>train:      0.6
+===>motocycle:  26.71
+===>bicycle:    28.16
+===> mIoU: 36.73

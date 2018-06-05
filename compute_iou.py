@@ -3,7 +3,7 @@ import argparse
 import json
 from PIL import Image
 from os.path import join
-
+import os
 
 def fast_hist(a, b, n):
     k = (a >= 0) & (a < n)
@@ -52,9 +52,11 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
             print('{:d} / {:d}: {:0.2f}'.format(ind, len(gt_imgs), 100*np.mean(per_class_iu(hist))))
     
     mIoUs = per_class_iu(hist)
+
     for ind_class in range(num_classes):
         print('===>' + name_classes[ind_class] + ':\t' + str(round(mIoUs[ind_class] * 100, 2)))
     print('===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2)))
+
     return mIoUs
 
 

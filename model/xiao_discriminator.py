@@ -1,7 +1,7 @@
 import torch as torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import pdb
 from .networks import ResBlockProjection
 
 class XiaoDiscriminator(nn.Module):
@@ -51,8 +51,14 @@ class XiaoDiscriminator(nn.Module):
         # x = self.conv8(x)
         # x = self.conv9(x)
         x = self.activation(x)
-        x = self.global_pooling(x)  # global average pooling
-        x = self.linear(x)
+
+        # x = self.global_pooling(x)  # global average pooling
+        x = x.sum(2).sum(2)
+        output = self.linear(x)
+
+        # pdb.set_trace()
+
+        # x = self.linear(x)
         # a = torch.dot(proj_x.view(-1).type(torch.cuda.FloatTensor), label.view(-1).type(torch.cuda.FloatTensor))
         # x += a
-        return x
+        return output

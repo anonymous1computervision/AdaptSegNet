@@ -15,13 +15,15 @@ import os.path as osp
 import matplotlib.pyplot as plt
 import random
 
-from model.deeplab_multi import Res_Deeplab
+# from model.deeplab_multi import Res_Deeplab
+from model.deeplab_single import Res_Deeplab
+
 from model.discriminator import FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from utils.loss import CrossEntropy2d
 from dataset.gta5_dataset import GTA5DataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
-
+import pdb
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
 
 MODEL = 'DeepLab'
@@ -31,10 +33,13 @@ NUM_WORKERS = 4
 DATA_DIRECTORY = './data/GTA5'
 DATA_LIST_PATH = './dataset/gta5_list/train.txt'
 IGNORE_LABEL = 255
-INPUT_SIZE = '1280,720'
+# INPUT_SIZE = '1280,720'
+INPUT_SIZE = '320,180'
 DATA_DIRECTORY_TARGET = './data/Cityscapes/data'
 DATA_LIST_PATH_TARGET = './dataset/cityscapes_list/train.txt'
-INPUT_SIZE_TARGET = '1024,512'
+# INPUT_SIZE_TARGET = '1024,512'
+INPUT_SIZE_TARGET = '256,128'
+
 LEARNING_RATE = 2.5e-4
 MOMENTUM = 0.9
 NUM_CLASSES = 19
@@ -57,6 +62,7 @@ LAMBDA_ADV_SOURCE1 = 0.0002
 TARGET = 'cityscapes'
 SET = 'train'
 
+DEBUG_MODE = False
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -168,6 +174,19 @@ def adjust_learning_rate_D(optimizer, i_iter):
     if len(optimizer.param_groups) > 1:
         optimizer.param_groups[1]['lr'] = lr * 10
 
+def label_to_channel(labels, num_classes=19):
+    # map value to each category
+    #
+    # input:
+    #   label (n, h, w)
+    #
+    # output:
+    #   (n, num_classes, h, w)
+    n, h, w = labels.shape
+    label_channel = torch.zeros(n, num_classes, h, w)
+    for i in range(num_classes):
+        label_channel[:, i] = (labels == i) * 1
+    return label_channel
 
 def main():
     """Create the model and start the training."""
@@ -214,9 +233,11 @@ def main():
     # model_D2.train()
     # model_D2.cuda(args.gpu)
 
+    # create dir
     if not os.path.exists(args.snapshot_dir):
         os.makedirs(args.snapshot_dir)
 
+    # load data
     trainloader = data.DataLoader(
         GTA5DataSet(args.data_dir, args.data_list, max_iters=args.num_steps * args.iter_size * args.batch_size,
                     crop_size=input_size,
@@ -250,13 +271,14 @@ def main():
 
     bce_loss = torch.nn.BCEWithLogitsLoss()
 
-    interp = nn.Upsample(size=(input_size[1], input_size[0]), align_corners=False, mode='bilinear')
-    interp_target = nn.Upsample(size=(input_size_target[1], input_size_target[0]), align_corners=False, mode='bilinear')
-    inter_mini = nn.Upsample(size=(224, 224), align_corners=False, mode='bilinear')
+    # interp = nn.Upsample(size=(input_size[1], input_size[0]), align_corners=False, mode='bilinear')
+    # interp_target = nn.Upsample(size=(input_size_target[1], input_size_target[0]), align_corners=False, mode='bilinear')
+    inter_mini = nn.Upsample(size=(320, 180), align_corners=False, mode='bilinear')
+    # inter_mini = nn.Upsample(size=(320, 180), mode='nearest')
+
 
     # labels for adversarial training
-    source_label = 0
-    target_label = 1
+    source_label, target_label = 0, 1
 
     for i_iter in range(args.num_steps):
 
@@ -296,31 +318,44 @@ def main():
             images = Variable(images).cuda(args.gpu)
             label = Variable(labels).cuda(args.gpu)
 
-            pred1, _ = model(images)
+            pred1  = model(images)
 
             # resize to source size
             # pred1 = interp(pred1)
             # pred2 = interp(pred2)
 
             mini_pred1 = inter_mini(pred1)
-            mini_label = inter_mini(label)
 
-            D_out1 = model_D1(F.softmax(mini_pred1), label=mini_label)
+            # print("pdb trace 1")
+            # pdb.set_trace()
+
+
+
+            D_out1 = model_D1(F.softmax(mini_pred1),
+                              label= inter_mini(label_to_channel(label, num_classes=NUM_CLASSES)))
 
             # D_out1 = model_D1(F.softmax(pred1), label=None)
             # D_out2 = model_D2(F.softmax(pred2), label=labels)
             # loss_adv_source2 = D_out2
-            loss_adv_source1 = bce_loss(D_out1,
-                                        Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label), requires_grad=False).cuda(args.gpu))
 
+            if DEBUG_MODE:
+                print("mini pred1 shape", mini_pred1.shape)
+                print("mini label shape", label.shape)
+                print("pdb trace 2")
+                pdb.set_trace()
+            # a = Variable(torch.FloatTensor(D_out1.shape).fill_(source_label), requires_grad=False).cuda(args.gpu)
+            loss_adv_source1 = bce_loss(D_out1,  Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label), requires_grad=False).cuda(args.gpu))
+            # print("loss adv source1 =", loss_adv_source1)
             # proper normalization
             # loss = args.lambda_adv_source1 * loss_adv_source1 + args.lambda_adv_source2 * loss_adv_source2
-            loss = 0.001  * loss_adv_source1
+            # loss = LAMBDA_SEG  * loss_adv_source1
+            loss = loss_adv_source1
+
             loss = loss / args.iter_size
 
-            # loss_source_1 = loss_adv_source1.data[0].cpu().numpy() / args.iter_size
-
             loss.backward()
+            loss_source_1 += loss_adv_source1.data.cpu().numpy() / args.iter_size
+
             # loss_source_2 = loss_adv_source2.data.cpu().numpy() / args.iter_size
 
             # train with target
@@ -329,15 +364,26 @@ def main():
             images, _, _ = batch
             images = Variable(images).cuda(args.gpu)
 
-            pred_target1, _ = model(images)
+            pred_target1 = model(images)
 
-            # resize to targey size
+            # resize to target size
             # pred_target1 = interp_target(pred_target1)
             # pred_target2 = interp_target(pred_target2)
 
+            # print("pdb trace 3")
+            # pdb.set_trace()
+
             mini_target1 = inter_mini(pred_target1)
-            D_out1 = model_D1(F.softmax(inter_mini(pred_target1)))
+            D_out1 = model_D1(F.softmax(pred_target1))
+
+            # D_out1 = model_D1(F.softmax(inter_mini(pred_target1)))
             # D_out2 = model_D2(F.softmax(pred_target2))
+
+
+            if DEBUG_MODE:
+                print("mini_target1 shape", mini_target1.shape)
+                print("pdb trace 4")
+                pdb.set_trace()
             loss_adv_target1 = bce_loss(D_out1,
                                         Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(
                                             args.gpu))
@@ -348,7 +394,7 @@ def main():
             loss = args.lambda_adv_target1 * loss_adv_target1
             loss = loss / args.iter_size
             loss.backward()
-            # loss_target_1 = loss_adv_target1.data[0].cpu().numpy() / args.iter_size
+            loss_target_1 += loss_adv_target1.data.cpu().numpy() / args.iter_size
             # loss_target_2 = loss_adv_target2.data.cpu().numpy() / args.iter_size
 
             # train D
@@ -377,7 +423,7 @@ def main():
             # loss_D2 = loss_D2 / args.iter_size / 2
 
             loss_D1.backward()
-            # loss_D_value1 = loss_D1.data[0].cpu().numpy()
+            loss_D_value1 += loss_D1.data.cpu().numpy()
 
             # loss_D2.backward()
 
@@ -396,6 +442,9 @@ def main():
 
             loss_D1 = loss_D1 / args.iter_size / 2
             # loss_D2 = loss_D2 / args.iter_size / 2
+            if DEBUG_MODE:
+                print("pdb trace 5 pre bp")
+                pdb.set_trace()
 
             loss_D1.backward()
             # loss_D2.backward()
