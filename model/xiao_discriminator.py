@@ -2,63 +2,78 @@ import torch as torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pdb
-from .networks import ResBlockProjection
+from .networks import ResBlock_2018
 
 class XiaoDiscriminator(nn.Module):
 
     def __init__(self, num_classes, ndf=16):
         super(XiaoDiscriminator, self).__init__()
-        self.activation = nn.ReLU(inplace=True)
-        # channel = 64
-        self.conv1 = ResBlockProjection(num_classes, ndf, downsample='none', activation="relu")
-        # self.conv1 = ResBlockProjection(num_classes, ndf, downsample=self.downsample, activation="relu")
-        self.conv2 = ResBlockProjection(ndf, ndf, downsample='none', activation="relu")
+        self.model_pre = []
+        # channe = 64
+        self.model_pre += [ResBlock_2018(num_classes, ndf, downsample=False, use_BN=True)]
+        self.model_pre += [ResBlock_2018(ndf, ndf, downsample=False, use_BN=True)]
+        # channe = 128
+        self.model_pre += [ResBlock_2018(ndf, ndf*2, downsample=False, use_BN=True)]
+        self.model_pre += [ResBlock_2018(ndf*2, ndf*2, downsample=False, use_BN=True)]
+
+        # use cGANs with projection
+        self.proj_conv =  nn.Conv2d( ndf*2, num_classes, kernel_size=3, stride=1, padding=1)
+
+        self.model_block = []
         # channel = 128
-        self.conv3 = ResBlockProjection(ndf, ndf*2, downsample='avg', activation="relu")
-        self.conv4 = ResBlockProjection(ndf*2, ndf*2, downsample='avg', activation="relu")
-        self.conv5 = ResBlockProjection(ndf*2, ndf*2, downsample='avg', activation="relu")
+        self.model_block += [ResBlock_2018(ndf*2, ndf*2, downsample=True, use_BN=True)]
         # channel = 256
-        # self.conv6 = ResBlockProjection(ndf*2, ndf*4, downsample=self.downsample, activation="relu")
+        self.model_block += [ResBlock_2018(ndf*2, ndf*4, downsample=True, use_BN=True)]
         # channel = 512
-        # self.conv7 = ResBlockProjection(ndf*4, ndf*8, downsample=self.downsample, activation="relu")
+        self.model_block += [ResBlock_2018(ndf*4, ndf*8, downsample=True, use_BN=True)]
         # channel = 1024
-        # self.conv8 = ResBlockProjection(ndf*8, ndf*16, downsample=self.downsample, activation="relu")
-        # self.conv9 = ResBlockProjection(ndf*16, ndf*16, downsample='none', activation="relu")
+        self.model_block += [ResBlock_2018(ndf*8, ndf*16, downsample=True, use_BN=True)]
 
-        # self.proj_conv = nn.Conv2d(ndf, 1, kernel_size=3, stride=1, padding=1)
+        # use some trick
+        self.model_block += [nn.ReLU(inplace=True)]
+        self.model_block += [nn.AdaptiveAvgPool2d(ndf*16)]
+        self.model_block += [nn.Linear(ndf*16, 1)]
 
-        self.global_pooling = nn.AdaptiveAvgPool2d(ndf*2)
+        # create model
+        self.model_pre = nn.Sequential(*self.model_pre)
+        self.model_block = nn.Sequential(*self.model_block)
 
-        # self.classifier = nn.Conv2d(ndf*16, 1, kernel_size=4, stride=2, padding=1)
-        self.linear = nn.Linear(ndf*2, 1)
         # self.leaky_relu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
-        # self.selu = nn.SELU(inplace=True)
 
     def forward(self, x, label=None):
-        # sementic label bathc * h * w
-        # value = (0~num_classes)
-        # if label is None:
-        #     x_ =  x.permute(0, 2, 3, 1).detach()
-        #     label = torch.argmax(x_, -1)
-        x = self.conv1(x)
-        x = self.conv2(x)
+        if label is None:
+            # print("copy x")
+            label = x.clone().cuda(0)
+        # # sementic label bathc * h * w
+        # # value = (0~num_classes)
+        # # if label is None:
+        # #     x_ =  x.permute(0, 2, 3, 1).detach()
+        # #     label = torch.argmax(x_, -1)
+        # x = self.conv1(x)
+        # x = self.conv2(x)
         # proj_x = self.proj_conv(x)
-        x = self.conv3(x)
-        x = self.conv4(x)
-        x = self.conv5(x)
-        # x = self.conv6(x)
-        # x = self.conv7(x)
-        # x = self.conv8(x)
-        # x = self.conv9(x)
-        x = self.activation(x)
+        # x = self.conv3(x)
+        # x = self.conv4(x)
+        # x = self.conv5(x)
+        # # x = self.conv6(x)
+        # # x = self.conv7(x)
+        # # x = self.conv8(x)
+        # # x = self.conv9(x)
+        # x = self.activation(x)
+        #
+        # # x = self.global_pooling(x)  # global average pooling
+        # x = x.sum(2).sum(2)
+        # output = self.linear(x)
+        # x = self.linear(x)
 
-        # x = self.global_pooling(x)  # global average pooling
-        x = x.sum(2).sum(2)
-        output = self.linear(x)
-
+        # print("label shape = ", label.shape)
+        # print("proj_x shape = ", proj_x.shape)
         # pdb.set_trace()
 
-        # x = self.linear(x)
-        # a = torch.dot(proj_x.view(-1).type(torch.cuda.FloatTensor), label.view(-1).type(torch.cuda.FloatTensor))
+        x = self.model_pre(x)
+        proj_x = self.proj_conv(x)
+        output = self.model_block(x)
+        output += torch.sum(proj_x*label)
+
         # x += a
         return output

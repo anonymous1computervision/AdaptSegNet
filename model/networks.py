@@ -287,38 +287,39 @@ class ResBlock(nn.Module):
         out += residual
         return out
 
+class ResBlock_2018(nn.Module):
+    def __init__(self, in_channels, out_channels, hidden_channels=None, use_BN=False, downsample=False):
+        super(ResBlock_2018, self).__init__()
+        hidden_channels = in_channels
+        self.downsample = downsample
 
-class ResBlockProjection(nn.Module):
-    def __init__(self, input_dim, output_dim, downsample='none', norm='none', activation='relu', pad_type='zero'):
-        super(ResBlockProjection, self).__init__()
+        self.resblock = self.make_res_block(in_channels, out_channels, hidden_channels, use_BN, downsample)
+        self.residual_connect = self.make_residual_connect(in_channels, out_channels)
 
+    def make_res_block(self, in_channels, out_channels, hidden_channels, use_BN, downsample):
         model = []
-        model += [Conv2dBlockActivateFirst(input_dim, input_dim, kernel_size=3, stride=1, padding=1, norm=norm, activation=activation, pad_type=pad_type)]
-        model += [Conv2dBlockActivateFirst(input_dim, output_dim, kernel_size=3, stride=1, padding=1, norm=norm, activation=activation, pad_type=pad_type)]
-        self.model = nn.Sequential(*model)
-        self.learnable_sc = (input_dim != output_dim) or downsample != 'none'
-        self.c_sc = Conv2dBlockActivateFirst(input_dim, output_dim, kernel_size=1, stride=1, padding=0, norm=norm, activation='none', pad_type=pad_type)
+        if use_BN:
+            model += [nn.BatchNorm2d(in_channels)]
 
-        if downsample == 'avg':
-            self.downsample = nn.AvgPool2d(3, stride=2)
-        else:
-            self.downsample = None
+        model += [nn.ReLU()]
+        model += [nn.Conv2d(in_channels, hidden_channels, kernel_size=3, padding=1)]
+        model += [nn.ReLU()]
+        model += [nn.Conv2d(hidden_channels, out_channels, kernel_size=3, padding=1)]
+        if downsample:
+            model += [nn.AvgPool2d(2)]
+        return nn.Sequential(*model)
 
-    def forward(self, x):
-
-        residual = x
-        residual = self.model(residual)
-
-        shortcut = x
-
-        if self.learnable_sc:
-            shortcut = self.c_sc(shortcut)
-
+    def make_residual_connect(self, in_channels, out_channels):
+        model = []
+        model += [nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)]
         if self.downsample:
-            return self.downsample(shortcut) + self.downsample(residual)
+            model += [nn.AvgPool2d(2)]
+            return nn.Sequential(*model)
+        else:
+            return nn.Sequential(*model)
 
-        return shortcut + residual
-
+    def forward(self, input):
+        return self.resblock(input) + self.residual_connect(input)
 
 
 class Conv2dBlockActivateFirst(nn.Module):

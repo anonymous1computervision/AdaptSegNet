@@ -324,15 +324,15 @@ def main():
             D_out1 = model_D1(F.softmax(pred_target1))
             # D_out2 = model_D2(F.softmax(pred_target2))
             pdb.set_trace()
-            loss_adv_target1 = bce_loss(D_out1,
-                                       Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(
-                                           args.gpu))
+            # loss_adv_target1 = bce_loss(D_out1,
+            #                            Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(
+            #                                args.gpu))
 
-            # loss_adv_target2 = bce_loss(D_out2,
-            #                             Variable(torch.FloatTensor(D_out2.data.size()).fill_(source_label)).cuda(
-            #                                 args.gpu))
+            # use WGAN
 
-            # loss = args.lambda_adv_target1 * loss_adv_target1 + args.lambda_adv_target2 * loss_adv_target2
+            loss_adv_target1 = -torch.mean(D_out1)
+
+
             loss = args.lambda_adv_target1 * loss_adv_target1
 
             loss = loss / args.iter_size
@@ -355,44 +355,50 @@ def main():
             pred1 = pred1.detach()
             # pred2 = pred2.detach()
 
-            D_out1 = model_D1(F.softmax(pred1))
+            D_real = model_D1(F.softmax(pred1))
             # D_out2 = model_D2(F.softmax(pred2))
 
-            loss_D1 = bce_loss(D_out1,
-                              Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(args.gpu))
+            # loss_D1 = bce_loss(D_out1,
+            #                   Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(args.gpu))
 
             # loss_D2 = bce_loss(D_out2,
             #                    Variable(torch.FloatTensor(D_out2.data.size()).fill_(source_label)).cuda(args.gpu))
 
-            loss_D1 = loss_D1 / args.iter_size / 2
+            # loss_D1 = loss_D1 / args.iter_size / 2
             # loss_D2 = loss_D2 / args.iter_size / 2
 
-            loss_D1.backward()
+            # loss_D1.backward()
             # loss_D2.backward()
 
-            loss_D_value1 += loss_D1.data.cpu().numpy()
+            loss_D_value1 += D_real.data.cpu().numpy()
+
+
+            # loss_D_value1 += loss_D1.data.cpu().numpy()
             # loss_D_value2 += loss_D2.data.cpu().numpy()
 
             # train with target
             pred_target1 = pred_target1.detach()
             # pred_target2 = pred_target2.detach()
 
-            D_out1 = model_D1(F.softmax(pred_target1))
+            D_fake = model_D1(F.softmax(pred_target1))
+
+            loss_D_value1 += D_fake.data.cpu().numpy()
+
             # D_out2 = model_D2(F.softmax(pred_target2))
 
-            loss_D1 = bce_loss(D_out1,
-                              Variable(torch.FloatTensor(D_out1.data.size()).fill_(target_label)).cuda(args.gpu))
+            # loss_D1 = bce_loss(D_out1,
+            #                   Variable(torch.FloatTensor(D_out1.data.size()).fill_(target_label)).cuda(args.gpu))
 
             # loss_D2 = bce_loss(D_out2,
             #                    Variable(torch.FloatTensor(D_out2.data.size()).fill_(target_label)).cuda(args.gpu))
 
-            loss_D1 = loss_D1 / args.iter_size / 2
+            loss = -(torch.mean(D_real) - torch.mean(D_fake))
+
             # loss_D2 = loss_D2 / args.iter_size / 2
 
-            loss_D1.backward()
+            loss.backward()
             # loss_D2.backward()
 
-            loss_D_value1 += loss_D1.data.cpu().numpy()
             # loss_D_value2 += loss_D2.data.cpu().numpy()
 
         optimizer.step()
