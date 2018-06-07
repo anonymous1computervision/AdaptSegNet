@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pdb
 from .networks import ResBlock_2018
+from .networks import FirstResBlock_2018_SN
+from .networks import ResBlock_2018_SN
 
 class XiaoDiscriminator(nn.Module):
 
@@ -10,24 +12,24 @@ class XiaoDiscriminator(nn.Module):
         super(XiaoDiscriminator, self).__init__()
         self.model_pre = []
         # channe = 64
-        self.model_pre += [ResBlock_2018(num_classes, ndf, downsample=False, use_BN=True)]
-        self.model_pre += [ResBlock_2018(ndf, ndf, downsample=False, use_BN=True)]
+        self.model_pre += [FirstResBlock_2018_SN(num_classes, ndf, downsample=False, use_BN=True)]
+        self.model_pre += [ResBlock_2018_SN(ndf, ndf, downsample=False, use_BN=True)]
         # channe = 128
-        self.model_pre += [ResBlock_2018(ndf, ndf*2, downsample=False, use_BN=True)]
-        self.model_pre += [ResBlock_2018(ndf*2, ndf*2, downsample=False, use_BN=True)]
+        self.model_pre += [ResBlock_2018_SN(ndf, ndf*2, downsample=False, use_BN=True)]
+        self.model_pre += [ResBlock_2018_SN(ndf*2, ndf*2, downsample=False, use_BN=True)]
 
         # use cGANs with projection
         self.proj_conv =  nn.Conv2d( ndf*2, num_classes, kernel_size=3, stride=1, padding=1)
 
         self.model_block = []
         # channel = 128
-        self.model_block += [ResBlock_2018(ndf*2, ndf*2, downsample=True, use_BN=True)]
+        self.model_block += [ResBlock_2018_SN(ndf*2, ndf*2, downsample=True, use_BN=True)]
         # channel = 256
-        self.model_block += [ResBlock_2018(ndf*2, ndf*4, downsample=True, use_BN=True)]
+        self.model_block += [ResBlock_2018_SN(ndf*2, ndf*4, downsample=True, use_BN=True)]
         # channel = 512
-        self.model_block += [ResBlock_2018(ndf*4, ndf*8, downsample=True, use_BN=True)]
+        self.model_block += [ResBlock_2018_SN(ndf*4, ndf*8, downsample=True, use_BN=True)]
         # channel = 1024
-        self.model_block += [ResBlock_2018(ndf*8, ndf*16, downsample=True, use_BN=True)]
+        self.model_block += [ResBlock_2018_SN(ndf*8, ndf*16, downsample=True, use_BN=True)]
 
         # use some trick
         self.model_block += [nn.ReLU(inplace=True)]

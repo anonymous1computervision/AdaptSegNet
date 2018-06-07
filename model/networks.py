@@ -5,6 +5,10 @@ from torch import nn
 from torch.autograd import Variable
 import torch
 import torch.nn.functional as F
+import numpy as np
+
+from .spectral import SpectralNorm
+
 try:
     from itertools import izip as zip
 except ImportError: # will be 3.x series
@@ -286,6 +290,90 @@ class ResBlock(nn.Module):
         out = self.model(x)
         out += residual
         return out
+
+
+# special ResBlock just for the first layer of the discriminator
+class FirstResBlock_2018_SN(nn.Module):
+    def __init__(self, in_channels, out_channels, hidden_channels=None, use_BN=False, downsample=False):
+        super(ResBlock_2018, self).__init__()
+        hidden_channels = in_channels
+        self.downsample = downsample
+
+        self.resblock = self.make_res_block(in_channels, out_channels, hidden_channels, use_BN, downsample)
+        self.residual_connect = self.make_residual_connect(in_channels, out_channels)
+
+    def make_res_block(self, in_channels, out_channels, hidden_channels, use_BN=None, downsample=None):
+        conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
+        conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
+        nn.init.xavier_uniform(conv1.weight.data, 1.)
+        nn.init.xavier_uniform(conv2.weight.data, 1.)
+
+        model = []
+        if use_BN:
+            model += [nn.BatchNorm2d(in_channels)]
+        model += [nn.ReLU()]
+        model += [SpectralNorm(conv1)]
+        model += [nn.ReLU()]
+        model += [SpectralNorm(conv2)]
+        if downsample:
+            model += [nn.AvgPool2d(2)]
+        return nn.Sequential(*model)
+
+    def make_residual_connect(self, in_channels, out_channels):
+        conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)
+        nn.init.xavier_uniform(conv1.weight.data, np.sqrt(2))
+
+        model = []
+        model += [SpectralNorm(conv1)]
+        if self.downsample:
+            model += [nn.AvgPool2d(2)]
+            return nn.Sequential(*model)
+        else:
+            return nn.Sequential(*model)
+
+    def forward(self, input):
+        return self.resblock(input) + self.residual_connect(input)
+
+class ResBlock_2018_SN(nn.Module):
+    def __init__(self, in_channels, out_channels, hidden_channels=None, use_BN=False, downsample=False):
+        super(ResBlock_2018, self).__init__()
+        hidden_channels = in_channels
+        self.downsample = downsample
+
+        self.resblock = self.make_res_block(in_channels, out_channels, hidden_channels, use_BN, downsample)
+        self.residual_connect = self.make_residual_connect(in_channels, out_channels)
+
+    def make_res_block(self, in_channels, out_channels, hidden_channels, use_BN=None, downsample=None):
+        conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
+        conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
+        nn.init.xavier_uniform(conv1.weight.data, 1.)
+        nn.init.xavier_uniform(conv2.weight.data, 1.)
+
+        model = []
+        if use_BN:
+            model += [nn.BatchNorm2d(in_channels)]
+        model += [nn.ReLU()]
+        model += [SpectralNorm(conv1)]
+        model += [nn.ReLU()]
+        model += [SpectralNorm(conv2)]
+        if downsample:
+            model += [nn.AvgPool2d(2)]
+        return nn.Sequential(*model)
+
+    def make_residual_connect(self, in_channels, out_channels):
+        conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)
+        nn.init.xavier_uniform(conv1.weight.data, np.sqrt(2))
+
+        model = []
+        model += [SpectralNorm(conv1)]
+        if self.downsample:
+            model += [nn.AvgPool2d(2)]
+            return nn.Sequential(*model)
+        else:
+            return nn.Sequential(*model)
+
+    def forward(self, input):
+        return self.resblock(input) + self.residual_connect(input)
 
 class ResBlock_2018(nn.Module):
     def __init__(self, in_channels, out_channels, hidden_channels=None, use_BN=False, downsample=False):
