@@ -295,7 +295,7 @@ class ResBlock(nn.Module):
 # special ResBlock just for the first layer of the discriminator
 class FirstResBlock_2018_SN(nn.Module):
     def __init__(self, in_channels, out_channels, hidden_channels=None, use_BN=False, downsample=False):
-        super(ResBlock_2018, self).__init__()
+        super(FirstResBlock_2018_SN, self).__init__()
         hidden_channels = in_channels
         self.downsample = downsample
 
@@ -305,8 +305,8 @@ class FirstResBlock_2018_SN(nn.Module):
     def make_res_block(self, in_channels, out_channels, hidden_channels, use_BN=None, downsample=None):
         conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
         conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
-        nn.init.xavier_uniform(conv1.weight.data, 1.)
-        nn.init.xavier_uniform(conv2.weight.data, 1.)
+        nn.init.xavier_uniform_(conv1.weight.data, 1.)
+        nn.init.xavier_uniform_(conv2.weight.data, 1.)
 
         model = []
         if use_BN:
@@ -321,7 +321,7 @@ class FirstResBlock_2018_SN(nn.Module):
 
     def make_residual_connect(self, in_channels, out_channels):
         conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)
-        nn.init.xavier_uniform(conv1.weight.data, np.sqrt(2))
+        nn.init.xavier_uniform_(conv1.weight.data, np.sqrt(2))
 
         model = []
         model += [SpectralNorm(conv1)]
@@ -336,7 +336,7 @@ class FirstResBlock_2018_SN(nn.Module):
 
 class ResBlock_2018_SN(nn.Module):
     def __init__(self, in_channels, out_channels, hidden_channels=None, use_BN=False, downsample=False):
-        super(ResBlock_2018, self).__init__()
+        super(ResBlock_2018_SN, self).__init__()
         hidden_channels = in_channels
         self.downsample = downsample
 
@@ -346,8 +346,8 @@ class ResBlock_2018_SN(nn.Module):
     def make_res_block(self, in_channels, out_channels, hidden_channels, use_BN=None, downsample=None):
         conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
         conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
-        nn.init.xavier_uniform(conv1.weight.data, 1.)
-        nn.init.xavier_uniform(conv2.weight.data, 1.)
+        nn.init.xavier_uniform_(conv1.weight.data, 1.)
+        nn.init.xavier_uniform_(conv2.weight.data, 1.)
 
         model = []
         if use_BN:
@@ -362,7 +362,7 @@ class ResBlock_2018_SN(nn.Module):
 
     def make_residual_connect(self, in_channels, out_channels):
         conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)
-        nn.init.xavier_uniform(conv1.weight.data, np.sqrt(2))
+        nn.init.xavier_uniform_(conv1.weight.data, np.sqrt(2))
 
         model = []
         model += [SpectralNorm(conv1)]

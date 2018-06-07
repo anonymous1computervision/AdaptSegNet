@@ -305,7 +305,12 @@ def main():
                           lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer.zero_grad()
 
-    optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    # optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    # next try
+    # TODO: replace Parameters with buffers, which aren't returned from .parameters() method.
+    # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.lr, betas=(0, 0.99))
+
     optimizer_D1.zero_grad()
 
 
@@ -336,7 +341,7 @@ def main():
 
         for sub_i in range(args.iter_size):
 
-            # ================== Train D ================== #
+            # ================== Train G ================== #
 
             # don't accumulate grads in D
             for param in model_D1.parameters():
@@ -392,6 +397,7 @@ def main():
 
             loss = d_loss_fake / args.iter_size
             loss.backward()
+
             if DEBUG_MODE:
                 print("loss_adv_target1 shape", loss_target.shape, "  value =", loss_target)
                 print("_target1 shape", mini_target1.shape)
@@ -428,7 +434,7 @@ def main():
 
             # loss_D_value1 = 0.01 * d_loss_fake
 
-            loss = d_loss_real + d_loss_fake
+            loss = (d_loss_real + d_loss_fake)/ args.iter_size
             loss_D_value = loss
             if DEBUG_MODE:
                 print("loss_D_value1 shape", loss_D_value.shape, "  value =", loss_D_value)
@@ -451,7 +457,6 @@ def main():
                 # save output image
                 output_to_image(pred1).save('check_output/Image_source_domain_seg/%s.png' % (i_iter))
                 output_to_image(pred_target1).save('check_output/Image_target_domain_seg/%s.png' % (i_iter))
-
 
         optimizer.step()
         optimizer_D1.step()
