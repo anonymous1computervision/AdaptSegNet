@@ -9,7 +9,8 @@ from torch.autograd import Variable
 import torchvision.models as models
 import torch.nn.functional as F
 from torch.utils import data, model_zoo
-from model.deeplab_multi import Res_Deeplab
+# from model.deeplab_multi import Res_Deeplab
+from model.deeplab_single import Res_Deeplab
 from dataset.cityscapes_dataset import cityscapesDataSet
 from collections import OrderedDict
 import os

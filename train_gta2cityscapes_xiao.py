@@ -52,6 +52,7 @@ NUM_STEPS_STOP = 100000  # early stopping
 POWER = 0.9
 RANDOM_SEED = 1234
 RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_init-f81d91e8.pth'
+# RESTORE_FROM = './snapshots/GTA2Cityscapes_multi/GTA5_10000.pth'
 SAVE_NUM_IMAGES = 2
 SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = './snapshots/'
@@ -176,12 +177,13 @@ def output_to_image(output):
     #
     #
     interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
-    output = interp(output).cpu().data[0].numpy()
-    output = output.transpose(1, 2, 0)
-    output = np.asarray(np.argmax(output, axis=2), dtype=np.uint8)
+    output = interp(output).permute(0,2,3, 1)
+    _, output = torch.max(output, -1)
+    output = output.cpu().data[0].numpy().astype(np.uint8)
     output_color = colorize_mask(output)
 
     return output_color
+
 
 # ===============for model==============
 def loss_calc(pred, label, gpu):
@@ -306,8 +308,10 @@ def main():
     optimizer.zero_grad()
 
     # optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
-    optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D, betas=(0.9, 0.99))
     # next try
+    optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D,
+                              betas=(0.0, 0.9))
     # TODO: replace Parameters with buffers, which aren't returned from .parameters() method.
     # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.lr, betas=(0, 0.99))
 
@@ -318,7 +322,9 @@ def main():
 
     interp = nn.Upsample(size=(input_size[1], input_size[0]), align_corners=False, mode='bilinear')
     # interp_target = nn.Upsample(size=(input_size_target[1], input_size_target[0]), align_corners=False, mode='bilinear')
-    inter_mini = nn.Upsample(size=(input_size[1], input_size[0]), align_corners=False, mode='bilinear')
+    # inter_mini = nn.Upsample(size=(int(input_size[1]/4), int(input_size[0]/4)), align_corners=False, mode='bilinear')
+    inter_mini = nn.Upsample(size=(int(input_size[1]/32), int(input_size[0]/32)), align_corners=False, mode='bilinear')
+
     # inter_mini = nn.Upsample(size=(320, 180), mode='nearest')
 
 
@@ -339,6 +345,7 @@ def main():
         optimizer_D1.zero_grad()
         adjust_learning_rate_D(optimizer_D1, i_iter)
 
+
         for sub_i in range(args.iter_size):
 
             # ================== Train G ================== #
@@ -347,18 +354,21 @@ def main():
             for param in model_D1.parameters():
                 param.requires_grad = False
 
+            for param in model.parameters():
+                param.requires_grad = True
 
             # train with source
             _, batch = trainloader_iter.__next__()
             images, labels, _, names = batch
             images = Variable(images).cuda(args.gpu)
+            mini_source_image = inter_mini(images)
+
             label = Variable(labels).cuda(args.gpu)
 
             pred1  = model(images)
 
             # resize to source size
             pred1 = interp(pred1)
-
             loss_seg1 = loss_calc(pred1, label, args.gpu)
             loss_source += loss_seg1.data.cpu().numpy() / args.iter_size
             loss = loss_seg1
@@ -376,15 +386,15 @@ def main():
 
 
             # train with target
-
+            # don't train G at first 1000 epoch bcz the discriminator is sake
             _, batch = targetloader_iter.__next__()
             images, _, _ = batch
             images = Variable(images).cuda(args.gpu)
-
             pred_target1 = model(images)
-            mini_target1 = inter_mini(pred_target1)
+            pred_target1 = interp(pred_target1)
+            mini_target_image = inter_mini(images)
 
-            d_out_fake = model_D1(F.softmax(pred_target1))
+            d_out_fake = model_D1(F.softmax(pred_target1), label=mini_target_image)
 
             # use hinge loss
 
@@ -395,12 +405,12 @@ def main():
 
             loss_target += d_loss_fake
 
+            # loss = d_loss_fake / args.iter_size
             loss = d_loss_fake / args.iter_size
             loss.backward()
 
             if DEBUG_MODE:
                 print("loss_adv_target1 shape", loss_target.shape, "  value =", loss_target)
-                print("_target1 shape", mini_target1.shape)
                 print("pdb trace 4")
                 pdb.set_trace()
 
@@ -414,7 +424,7 @@ def main():
             # train with source
             pred1 = pred1.detach()
 
-            d_out_real = model_D1(F.softmax(pred1), label=inter_mini(label_to_channel(label, num_classes=NUM_CLASSES)))
+            d_out_real = model_D1(F.softmax(pred1), label=mini_source_image)
 
             if LOSS_OPTION == 'wgan-gp':
                 d_loss_real = - d_out_real.mean()
@@ -422,10 +432,10 @@ def main():
                 d_loss_real = torch.nn.ReLU()(1.0 - d_out_real).mean()
 
             # train with target
-            pred_target1 = pred_target1.detach()
+            pred_target_fake = pred_target1.detach()
             # pred_target2 = pred_target2.detach()
 
-            d_out_fake = model_D1(F.softmax(pred_target1))
+            d_out_fake = model_D1(F.softmax(pred_target_fake), label=mini_target_image)
 
             if LOSS_OPTION == 'wgan-gp':
                 d_loss_fake = d_out_fake.mean()
@@ -435,10 +445,11 @@ def main():
             # loss_D_value1 = 0.01 * d_loss_fake
 
             loss = (d_loss_real + d_loss_fake)/ args.iter_size
+            # loss = (d_loss_real + d_loss_fake)
+
             loss_D_value = loss
             if DEBUG_MODE:
                 print("loss_D_value1 shape", loss_D_value.shape, "  value =", loss_D_value)
-                print("_target1 shape", mini_target1.shape)
                 pdb.set_trace()
             loss.backward()
 

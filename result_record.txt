@@ -180,3 +180,25 @@ DA *1
 ===>motocycle:  26.71
 ===>bicycle:    28.16
 ===> mIoU: 36.73
+
+DA *1 and use spectural 10000 epochs
+===>road:       74.33
+===>sidewalk:   23.81
+===>building:   74.1
+===>wall:       25.44
+===>fence:      15.94
+===>pole:       23.14
+===>light:      25.82
+===>sign:       17.61
+===>vegetation: 80.81
+===>terrain:    16.68
+===>sky:        76.35
+===>person:     52.86
+===>rider:      18.02
+===>car:        72.39
+===>truck:      20.99
+===>bus:        11.45
+===>train:      2.64
+===>motocycle:  12.53
+===>bicycle:    30.35
+===> mIoU: 35.54
