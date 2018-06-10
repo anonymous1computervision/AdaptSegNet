@@ -4,6 +4,7 @@ import os
 import os.path as osp
 import random
 import shutil
+import pdb
 
 import argparse
 import scipy.misc
@@ -18,7 +19,6 @@ from torch.utils import data, model_zoo
 from tensorboardX import SummaryWriter
 import numpy as np
 from PIL import Image
-import pdb
 import matplotlib.pyplot as plt
 
 # from model.deeplab_multi import Res_Deeplab
