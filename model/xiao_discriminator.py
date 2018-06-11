@@ -61,6 +61,6 @@ class XiaoDiscriminator(nn.Module):
         # print("proj shape", proj_x.shape)
         output = self.model_block(x)
         # output += torch.sum(proj_x*label)
-        output += torch.mean(proj_x*label)
+        output += torch.mean(nn.ReLU()(proj_x)*label)
 
         return output

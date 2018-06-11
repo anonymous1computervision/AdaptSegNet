@@ -388,7 +388,7 @@ def main():
             # train with target
             # don't train G at first 1000 epoch bcz the discriminator is sake
             _, batch = targetloader_iter.__next__()
-            images, _, _ = batch
+            images, _, _, target_name = batch
             images = Variable(images).cuda(args.gpu)
             pred_target1 = model(images)
             pred_target1 = interp(pred_target1)
@@ -454,16 +454,15 @@ def main():
             loss.backward()
 
             #
-            if i_iter % 50 == 0 and sub_i == args.iter_size-1:
-                log_value('loss_seg', loss_source, i_iter)
-                log_value('loss_fake_G', float(loss_target), i_iter)
-                log_value('lossD', float(loss_D_value), i_iter)
-
+            if i_iter % 50 == 0 and sub_i == args.iter_size - 1:
                 # save label
                 label_name = os.path.join("data", "GTA5", "labels", names[0])
-                print("label_name =", label_name)
                 save_name = 'check_output/Image_source_domain_seg/%s_label.png' % (i_iter)
                 shutil.copyfile(label_name, save_name)
+
+                target_name = os.path.join("data", "Cityscapes", "data", "leftImg8bit", "train", target_name[0])
+                save_name = 'check_output/Image_target_domain_seg/%s_label.png' % (i_iter)
+                shutil.copyfile(target_name, save_name)
 
                 # save output image
                 output_to_image(pred1).save('check_output/Image_source_domain_seg/%s.png' % (i_iter))

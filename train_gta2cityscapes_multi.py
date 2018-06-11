@@ -20,7 +20,6 @@ import random
 
 from model.deeplab_multi import Res_Deeplab
 from model.discriminator import FCDiscriminator
-from model.xiao_discriminator import XiaoDiscriminator
 
 from utils.loss import CrossEntropy2d
 from dataset.gta5_dataset import GTA5DataSet
@@ -329,7 +328,6 @@ def main():
             _, batch = trainloader_iter.__next__()
             images, labels, _, names = batch
             images = Variable(images).cuda(args.gpu)
-
             pred1, pred2 = model(images)
             pred1 = interp(pred1)
             pred2 = interp(pred2)
@@ -347,9 +345,8 @@ def main():
             # train with target
 
             _, batch = targetloader_iter.__next__()
-            images, _, _ = batch
+            images, _, _, target_name = batch
             images = Variable(images).cuda(args.gpu)
-
             pred_target1, pred_target2 = model(images)
             pred_target1 = interp_target(pred_target1)
             pred_target2 = interp_target(pred_target2)
@@ -425,19 +422,18 @@ def main():
             loss_D_value2 += loss_D2.data.cpu().numpy()
             #
             if i_iter % 50 == 0 and sub_i == args.iter_size - 1:
-                # log_value('loss_seg', loss_source, i_iter)
-                # log_value('loss_fake_G', float(loss_target), i_iter)
-                # log_value('lossD', float(loss_D_value), i_iter)
-
                 # save label
                 label_name = os.path.join("data", "GTA5", "labels", names[0])
-                print("label_name =", label_name)
                 save_name = 'check_output/Image_source_domain_seg/%s_label.png' % (i_iter)
                 shutil.copyfile(label_name, save_name)
 
+                target_name = os.path.join("data", "Cityscapes", "data", "leftImg8bit", "train", target_name[0])
+                save_name = 'check_output/Image_target_domain_seg/%s_label.png' % (i_iter)
+                shutil.copyfile(target_name, save_name)
+
                 # save output image
-                output_to_image(pred2).save('check_output/Image_source_domain_seg/%s.png' % (i_iter))
-                output_to_image(pred_target2).save('check_output/Image_target_domain_seg/%s.png' % (i_iter))
+                output_to_image(pred1).save('check_output/Image_source_domain_seg/%s.png' % (i_iter))
+                output_to_image(pred_target1).save('check_output/Image_target_domain_seg/%s.png' % (i_iter))
 
         optimizer.step()
         optimizer_D1.step()
