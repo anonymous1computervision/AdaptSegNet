@@ -20,16 +20,16 @@ class XiaoDiscriminator(nn.Module):
         self.model_pre += [ResBlock_2018_SN(ndf*2, ndf*2, downsample=False, use_BN=False)]
         # channel = 128
         self.model_pre += [ResBlock_2018_SN(ndf*2, ndf*2, downsample=True, use_BN=False)]
-        # channel = 256
-        self.model_pre += [ResBlock_2018_SN(ndf*2, ndf*4, downsample=True, use_BN=False)]
-        # channel = 512
-        self.model_pre += [ResBlock_2018_SN(ndf*4, ndf*8, downsample=True, use_BN=False)]
-
         # use cGANs with projection
         num_classes = 3
-        self.proj_conv = SpectralNorm(nn.Conv2d(ndf * 8, num_classes, kernel_size=3, stride=1, padding=1))
+        self.proj_conv = SpectralNorm(nn.Conv2d(ndf * 2, num_classes, kernel_size=3, stride=1, padding=1))
 
         self.model_block = []
+
+        # channel = 256
+        self.model_block += [ResBlock_2018_SN(ndf*2, ndf*4, downsample=True, use_BN=False)]
+        # channel = 512
+        self.model_block += [ResBlock_2018_SN(ndf*4, ndf*8, downsample=True, use_BN=False)]
 
         # channel = 1024
         self.model_block += [ResBlock_2018_SN(ndf*8, ndf*16, downsample=True, use_BN=False)]
