@@ -16,7 +16,6 @@ import torch.nn.functional as F
 import torch
 import torch.nn as nn
 from torch.utils import data, model_zoo
-from tensorboardX import SummaryWriter
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt

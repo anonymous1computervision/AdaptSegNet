@@ -280,9 +280,13 @@ def main():
     optimizer.zero_grad()
 
     optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D,
+    #                           betas=(0.9, 0.99))
     optimizer_D1.zero_grad()
 
     optimizer_D2 = optim.Adam(model_D2.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    # optimizer_D2 = optim.Adam(filter(lambda p: p.requires_grad, model_D2.parameters()), lr=args.learning_rate_D,
+    #                           betas=(0.9, 0.99))
     optimizer_D2.zero_grad()
 
     bce_loss = torch.nn.BCEWithLogitsLoss()
