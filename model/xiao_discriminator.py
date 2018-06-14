@@ -9,25 +9,26 @@ from .networks import SpectralNorm
 
 class XiaoDiscriminator(nn.Module):
 
-    def __init__(self, num_classes, ndf=16):
+    def __init__(self, num_classes, ndf=32):
         super(XiaoDiscriminator, self).__init__()
         self.model_pre = []
         # channe = 64
         self.model_pre += [FirstResBlock_2018_SN(num_classes, ndf, downsample=True, use_BN=False)]
-        self.model_pre += [ResBlock_2018_SN(ndf, ndf, downsample=False, use_BN=False)]
+        # self.model_pre += [ResBlock_2018_SN(ndf, ndf, downsample=False, use_BN=False)]
         # channe = 128
         self.model_pre += [ResBlock_2018_SN(ndf, ndf*2, downsample=True, use_BN=False)]
-        self.model_pre += [ResBlock_2018_SN(ndf*2, ndf*2, downsample=False, use_BN=False)]
+        # self.model_pre += [ResBlock_2018_SN(ndf*2, ndf*2, downsample=False, use_BN=False)]
         # channel = 128
-        self.model_pre += [ResBlock_2018_SN(ndf*2, ndf*2, downsample=True, use_BN=False)]
+        # self.model_pre += [ResBlock_2018_SN(ndf*2, ndf*2, downsample=True, use_BN=False)]
         # use cGANs with projection
-        num_classes = 3
-        self.proj_conv = SpectralNorm(nn.Conv2d(ndf * 2, num_classes, kernel_size=3, stride=1, padding=1))
 
-        self.model_block = []
 
         # channel = 256
-        self.model_block += [ResBlock_2018_SN(ndf*2, ndf*4, downsample=True, use_BN=False)]
+        self.model_pre += [ResBlock_2018_SN(ndf*2, ndf*4, downsample=True, use_BN=False)]
+        # num_classes = 3
+        self.proj_conv = SpectralNorm(nn.Conv2d(ndf * 4, num_classes, kernel_size=3, stride=1, padding=1))
+
+        self.model_block = []
         # channel = 512
         self.model_block += [ResBlock_2018_SN(ndf*4, ndf*8, downsample=True, use_BN=False)]
 

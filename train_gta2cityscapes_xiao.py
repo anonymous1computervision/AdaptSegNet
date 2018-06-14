@@ -30,7 +30,7 @@ from dataset.cityscapes_dataset import cityscapesDataSet
 
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
 MODEL = 'DeepLab'
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 ITER_SIZE = 1
 NUM_WORKERS = 4
 DATA_DIRECTORY = './data/GTA5'
@@ -347,65 +347,6 @@ def main():
 
         for sub_i in range(args.iter_size):
 
-
-            # ================== Train D ================== #
-
-            # Disable G backpropgation requires_grad
-            for param in model.parameters():
-                param.requires_grad = False
-            # Enable D backpropgation requires_grad
-            for param in model_D1.parameters():
-                param.requires_grad =True
-            # train 5times
-            for _ in range(5):
-                # ================== Train with source================== #
-
-                _, batch = trainloader_iter.__next__()
-                images, labels, _, names = batch
-                images = Variable(images).cuda(args.gpu)
-                label = Variable(labels).cuda(args.gpu)
-
-                pred_source_real  = model(images).detach()
-                # resize to source size
-                pred_source_real = interp(pred_source_real)
-                # resize to mini size for inner product
-                mini_source_image = inter_mini(images)
-                d_out_real = model_D1(F.softmax(pred_source_real), label=mini_source_image)
-
-                if LOSS_OPTION == 'wgan-gp':
-                    d_loss_real = - d_out_real.mean()
-                elif LOSS_OPTION == 'hinge':
-                    d_loss_real = torch.nn.ReLU()(1.0 - d_out_real).mean()
-
-                # ================== Train train with target================== #
-
-                _, batch = targetloader_iter.__next__()
-                images, _, _, target_name = batch
-                images = Variable(images).cuda(args.gpu)
-                pred_target_fake = model(images).detach()
-                # resize to source size
-                pred_target_fake = interp(pred_target_fake)
-                # resize to mini size for inner product
-                mini_target_image = inter_mini(images)
-
-                d_out_fake = model_D1(F.softmax(pred_target_fake), label=mini_target_image)
-
-                if LOSS_OPTION == 'wgan-gp':
-                    d_loss_fake = d_out_fake.mean()
-                elif LOSS_OPTION == 'hinge':
-                    d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
-
-                loss = (d_loss_real + d_loss_fake) / args.iter_size
-                loss_D_value = loss
-                loss.backward()
-
-            if DEBUG_MODE:
-                # print("mini pred1 shape", mini_pred1.shape)
-                print("loss_source_1 shape", loss_source.shape, "  value =", loss_source)
-                print("label shape", label.shape)
-                print("pdb trace 2")
-                pdb.set_trace()
-
             #{ ================== Train G ================== #
 
             # Enable G backpropgation requires_grad
@@ -419,11 +360,13 @@ def main():
             _, batch = targetloader_iter.__next__()
             images, _, _, target_name = batch
             images = Variable(images).cuda(args.gpu)
-            pred_target1 = model(images)
-            pred_target1 = interp(pred_target1)
+            pred_target_fake = model(images)
+            pred_target_fake = interp(pred_target_fake)
             mini_target_image = inter_mini(images)
 
-            d_out_fake = model_D1(F.softmax(pred_target1), label=mini_target_image)
+            # d_out_fake = model_D1(F.softmax(pred_target1), label=mini_target_image)
+            d_out_fake = model_D1(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
+
 
             # use hinge loss
             if LOSS_OPTION == 'wgan-gp':
@@ -432,7 +375,7 @@ def main():
                 d_loss_fake = - d_out_fake.mean()
 
             loss_target += d_loss_fake
-            LAMBDA_ADV_G = 1
+            LAMBDA_ADV_G = 10
             loss = LAMBDA_ADV_G * d_loss_fake / args.iter_size
             loss.backward()
 
@@ -458,6 +401,72 @@ def main():
             # proper normalization
             loss = loss / args.iter_size
             loss.backward()
+
+            # ================== Train D ================== #
+
+            # Disable G backpropgation requires_grad
+            for param in model.parameters():
+                param.requires_grad = False
+            # Enable D backpropgation requires_grad
+            for param in model_D1.parameters():
+                param.requires_grad = True
+            # train 5 times discriminator
+            # for _ in range(5):
+
+            # ================== Train with source================== #
+
+            # _, batch = trainloader_iter.__next__()
+            # images, labels, _, names = batch
+            # images = Variable(images).cuda(args.gpu)
+            # label = Variable(labels).cuda(args.gpu)
+
+            # pred_source_real = model(images).detach()
+            # resize to source size
+            # pred_source_real = interp(pred_source_real)
+            # resize to mini size for inner product
+            # mini_source_image = inter_mini(images)
+            # d_out_real = model_D1(F.softmax(pred_source_real), label=mini_source_image)
+            pred_source_real = pred_source_real.detach()
+            d_out_real = model_D1(F.softmax(pred_source_real), label=inter_mini(label_to_channel(label)))
+
+            if LOSS_OPTION == 'wgan-gp':
+                d_loss_real = - d_out_real.mean()
+            elif LOSS_OPTION == 'hinge':
+                d_loss_real = torch.nn.ReLU()(1.0 - d_out_real).mean()
+
+            # ================== Train train with target================== #
+
+            # _, batch = targetloader_iter.__next__()
+            # images, _, _, target_name = batch
+            # images = Variable(images).cuda(args.gpu)
+            # pred_target_fake = model(images).detach()
+            # # resize to source size
+            # pred_target_fake = interp(pred_target_fake)
+            # # resize to mini size for inner product
+            # mini_target_image = inter_mini(images)
+
+            # d_out_fake = model_D1(F.softmax(pred_target_fake), label=mini_target_image)
+            pred_target_fake = pred_target_fake.detach()
+            d_out_fake = model_D1(F.softmax(pred_target_fake), label=inter_mini(F.softmax(pred_target_fake)))
+
+
+            if LOSS_OPTION == 'wgan-gp':
+                d_loss_fake = d_out_fake.mean()
+            elif LOSS_OPTION == 'hinge':
+                d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
+
+            loss = (d_loss_real + d_loss_fake) / args.iter_size
+            loss_D_value = loss
+            loss.backward()
+
+            if DEBUG_MODE:
+                # print("mini pred1 shape", mini_pred1.shape)
+                print("loss_source_1 shape", loss_source.shape, "  value =", loss_source)
+                print("label shape", label.shape)
+                print("pdb trace 2")
+                pdb.set_trace()
+
+
 
             if i_iter % 50 == 0 and sub_i == args.iter_size - 1:
                 # save label
