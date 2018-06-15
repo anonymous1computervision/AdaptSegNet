@@ -203,3 +203,28 @@ spectrual normalize 50k
 ===>motocycle:  23.44
 ===>bicycle:    22.1
 ===> mIoU: 38.44
+
+baseline leaky 50k
+
+road:       68.28
+sidewalk:   14.71
+building:   78.81
+wall:       22.4
+fence:      18.84
+pole:       21.56
+light:      21.31
+sign:       15.02
+vegetation: 81.51
+terrain:    22.35
+sky:        73.5
+person:     54.04
+rider:      25.8
+car:        39.01
+truck:      24.92
+bus:        29.16
+train:      6.99
+motocycle:  27.39
+bicycle:    22.17
+mIoU: 35.15
+
+single DA + attention
