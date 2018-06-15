@@ -9,7 +9,9 @@ import numpy as np
 from PIL import Image
 import torch.nn as nn
 
-from model.deeplab_single import Res_Deeplab
+# from model.deeplab_single import Res_Deeplab as Res_Deeplab_S
+from model.deeplab_multi import Res_Deeplab as Res_Deeplab_M
+
 from dataset.my_test_dataloader import MyDataSet
 
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
@@ -113,7 +115,9 @@ if __name__ == '__main__':
         if index % 100 == 0:
             print('%d processd' % index)
         image, _, _, name = batch
-        output1 = model(Variable(image, volatile=True).cuda(gpu0)).detach()
+        # output1 = model(Variable(image, volatile=True).cuda(gpu0)).detach()
+        output1, _ = model(Variable(image, volatile=True).cuda(gpu0))
+
         output = interp(output1).cpu().data[0].numpy()
 
         output = output.transpose(1, 2, 0)

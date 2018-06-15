@@ -20,6 +20,7 @@ import random
 
 from model.deeplab_multi import Res_Deeplab
 from model.discriminator import FCDiscriminator
+from model.xiao_discriminator import XiaoDiscriminator
 
 from utils.loss import CrossEntropy2d
 from dataset.gta5_dataset import GTA5DataSet
@@ -52,7 +53,8 @@ SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = './snapshots/'
 WEIGHT_DECAY = 0.0005
 
-LEARNING_RATE_D = 1e-4
+# LEARNING_RATE_D = 1e-4
+LEARNING_RATE_D = 1e-3
 LAMBDA_SEG = 0.1
 LAMBDA_ADV_TARGET1 = 0.0002
 LAMBDA_ADV_TARGET2 = 0.001
@@ -242,8 +244,10 @@ def main():
     cudnn.benchmark = True
 
     # init D
-    model_D1 = FCDiscriminator(num_classes=args.num_classes)
-    model_D2 = FCDiscriminator(num_classes=args.num_classes)
+    # model_D1 = FCDiscriminator(num_classes=args.num_classes)
+    # model_D2 = FCDiscriminator(num_classes=args.num_classes)
+    model_D1 = XiaoDiscriminator()
+    model_D2 = XiaoDiscriminator()
 
     model_D1.train()
     model_D1.cuda(args.gpu)
@@ -279,14 +283,14 @@ def main():
                           lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer.zero_grad()
 
-    optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
-    # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D,
-    #                           betas=(0.9, 0.99))
+    # optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D,
+                              betas=(0, 0.99))
     optimizer_D1.zero_grad()
 
-    optimizer_D2 = optim.Adam(model_D2.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
-    # optimizer_D2 = optim.Adam(filter(lambda p: p.requires_grad, model_D2.parameters()), lr=args.learning_rate_D,
-    #                           betas=(0.9, 0.99))
+    # optimizer_D2 = optim.Adam(model_D2.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    optimizer_D2 = optim.Adam(filter(lambda p: p.requires_grad, model_D2.parameters()), lr=args.learning_rate_D,
+                              betas=(0, 0.99))
     optimizer_D2.zero_grad()
 
     bce_loss = torch.nn.BCEWithLogitsLoss()
@@ -339,13 +343,11 @@ def main():
             loss_seg1 = loss_calc(pred1, labels, args.gpu)
             loss_seg2 = loss_calc(pred2, labels, args.gpu)
             loss = loss_seg2 + args.lambda_seg * loss_seg1
-
             # proper normalization
             loss = loss / args.iter_size
             loss.backward()
             loss_seg_value1 += loss_seg1.data.cpu().numpy() / args.iter_size
             loss_seg_value2 += loss_seg2.data.cpu().numpy() / args.iter_size
-
             # train with target
 
             _, batch = targetloader_iter.__next__()
@@ -354,7 +356,6 @@ def main():
             pred_target1, pred_target2 = model(images)
             pred_target1 = interp_target(pred_target1)
             pred_target2 = interp_target(pred_target2)
-
             D_out1 = model_D1(F.softmax(pred_target1))
             D_out2 = model_D2(F.softmax(pred_target2))
 
@@ -371,7 +372,6 @@ def main():
             loss.backward()
             loss_adv_target_value1 += loss_adv_target1.data.cpu().numpy() / args.iter_size
             loss_adv_target_value2 += loss_adv_target2.data.cpu().numpy() / args.iter_size
-
             # train D
 
             # bring back requires_grad
@@ -390,7 +390,6 @@ def main():
 
             loss_D1 = bce_loss(D_out1,
                               Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(args.gpu))
-
             loss_D2 = bce_loss(D_out2,
                                Variable(torch.FloatTensor(D_out2.data.size()).fill_(source_label)).cuda(args.gpu))
 
@@ -402,7 +401,6 @@ def main():
 
             loss_D_value1 += loss_D1.data.cpu().numpy()
             loss_D_value2 += loss_D2.data.cpu().numpy()
-
             # train with target
             pred_target1 = pred_target1.detach()
             pred_target2 = pred_target2.detach()
@@ -412,7 +410,6 @@ def main():
 
             loss_D1 = bce_loss(D_out1,
                               Variable(torch.FloatTensor(D_out1.data.size()).fill_(target_label)).cuda(args.gpu))
-
             loss_D2 = bce_loss(D_out2,
                                Variable(torch.FloatTensor(D_out2.data.size()).fill_(target_label)).cuda(args.gpu))
 
