@@ -3,7 +3,7 @@ import math
 import torch.utils.model_zoo as model_zoo
 import torch
 import numpy as np
-
+from .networks import Self_Attn
 affine_par = True
 
 
@@ -133,8 +133,10 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
-        self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
+        # self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
         self.layer6 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
+        self.attn1 = Self_Attn(2048, 'relu')
+        self.deconv = nn.Conv2d(2048, num_classes, kernel_size=3 , padding=1)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -178,9 +180,11 @@ class ResNet(nn.Module):
         # x1 = self.layer5(x)
 
         x = self.layer4(x)
-        x = self.layer6(x)
+        auxiliary = self.layer6(x)
+        attention_mask, _ =self.attn1(x)
+        attention_mask = self.deconv(attention_mask)
 
-        return x
+        return attention_mask * auxiliary
 
     def get_1x_lr_params_NOscale(self):
         """
@@ -212,7 +216,7 @@ class ResNet(nn.Module):
         which does the classification of pixel into classes
         """
         b = []
-        b.append(self.layer5.parameters())
+        # b.append(self.layer5.parameters())
         b.append(self.layer6.parameters())
 
         for j in range(len(b)):

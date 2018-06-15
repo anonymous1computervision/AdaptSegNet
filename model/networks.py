@@ -86,163 +86,44 @@ class MsImageDis(nn.Module):
         return loss
 
 ##################################################################################
-# Generator
+# Attention Models
 ##################################################################################
+class Self_Attn(nn.Module):
+    """ Self attention Layer"""
 
-class AdaINGen(nn.Module):
-    # AdaIN auto-encoder architecture
-    def __init__(self, input_dim, params):
-        super(AdaINGen, self).__init__()
-        dim = params['dim']
-        style_dim = params['style_dim']
-        n_downsample = params['n_downsample']
-        n_res = params['n_res']
-        activ = params['activ']
-        pad_type = params['pad_type']
-        mlp_dim = params['mlp_dim']
+    def __init__(self, in_dim, activation):
+        super(Self_Attn, self).__init__()
+        self.chanel_in = in_dim
+        self.activation = activation
 
-        # style encoder
-        self.enc_style = StyleEncoder(4, input_dim, dim, style_dim, norm='none', activ=activ, pad_type=pad_type)
+        self.query_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim // 8, kernel_size=1)
+        self.key_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim // 8, kernel_size=1)
+        self.value_conv = nn.Conv2d(in_channels=in_dim, out_channels=in_dim, kernel_size=1)
+        self.gamma = nn.Parameter(torch.zeros(1))
 
-        # content encoder
-        self.enc_content = ContentEncoder(n_downsample, n_res, input_dim, dim, 'in', activ, pad_type=pad_type)
-        self.dec = Decoder(n_downsample, n_res, self.enc_content.output_dim, input_dim, res_norm='adain', activ=activ, pad_type=pad_type)
-
-        # MLP to generate AdaIN parameters
-        self.mlp = MLP(style_dim, self.get_num_adain_params(self.dec), mlp_dim, 3, norm='none', activ=activ)
-
-    def forward(self, images):
-        # reconstruct an image
-        content, style_fake = self.encode(images)
-        images_recon = self.decode(content, style_fake)
-        return images_recon
-
-    def encode(self, images):
-        # encode an image to its content and style codes
-        style_fake = self.enc_style(images)
-        content = self.enc_content(images)
-        return content, style_fake
-
-    def decode(self, content, style):
-        # decode content and style codes to an image
-        adain_params = self.mlp(style)
-        self.assign_adain_params(adain_params, self.dec)
-        images = self.dec(content)
-        return images
-
-    def assign_adain_params(self, adain_params, model):
-        # assign the adain_params to the AdaIN layers in model
-        for m in model.modules():
-            if m.__class__.__name__ == "AdaptiveInstanceNorm2d":
-                mean = adain_params[:, :m.num_features]
-                std = adain_params[:, m.num_features:2*m.num_features]
-                m.bias = mean.contiguous().view(-1)
-                m.weight = std.contiguous().view(-1)
-                if adain_params.size(1) > 2*m.num_features:
-                    adain_params = adain_params[:, 2*m.num_features:]
-
-    def get_num_adain_params(self, model):
-        # return the number of AdaIN parameters needed by the model
-        num_adain_params = 0
-        for m in model.modules():
-            if m.__class__.__name__ == "AdaptiveInstanceNorm2d":
-                num_adain_params += 2*m.num_features
-        return num_adain_params
-
-
-class VAEGen(nn.Module):
-    # VAE architecture
-    def __init__(self, input_dim, params):
-        super(VAEGen, self).__init__()
-        dim = params['dim']
-        n_downsample = params['n_downsample']
-        n_res = params['n_res']
-        activ = params['activ']
-        pad_type = params['pad_type']
-
-        # content encoder
-        self.enc = ContentEncoder(n_downsample, n_res, input_dim, dim, 'in', activ, pad_type=pad_type)
-        self.dec = Decoder(n_downsample, n_res, self.enc.output_dim, input_dim, res_norm='in', activ=activ, pad_type=pad_type)
-
-    def forward(self, images):
-        # This is a reduced VAE implementation where we assume the outputs are multivariate Gaussian distribution with mean = hiddens and std_dev = all ones.
-        hiddens = self.encode(images)
-        if self.training == True:
-            noise = Variable(torch.randn(hiddens.size()).cuda(hiddens.data.get_device()))
-            images_recon = self.decode(hiddens + noise)
-        else:
-            images_recon = self.decode(hiddens)
-        return images_recon, hiddens
-
-    def encode(self, images):
-        hiddens = self.enc(images)
-        noise = Variable(torch.randn(hiddens.size()).cuda(hiddens.data.get_device()))
-        return hiddens, noise
-
-    def decode(self, hiddens):
-        images = self.dec(hiddens)
-        return images
-
-
-##################################################################################
-# Encoder and Decoders
-##################################################################################
-
-class StyleEncoder(nn.Module):
-    def __init__(self, n_downsample, input_dim, dim, style_dim, norm, activ, pad_type):
-        super(StyleEncoder, self).__init__()
-        self.model = []
-        self.model += [Conv2dBlock(input_dim, dim, 7, 1, 3, norm=norm, activation=activ, pad_type=pad_type)]
-        for i in range(2):
-            self.model += [Conv2dBlock(dim, 2 * dim, 4, 2, 1, norm=norm, activation=activ, pad_type=pad_type)]
-            dim *= 2
-        for i in range(n_downsample - 2):
-            self.model += [Conv2dBlock(dim, dim, 4, 2, 1, norm=norm, activation=activ, pad_type=pad_type)]
-        self.model += [nn.AdaptiveAvgPool2d(1)] # global average pooling
-        self.model += [nn.Conv2d(dim, style_dim, 1, 1, 0)]
-        self.model = nn.Sequential(*self.model)
-        self.output_dim = dim
+        self.softmax = nn.Softmax(dim=-1)  #
 
     def forward(self, x):
-        return self.model(x)
+        """
+            inputs :
+                x : input feature maps( B X C X W X H)
+            returns :
+                out : self attention value + input feature
+                attention: B X N X N (N is Width*Height)
+        """
+        m_batchsize, C, width, height = x.size()
+        proj_query = self.query_conv(x).view(m_batchsize, -1, width * height).permute(0, 2, 1)  # B X CX(N)
+        proj_key = self.key_conv(x).view(m_batchsize, -1, width * height)  # B X C x (*W*H)
+        energy = torch.bmm(proj_query, proj_key)  # transpose check
+        attention = self.softmax(energy)  # BX (N) X (N)
+        proj_value = self.value_conv(x).view(m_batchsize, -1, width * height)  # B X C X N
 
+        out = torch.bmm(proj_value, attention.permute(0, 2, 1))
+        out = out.view(m_batchsize, C, width, height)
 
-class ContentEncoder(nn.Module):
-    def __init__(self, n_downsample, n_res, input_dim, dim, norm, activ, pad_type):
-        super(ContentEncoder, self).__init__()
-        self.model = []
-        self.model += [Conv2dBlock(input_dim, dim, 7, 1, 3, norm=norm, activation=activ, pad_type=pad_type)]
-        # downsampling blocks
-        for i in range(n_downsample):
-            self.model += [Conv2dBlock(dim, 2 * dim, 4, 2, 1, norm=norm, activation=activ, pad_type=pad_type)]
-            dim *= 2
-        # residual blocks
-        self.model += [ResBlocks(n_res, dim, norm=norm, activation=activ, pad_type=pad_type)]
-        self.model = nn.Sequential(*self.model)
-        self.output_dim = dim
+        out = self.gamma * out + x
+        return out, attention
 
-    def forward(self, x):
-        return self.model(x)
-
-
-class Decoder(nn.Module):
-    def __init__(self, n_upsample, n_res, dim, output_dim, res_norm='adain', activ='relu', pad_type='zero'):
-        super(Decoder, self).__init__()
-
-        self.model = []
-        # AdaIN residual blocks
-        self.model += [ResBlocks(n_res, dim, res_norm, activ, pad_type=pad_type)]
-        # upsampling blocks
-        for i in range(n_upsample):
-            self.model += [nn.Upsample(scale_factor=2),
-                           Conv2dBlock(dim, dim // 2, 5, 1, 2, norm='ln', activation=activ, pad_type=pad_type)]
-            dim //= 2
-        # use reflection padding in the last conv layer
-        self.model += [Conv2dBlock(dim, output_dim, 7, 1, 3, norm='none', activation='tanh', pad_type=pad_type)]
-        self.model = nn.Sequential(*self.model)
-
-    def forward(self, x):
-        return self.model(x)
 
 ##################################################################################
 # Sequential Models
@@ -298,22 +179,23 @@ class FirstResBlock_2018_SN(nn.Module):
         super(FirstResBlock_2018_SN, self).__init__()
         hidden_channels = in_channels
         self.downsample = downsample
-
+        # self.activate = nn.LeakyReLU(negative_slope=0.2)
+        self.activate = nn.ReLU()
         self.resblock = self.make_res_block(in_channels, out_channels, hidden_channels, use_BN, downsample)
         self.residual_connect = self.make_residual_connect(in_channels, out_channels)
 
     def make_res_block(self, in_channels, out_channels, hidden_channels, use_BN=None, downsample=None):
         conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
         conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
-        nn.init.xavier_uniform_(conv1.weight.data, 1.)
-        nn.init.xavier_uniform_(conv2.weight.data, 1.)
-
+        # nn.init.xavier_uniform_(conv1.weight.data, 1.)
+        # nn.init.xavier_uniform_(conv2.weight.data, 1.)
         model = []
         if use_BN:
             model += [nn.BatchNorm2d(in_channels)]
-        model += [nn.ReLU()]
+        # model += [nn.ReLU()]
+        model += [self.activate]
         model += [SpectralNorm(conv1)]
-        model += [nn.ReLU()]
+        model += [self.activate]
         model += [SpectralNorm(conv2)]
         if downsample:
             model += [nn.AvgPool2d(2)]
@@ -321,7 +203,6 @@ class FirstResBlock_2018_SN(nn.Module):
 
     def make_residual_connect(self, in_channels, out_channels):
         conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)
-        nn.init.xavier_uniform_(conv1.weight.data, np.sqrt(2))
 
         model = []
         model += [SpectralNorm(conv1)]
@@ -339,22 +220,22 @@ class ResBlock_2018_SN(nn.Module):
         super(ResBlock_2018_SN, self).__init__()
         hidden_channels = in_channels
         self.downsample = downsample
-
+        # self.activate  。nn.LeakyReLU(negative_slope=0.2)
+        self.activate = nn.ReLU()
         self.resblock = self.make_res_block(in_channels, out_channels, hidden_channels, use_BN, downsample)
         self.residual_connect = self.make_residual_connect(in_channels, out_channels)
 
     def make_res_block(self, in_channels, out_channels, hidden_channels, use_BN=None, downsample=None):
         conv1 = nn.Conv2d(in_channels, out_channels, 3, 1, padding=1)
         conv2 = nn.Conv2d(out_channels, out_channels, 3, 1, padding=1)
-        nn.init.xavier_uniform_(conv1.weight.data, 1.)
-        nn.init.xavier_uniform_(conv2.weight.data, 1.)
+
 
         model = []
         if use_BN:
             model += [nn.BatchNorm2d(in_channels)]
-        model += [nn.ReLU()]
+        model += [self.activate]
         model += [SpectralNorm(conv1)]
-        model += [nn.ReLU()]
+        model += [self.activate]
         model += [SpectralNorm(conv2)]
         if downsample:
             model += [nn.AvgPool2d(2)]
