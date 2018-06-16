@@ -30,7 +30,7 @@ from dataset.cityscapes_dataset import cityscapesDataSet
 
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
 MODEL = 'DeepLab'
-BATCH_SIZE = 1
+BATCH_SIZE = 4
 ITER_SIZE = 1
 NUM_WORKERS = 4
 DATA_DIRECTORY = './data/GTA5'
@@ -59,7 +59,7 @@ SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = './snapshots/'
 WEIGHT_DECAY = 0.0005
 
-LEARNING_RATE_D = 1e-4
+LEARNING_RATE_D = 1e-3
 LAMBDA_SEG = 0.1
 LAMBDA_ADV_TARGET1 = 0.0002
 LAMBDA_ADV_TARGET2 = 0.0002
@@ -298,11 +298,11 @@ def main():
 
     # implement model.optim_parameters(args) to handle different models' lr setting
 
-    LEARNING_RATE_G = 0.001
-    LEARNING_RATE_D = 0.004
+    LEARNING_RATE_G = 0.0001
+    LEARNING_RATE_D = 0.0004
 
     # optimizer = optim.SGD(model.optim_parameters(args),
-   #                       lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    #                      lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer = optim.SGD(model.optim_parameters(args),
                           lr=LEARNING_RATE_G, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer.zero_grad()
@@ -323,10 +323,16 @@ def main():
 
     bce_loss = torch.nn.BCEWithLogitsLoss()
 
+    # INPUT_SIZE = '1280,720'
     interp = nn.Upsample(size=(input_size[1], input_size[0]), align_corners=False, mode='bilinear')
+
+
+
     # interp_target = nn.Upsample(size=(input_size_target[1], input_size_target[0]), align_corners=False, mode='bilinear')
-    # inter_mini = nn.Upsample(size=(int(input_size[1]/4), int(input_size[0]/4)), align_corners=False, mode='bilinear')
-    inter_mini = nn.Upsample(size=(int(input_size[1]), int(input_size[0])), align_corners=False, mode='bilinear')
+    # inter_mini = nn.Upsample(size=(int(input_size[1]/2), int(input_size[0]/2)), align_corners=False, mode='bilinear')
+    # inter_mini = nn.Upsample(size=(int(input_size[1]), int(input_size[0])), align_corners=False, mode='bilinear')
+    inter_mini = nn.Upsample(size=(input_size[1], input_size[0]), align_corners=False, mode='bilinear')
+
 
 
     # labels for adversarial training
@@ -349,7 +355,9 @@ def main():
 
         for sub_i in range(args.iter_size):
 
-            # ================== Train D ================== #
+            # ============================================== #
+            #                   Train d                      #
+            # ============================================== #
 
             # Disable G backpropgation requires_grad
             for param in model.parameters():
@@ -358,17 +366,19 @@ def main():
             for param in model_D1.parameters():
                 param.requires_grad = True
 
-
-            # ================== Train with source================== #
+            # ===================================== #
+            #         Train D source                #
+            # ===================================== #
 
             _, batch = trainloader_iter.__next__()
             images, labels, _, names = batch
             images = Variable(images).cuda(args.gpu)
-            label = Variable(labels).cuda(args.gpu)
+            # label = Variable(labels).cuda(args.gpu)
 
             pred_source_real = model(images).detach()
             # resize to source size
-            pred_source_real = interp(pred_source_real)
+            # pred_source_real = interp(pred_source_real)
+            pred_source_real = inter_mini(pred_source_real)
             # resize to mini size for inner product
             # mini_source_image = inter_mini(images)
             # d_out_real = model_D1(F.softmax(pred_source_real), label=mini_source_image)
@@ -384,18 +394,21 @@ def main():
                                Variable(torch.FloatTensor(d_out_real.data.size()).fill_(source_label)).cuda(args.gpu))
             loss_D_value += d_loss_real
 
-            loss = d_loss_real / args.iter_size / 2
+            loss = d_loss_real / args.iter_size / 2 / BATCH_SIZE
 
             loss.backward()
 
-            # ================== Train train with target================== #
-
+            # ===================================== #
+            #         Train D target                #
+            # ===================================== #
             _, batch = targetloader_iter.__next__()
             images, _, _, target_name = batch
             images = Variable(images).cuda(args.gpu)
             pred_target_fake = model(images).detach()
             # resize to source size
-            pred_target_fake = interp(pred_target_fake)
+            # pred_target_fake = interp(pred_target_fake)
+            pred_target_fake = inter_mini(pred_target_fake)
+
             # resize to mini size for inner product
             # mini_target_image = inter_mini(images)
 
@@ -416,10 +429,12 @@ def main():
             #
             # loss = LAMBDA_ADV_D * (d_loss_real + d_loss_fake) / args.iter_size
             loss_D_value += d_loss_fake
-            loss = d_loss_fake / args.iter_size / 2
+            loss = d_loss_fake / args.iter_size / 2 / BATCH_SIZE
             loss.backward()
 
-            # { ================== Train G ================== #
+            # ============================================== #
+            #                   Train G                      #
+            # ============================================== #
 
             # Enable G backpropgation requires_grad
             for param in model.parameters():
@@ -427,7 +442,11 @@ def main():
             # Disable D backpropgation requires_grad
             for param in model_D1.parameters():
                 param.requires_grad = False
-            # ================== Train with source seg================== #
+
+            # ===================================== #
+            #         Train G source                #
+            # ===================================== #
+
             _, batch = trainloader_iter.__next__()
             images, labels, _, names = batch
             images = Variable(images).cuda(args.gpu)
@@ -436,21 +455,28 @@ def main():
             # resize to source size
             pred_source_real = interp(pred_source_real)
 
+
             # seg loss
             loss_seg1 = loss_calc(pred_source_real, label, args.gpu)
             loss_source += loss_seg1.data.cpu().numpy() / args.iter_size
             loss = loss_seg1
 
             # proper normalization
-            loss = loss / args.iter_size
+            loss = loss / args.iter_size / BATCH_SIZE
             loss.backward()
 
-            # ================== Train  with target adv================== #
+            # ===================================== #
+            #         Train G target                #
+            # ===================================== #
+
+
             _, batch = targetloader_iter.__next__()
             images, _, _, target_name = batch
             images = Variable(images).cuda(args.gpu)
             pred_target_fake = model(images)
-            pred_target_fake = interp(pred_target_fake)
+            # pred_target_fake = interp(pred_target_fake)
+            pred_target_fake = inter_mini(pred_target_fake)
+
             # mini_target_image = inter_mini(images)
 
             # d_out_fake = model_D1(F.softmax(pred_target1), label=mini_target_image)
@@ -470,7 +496,7 @@ def main():
 
             loss_target += d_loss_fake
             LAMBDA_ADV_G = 1
-            loss = LAMBDA_ADV_G * d_loss_fake / args.iter_size
+            loss = LAMBDA_ADV_G * d_loss_fake / args.iter_size / BATCH_SIZE
             loss.backward()
 
 

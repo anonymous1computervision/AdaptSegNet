@@ -227,4 +227,25 @@ motocycle:  27.39
 bicycle:    22.17
 mIoU: 35.15
 
-single DA + attention
+multi DA + attention in D
+
+===>road:       82.2
+===>sidewalk:   31.16
+===>building:   75.04
+===>wall:       18.75
+===>fence:      19.72
+===>pole:       22.93
+===>light:      25.35
+===>sign:       18.88
+===>vegetation: 49.95
+===>terrain:    11.2
+===>sky:        38.02
+===>person:     31.18
+===>rider:      20.51
+===>car:        43.16
+===>truck:      22.7
+===>bus:        44.39
+===>train:      3.54
+===>motocycle:  28.49
+===>bicycle:    27.7
+===> mIoU: 32.36

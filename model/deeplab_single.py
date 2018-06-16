@@ -181,11 +181,11 @@ class ResNet(nn.Module):
 
         x = self.layer4(x)
         auxiliary = self.layer6(x)
-        attention_mask, _ =self.attn1(x)
-        attention_mask = self.deconv(attention_mask)
+        # attention_mask, _ =self.attn1(x)
+        # attention_mask = self.deconv(attention_mask)
+        # auxiliary = attention_mask * auxiliary
 
-        return attention_mask * auxiliary
-
+        return auxiliary
     def get_1x_lr_params_NOscale(self):
         """
         This generator returns all the parameters of the net except for

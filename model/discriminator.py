@@ -23,7 +23,7 @@ class FCDiscriminator(nn.Module):
 		#self.sigmoid = nn.Sigmoid()
 
 
-	def forward(self, x):
+	def forward(self, x, label=None):
 		x = self.conv1(x)
 		x = self.activation(x)
 		x = self.conv2(x)
