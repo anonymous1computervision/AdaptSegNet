@@ -21,7 +21,9 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 # from model.deeplab_multi import Res_Deeplab
-from model.deeplab_single import Res_Deeplab
+# from model.deeplab_single import Res_Deeplab
+from model.deeplab_multi_attention import Res_Deeplab
+
 from model.discriminator import FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from utils.loss import CrossEntropy2d
@@ -59,11 +61,10 @@ SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = './snapshots/'
 WEIGHT_DECAY = 0.0005
 
-LEARNING_RATE_D = 1e-3
+LEARNING_RATE_D = 1e-4
 LAMBDA_SEG = 0.1
 LAMBDA_ADV_TARGET1 = 0.0002
-LAMBDA_ADV_TARGET2 = 0.0002
-LAMBDA_ADV_SOURCE1 = 0.0002
+LAMBDA_ADV_TARGET2 = 0.001
 
 TARGET = 'cityscapes'
 SET = 'train'
@@ -267,9 +268,12 @@ def main():
 
     # init D
     model_D1 = XiaoDiscriminator(num_classes=args.num_classes)
+    model_D2 = XiaoDiscriminator(num_classes=args.num_classes)
 
     model_D1.train()
     model_D1.cuda(args.gpu)
+    model_D2.train()
+    model_D2.cuda(args.gpu)
 
     # ===============  Preprocess and Load Data ==============
 
@@ -298,27 +302,30 @@ def main():
 
     # implement model.optim_parameters(args) to handle different models' lr setting
 
-    LEARNING_RATE_G = 0.0001
-    LEARNING_RATE_D = 0.0004
+    # LEARNING_RATE_G = 0.0001
+    # LEARNING_RATE_D = 0.0004
 
-    # optimizer = optim.SGD(model.optim_parameters(args),
-    #                      lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer = optim.SGD(model.optim_parameters(args),
-                          lr=LEARNING_RATE_G, momentum=args.momentum, weight_decay=args.weight_decay)
+                         lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    # optimizer = optim.SGD(model.optim_parameters(args),
+    #                       lr=LEARNING_RATE_G, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer.zero_grad()
 
     # optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
-    # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    optimizer_D2 = optim.Adam(filter(lambda p: p.requires_grad, model_D2.parameters()), lr=args.learning_rate_D, betas=(0.9, 0.99))
+
     # next try
 
     # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D,
+                              # betas=(0.0, 0.9))
+    # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=LEARNING_RATE_D,
     #                           betas=(0.0, 0.9))
-    optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=LEARNING_RATE_D,
-                              betas=(0.0, 0.9))
     # TODO: replace Parameters with buffers, which aren't returned from .parameters() method.
     # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.lr, betas=(0, 0.99))
 
     optimizer_D1.zero_grad()
+    optimizer_D2.zero_grad()
 
 
     bce_loss = torch.nn.BCEWithLogitsLoss()
@@ -343,7 +350,9 @@ def main():
         loss_D_value = 0
         loss_source = 0
         loss_target = 0
-
+        loss_target_attention = 0
+        loss_D_attention_value = 0
+        loss_source_attention_value = 0
         #  opt G
         optimizer.zero_grad()
         adjust_learning_rate(optimizer, i_iter)
@@ -365,6 +374,8 @@ def main():
             # Enable D backpropgation requires_grad
             for param in model_D1.parameters():
                 param.requires_grad = True
+            for param in model_D2.parameters():
+                param.requires_grad = False
 
             # ===================================== #
             #         Train D source                #
@@ -375,10 +386,12 @@ def main():
             images = Variable(images).cuda(args.gpu)
             # label = Variable(labels).cuda(args.gpu)
 
-            pred_source_real = model(images).detach()
+            pred_source_attention, pred_source_real = model(images)
             # resize to source size
             # pred_source_real = interp(pred_source_real)
-            pred_source_real = inter_mini(pred_source_real)
+
+            pred_source_attention = inter_mini(pred_source_real).detach()
+            pred_source_real = inter_mini(pred_source_real).detach()
             # resize to mini size for inner product
             # mini_source_image = inter_mini(images)
             # d_out_real = model_D1(F.softmax(pred_source_real), label=mini_source_image)
@@ -392,11 +405,19 @@ def main():
             d_out_real = model_D1(F.softmax(pred_source_real))
             d_loss_real = bce_loss(d_out_real,
                                Variable(torch.FloatTensor(d_out_real.data.size()).fill_(source_label)).cuda(args.gpu))
-            loss_D_value += d_loss_real
+            d_loss_real = d_loss_real / args.iter_size / 2 / BATCH_SIZE
+            d_loss_real.backward()
 
-            loss = d_loss_real / args.iter_size / 2 / BATCH_SIZE
 
-            loss.backward()
+            d_out_attention_real = model_D1(F.softmax(pred_source_attention))
+            d_loss_attention_real = bce_loss(d_out_attention_real,
+                                   Variable(torch.FloatTensor(d_out_attention_real.data.size()).fill_(source_label)).cuda(
+                                       args.gpu))
+            d_loss_attention_real = d_loss_attention_real / args.iter_size / 2 / BATCH_SIZE
+            d_loss_attention_real.backward()
+
+            loss_D_value += d_loss_real.data.cpu().numpy() / args.iter_size / BATCH_SIZE
+            loss_D_attention_value += d_loss_attention_real.data.cpu().numpy() / args.iter_size / BATCH_SIZE
 
             # ===================================== #
             #         Train D target                #
@@ -404,22 +425,31 @@ def main():
             _, batch = targetloader_iter.__next__()
             images, _, _, target_name = batch
             images = Variable(images).cuda(args.gpu)
-            pred_target_fake = model(images).detach()
+            pred_target_attention_fake, pred_target_fake = model(images)
             # resize to source size
             # pred_target_fake = interp(pred_target_fake)
-            pred_target_fake = inter_mini(pred_target_fake)
+            pred_target_fake = inter_mini(pred_target_fake).detach()
+            pred_target_attention_fake = inter_mini(pred_target_attention_fake).detach()
 
             # resize to mini size for inner product
             # mini_target_image = inter_mini(images)
 
             # d_out_fake = model_D1(F.softmax(pred_target_fake), label=mini_target_image)
-            pred_target_fake = pred_target_fake.detach()
             # d_out_fake = model_D1(F.softmax(pred_target_fake), label=inter_mini(F.softmax(pred_target_fake)))
-            d_out_fake = model_D1(F.softmax(pred_target_fake))
 
+            d_out_fake = model_D1(F.softmax(pred_target_fake))
             d_loss_fake = bce_loss(d_out_fake,
                                         Variable(torch.FloatTensor(d_out_fake.data.size()).fill_(target_label)).cuda(
                                             args.gpu))
+            d_loss_fake = d_loss_fake / args.iter_size / 2 / BATCH_SIZE
+            d_loss_fake.backward()
+
+            d_out_attention_fake = model_D1(F.softmax(pred_target_attention_fake))
+            d_out_attention_fake = bce_loss(d_out_attention_fake,
+                                   Variable(torch.FloatTensor(d_out_attention_fake.data.size()).fill_(target_label)).cuda(
+                                       args.gpu))
+            d_out_attention_fake = d_out_attention_fake / args.iter_size / 2 / BATCH_SIZE
+            d_out_attention_fake.backward()
 
             # if LOSS_OPTION == 'wgan-gp':
             #     d_loss_fake = d_out_fake.mean()
@@ -428,9 +458,9 @@ def main():
             # LAMBDA_ADV_D = 1
             #
             # loss = LAMBDA_ADV_D * (d_loss_real + d_loss_fake) / args.iter_size
-            loss_D_value += d_loss_fake
-            loss = d_loss_fake / args.iter_size / 2 / BATCH_SIZE
-            loss.backward()
+            loss_D_value += d_loss_fake.data.cpu().numpy()  / args.iter_size / BATCH_SIZE
+            loss_D_attention_value += d_out_attention_fake.data.cpu().numpy() / args.iter_size / BATCH_SIZE
+
 
             # ============================================== #
             #                   Train G                      #
@@ -451,20 +481,22 @@ def main():
             images, labels, _, names = batch
             images = Variable(images).cuda(args.gpu)
             label = Variable(labels).cuda(args.gpu)
-            pred_source_real = model(images)
+            pred_source_attention_real, pred_source_real = model(images)
             # resize to source size
             pred_source_real = interp(pred_source_real)
-
+            pred_source_attention_real = interp(pred_source_attention_real)
 
             # seg loss
             loss_seg1 = loss_calc(pred_source_real, label, args.gpu)
-            loss_source += loss_seg1.data.cpu().numpy() / args.iter_size
-            loss = loss_seg1
+            loss_seg_attention = loss_calc(pred_source_attention_real, label, args.gpu)
+
+            loss = loss_seg1 + args.lambda_seg * loss_seg_attention
 
             # proper normalization
             loss = loss / args.iter_size / BATCH_SIZE
             loss.backward()
-
+            loss_source += loss_seg1.data.cpu().numpy()  / args.iter_size / BATCH_SIZE
+            loss_source_attention_value += loss_seg_attention.data.cpu().numpy()  / args.iter_size / BATCH_SIZE
             # ===================================== #
             #         Train G target                #
             # ===================================== #
@@ -473,20 +505,30 @@ def main():
             _, batch = targetloader_iter.__next__()
             images, _, _, target_name = batch
             images = Variable(images).cuda(args.gpu)
-            pred_target_fake = model(images)
+            pred_target_attention_fake, pred_target_fake = model(images)
             # pred_target_fake = interp(pred_target_fake)
             pred_target_fake = inter_mini(pred_target_fake)
-
+            pred_target_attention_fake = inter_mini(pred_target_attention_fake)
             # mini_target_image = inter_mini(images)
 
             # d_out_fake = model_D1(F.softmax(pred_target1), label=mini_target_image)
             # d_out_fake = model_D1(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
 
-            d_out_fake = model_D1(F.softmax(pred_target_fake), label=None)
+            d_out_attention_fake = model_D1(F.softmax(pred_target_attention_fake), label=None)
 
+            d_loss_attention_fake = bce_loss(d_out_attention_fake,
+                                             Variable(torch.FloatTensor(d_out_attention_fake.data.size()).fill_(
+                                                 source_label)).cuda(
+                                                 args.gpu))
+
+            d_out_fake = model_D1(F.softmax(pred_target_fake), label=None)
             d_loss_fake = bce_loss(d_out_fake,
                                    Variable(torch.FloatTensor(d_out_fake.data.size()).fill_(source_label)).cuda(
                                        args.gpu))
+
+            loss = args.lambda_adv_target1 * d_loss_attention_fake + args.lambda_adv_target2 * d_loss_fake
+            loss = loss / args.iter_size / BATCH_SIZE
+            loss.backward()
 
             # use hinge loss
             # if LOSS_OPTION == 'wgan-gp':
@@ -494,10 +536,8 @@ def main():
             # elif LOSS_OPTION == 'hinge':
             #     d_loss_fake = - d_out_fake.mean()
 
-            loss_target += d_loss_fake
-            LAMBDA_ADV_G = 1
-            loss = LAMBDA_ADV_G * d_loss_fake / args.iter_size / BATCH_SIZE
-            loss.backward()
+            loss_target += d_loss_fake.data.cpu().numpy() / args.iter_size / BATCH_SIZE
+            loss_target_attention += d_loss_attention_fake.data.cpu().numpy() / args.iter_size / BATCH_SIZE
 
 
 
@@ -545,10 +585,13 @@ def main():
 
         optimizer.step()
         optimizer_D1.step()
-        # print('exp = {}'.format(args.snapshot_dir))
+        optimizer_D2.step()
 
-        print("iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
-                i_iter, args.num_steps, loss_source, float(loss_target), float(loss_D_value)))
+        # print('exp = {}'.format(args.snapshot_dir))
+        print(
+            'iter = {0:8d}/{1:8d}, loss_seg = {2:.3f} loss_seg_attn = {3:3f} loss_t_adv = {4:.3f}, loss_t_attn_adv = {5:.3f} loss_D = {6:.3f} loss_D_attn= {7:.3f}'.format(
+                i_iter, args.num_steps, loss_source, loss_seg_attention, loss_target, loss_target_attention,
+                loss_D_value, loss_D_attention_value))
 
 
 

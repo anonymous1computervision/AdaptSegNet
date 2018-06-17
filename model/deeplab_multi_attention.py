@@ -135,7 +135,8 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
         # self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
         self.layer6 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
-
+        self.attn1 = Self_Attn(1024, 'relu')
+        self.deconv = nn.Conv2d(1024, num_classes, kernel_size=3 , padding=1)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -176,15 +177,14 @@ class ResNet(nn.Module):
         x = self.layer2(x)
 
         x = self.layer3(x)
-        # x1 = self.layer5(x)
+        attention_mask, _ = self.attn1(x)
+        attention_mask = self.deconv(attention_mask)
 
         x = self.layer4(x)
         auxiliary = self.layer6(x)
-        # attention_mask, _ =self.attn1(x)
-        # attention_mask = self.deconv(attention_mask)
-        # auxiliary = attention_mask * auxiliary
 
-        return auxiliary
+
+        return attention_mask, auxiliary
     def get_1x_lr_params_NOscale(self):
         """
         This generator returns all the parameters of the net except for
