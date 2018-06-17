@@ -32,7 +32,7 @@ from dataset.cityscapes_dataset import cityscapesDataSet
 
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
 MODEL = 'DeepLab'
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 ITER_SIZE = 1
 NUM_WORKERS = 4
 DATA_DIRECTORY = './data/GTA5'
@@ -361,13 +361,15 @@ def main():
         optimizer_D1.zero_grad()
         adjust_learning_rate_D(optimizer_D1, i_iter)
 
+        #  opt D
+        optimizer_D2.zero_grad()
+        adjust_learning_rate_D(optimizer_D2, i_iter)
 
         for sub_i in range(args.iter_size):
 
             # ============================================== #
             #                   Train d                      #
             # ============================================== #
-
             # Disable G backpropgation requires_grad
             for param in model.parameters():
                 param.requires_grad = False
@@ -390,7 +392,7 @@ def main():
             # resize to source size
             # pred_source_real = interp(pred_source_real)
 
-            pred_source_attention = inter_mini(pred_source_real).detach()
+            pred_source_attention = inter_mini(pred_source_attention).detach()
             pred_source_real = inter_mini(pred_source_real).detach()
             # resize to mini size for inner product
             # mini_source_image = inter_mini(images)
@@ -405,7 +407,7 @@ def main():
             d_out_real = model_D1(F.softmax(pred_source_real))
             d_loss_real = bce_loss(d_out_real,
                                Variable(torch.FloatTensor(d_out_real.data.size()).fill_(source_label)).cuda(args.gpu))
-            d_loss_real = d_loss_real / args.iter_size / 2 / BATCH_SIZE
+            d_loss_real = d_loss_real / args.iter_size / 2
             d_loss_real.backward()
 
 
@@ -413,7 +415,7 @@ def main():
             d_loss_attention_real = bce_loss(d_out_attention_real,
                                    Variable(torch.FloatTensor(d_out_attention_real.data.size()).fill_(source_label)).cuda(
                                        args.gpu))
-            d_loss_attention_real = d_loss_attention_real / args.iter_size / 2 / BATCH_SIZE
+            d_loss_attention_real = d_loss_attention_real / args.iter_size / 2
             d_loss_attention_real.backward()
 
             loss_D_value += d_loss_real.data.cpu().numpy() / args.iter_size / BATCH_SIZE
@@ -441,14 +443,14 @@ def main():
             d_loss_fake = bce_loss(d_out_fake,
                                         Variable(torch.FloatTensor(d_out_fake.data.size()).fill_(target_label)).cuda(
                                             args.gpu))
-            d_loss_fake = d_loss_fake / args.iter_size / 2 / BATCH_SIZE
+            d_loss_fake = d_loss_fake / args.iter_size / 2
             d_loss_fake.backward()
 
             d_out_attention_fake = model_D1(F.softmax(pred_target_attention_fake))
             d_out_attention_fake = bce_loss(d_out_attention_fake,
                                    Variable(torch.FloatTensor(d_out_attention_fake.data.size()).fill_(target_label)).cuda(
                                        args.gpu))
-            d_out_attention_fake = d_out_attention_fake / args.iter_size / 2 / BATCH_SIZE
+            d_out_attention_fake = d_out_attention_fake / args.iter_size / 2
             d_out_attention_fake.backward()
 
             # if LOSS_OPTION == 'wgan-gp':
@@ -493,7 +495,7 @@ def main():
             loss = loss_seg1 + args.lambda_seg * loss_seg_attention
 
             # proper normalization
-            loss = loss / args.iter_size / BATCH_SIZE
+            loss = loss / args.iter_size
             loss.backward()
             loss_source += loss_seg1.data.cpu().numpy()  / args.iter_size / BATCH_SIZE
             loss_source_attention_value += loss_seg_attention.data.cpu().numpy()  / args.iter_size / BATCH_SIZE
@@ -527,7 +529,7 @@ def main():
                                        args.gpu))
 
             loss = args.lambda_adv_target1 * d_loss_attention_fake + args.lambda_adv_target2 * d_loss_fake
-            loss = loss / args.iter_size / BATCH_SIZE
+            loss = loss / args.iter_size
             loss.backward()
 
             # use hinge loss

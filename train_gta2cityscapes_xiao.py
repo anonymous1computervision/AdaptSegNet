@@ -30,7 +30,7 @@ from dataset.cityscapes_dataset import cityscapesDataSet
 
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
 MODEL = 'DeepLab'
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 ITER_SIZE = 1
 NUM_WORKERS = 4
 DATA_DIRECTORY = './data/GTA5'
@@ -59,7 +59,7 @@ SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = './snapshots/'
 WEIGHT_DECAY = 0.0005
 
-LEARNING_RATE_D = 1e-3
+LEARNING_RATE_D = 1e-4
 LAMBDA_SEG = 0.1
 LAMBDA_ADV_TARGET1 = 0.0002
 LAMBDA_ADV_TARGET2 = 0.0002
@@ -234,7 +234,7 @@ def label_to_channel(labels, num_classes=19):
 def main():
     """Create the model and start the training."""
 
-    LOSS_OPTION = 'hinge'
+    LOSS_OPTION = 'bce'
 
     h, w = map(int, args.input_size.split(','))
     input_size = (h, w)
@@ -266,7 +266,8 @@ def main():
     cudnn.benchmark = True
 
     # init D
-    model_D1 = XiaoDiscriminator(num_classes=args.num_classes)
+    # model_D1 = XiaoDiscriminator(num_classes=args.num_classes)
+    model_D1 = FCDiscriminator(num_classes=args.num_classes)
 
     model_D1.train()
     model_D1.cuda(args.gpu)
@@ -298,28 +299,28 @@ def main():
 
     # implement model.optim_parameters(args) to handle different models' lr setting
 
-    LEARNING_RATE_G = 0.0001
-    LEARNING_RATE_D = 0.0004
-
+    LEARNING_RATE_G = 2.5e-4
+    LEARNING_RATE_D = 1e-4
+    args.learning_rate_G = LEARNING_RATE_G
+    args.learning_rate_D = LEARNING_RATE_D
     # optimizer = optim.SGD(model.optim_parameters(args),
     #                      lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer = optim.SGD(model.optim_parameters(args),
                           lr=LEARNING_RATE_G, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer.zero_grad()
 
-    # optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
     # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D, betas=(0.9, 0.99))
     # next try
 
     # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D,
     #                           betas=(0.0, 0.9))
-    optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=LEARNING_RATE_D,
-                              betas=(0.0, 0.9))
+    # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=LEARNING_RATE_D,
+    #                           betas=(0.9, 0.99))
     # TODO: replace Parameters with buffers, which aren't returned from .parameters() method.
     # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.lr, betas=(0, 0.99))
 
     optimizer_D1.zero_grad()
-
 
     bce_loss = torch.nn.BCEWithLogitsLoss()
 
@@ -331,7 +332,7 @@ def main():
     # interp_target = nn.Upsample(size=(input_size_target[1], input_size_target[0]), align_corners=False, mode='bilinear')
     # inter_mini = nn.Upsample(size=(int(input_size[1]/2), int(input_size[0]/2)), align_corners=False, mode='bilinear')
     # inter_mini = nn.Upsample(size=(int(input_size[1]), int(input_size[0])), align_corners=False, mode='bilinear')
-    inter_mini = nn.Upsample(size=(input_size[1], input_size[0]), align_corners=False, mode='bilinear')
+    inter_mini = nn.Upsample(size=(input_size[1]/8, input_size[0]/8), align_corners=False, mode='bilinear')
 
 
 
@@ -360,8 +361,8 @@ def main():
             # ============================================== #
 
             # Disable G backpropgation requires_grad
-            for param in model.parameters():
-                param.requires_grad = False
+            # for param in model.parameters():
+            #     param.requires_grad = False
             # Enable D backpropgation requires_grad
             for param in model_D1.parameters():
                 param.requires_grad = True
@@ -373,30 +374,34 @@ def main():
             _, batch = trainloader_iter.__next__()
             images, labels, _, names = batch
             images = Variable(images).cuda(args.gpu)
-            # label = Variable(labels).cuda(args.gpu)
+            label = Variable(labels).cuda(args.gpu)
 
             pred_source_real = model(images).detach()
             # resize to source size
             # pred_source_real = interp(pred_source_real)
-            pred_source_real = inter_mini(pred_source_real)
+            pred_source_real = interp(pred_source_real)
             # resize to mini size for inner product
             # mini_source_image = inter_mini(images)
             # d_out_real = model_D1(F.softmax(pred_source_real), label=mini_source_image)
-            # d_out_real = model_D1(F.softmax(pred_source_real), label=inter_mini(label_to_channel(label)))
-            #
-            # if LOSS_OPTION == 'wgan-gp':
-            #     d_loss_real = - d_out_real.mean()
-            # elif LOSS_OPTION == 'hinge':
-            #     d_loss_real = torch.nn.ReLU()(1.0 - d_out_real).mean()
+            d_out_real = model_D1(F.softmax(pred_source_real), label=inter_mini(label_to_channel(label)))
 
-            d_out_real = model_D1(F.softmax(pred_source_real))
-            d_loss_real = bce_loss(d_out_real,
-                               Variable(torch.FloatTensor(d_out_real.data.size()).fill_(source_label)).cuda(args.gpu))
-            loss_D_value += d_loss_real
+            if LOSS_OPTION == 'wgan-gp':
+                d_loss_real = - d_out_real.mean()
+            elif LOSS_OPTION == 'hinge':
+                d_loss_real = torch.nn.ReLU()(1.0 - d_out_real).mean()
+            elif LOSS_OPTION == 'bce':
+                d_loss_real = bce_loss(d_out_real,
+                                       Variable(torch.FloatTensor(d_out_real.data.size()).fill_(source_label)).cuda(
+                                           args.gpu))
 
-            loss = d_loss_real / args.iter_size / 2 / BATCH_SIZE
+            # d_out_real = model_D1(F.softmax(pred_source_real))
+            # d_loss_real = bce_loss(d_out_real,
+            #                    Variable(torch.FloatTensor(d_out_real.data.size()).fill_(source_label)).cuda(args.gpu))
 
+            loss = d_loss_real / args.iter_size / 2
             loss.backward()
+            loss_D_value += d_loss_real.data.cpu().numpy() / args.iter_size
+
 
             # ===================================== #
             #         Train D target                #
@@ -407,38 +412,38 @@ def main():
             pred_target_fake = model(images).detach()
             # resize to source size
             # pred_target_fake = interp(pred_target_fake)
-            pred_target_fake = inter_mini(pred_target_fake)
+            pred_target_fake = interp(pred_target_fake)
 
             # resize to mini size for inner product
             # mini_target_image = inter_mini(images)
 
             # d_out_fake = model_D1(F.softmax(pred_target_fake), label=mini_target_image)
             pred_target_fake = pred_target_fake.detach()
-            # d_out_fake = model_D1(F.softmax(pred_target_fake), label=inter_mini(F.softmax(pred_target_fake)))
-            d_out_fake = model_D1(F.softmax(pred_target_fake))
-
-            d_loss_fake = bce_loss(d_out_fake,
-                                        Variable(torch.FloatTensor(d_out_fake.data.size()).fill_(target_label)).cuda(
-                                            args.gpu))
-
-            # if LOSS_OPTION == 'wgan-gp':
-            #     d_loss_fake = d_out_fake.mean()
-            # elif LOSS_OPTION == 'hinge':
-            #     d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
-            # LAMBDA_ADV_D = 1
+            d_out_fake = model_D1(F.softmax(pred_target_fake), label=inter_mini(F.softmax(pred_target_fake)))
+            # d_out_fake = model_D1(F.softmax(pred_target_fake))
             #
-            # loss = LAMBDA_ADV_D * (d_loss_real + d_loss_fake) / args.iter_size
-            loss_D_value += d_loss_fake
-            loss = d_loss_fake / args.iter_size / 2 / BATCH_SIZE
+            #
+
+            if LOSS_OPTION == 'wgan-gp':
+                d_loss_fake = d_out_fake.mean()
+            elif LOSS_OPTION == 'hinge':
+                d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
+            elif LOSS_OPTION == 'bce':
+                d_loss_fake = bce_loss(d_out_fake,
+                                       Variable(torch.FloatTensor(d_out_fake.data.size()).fill_(target_label)).cuda(
+                                           args.gpu))
+            loss = d_loss_fake / args.iter_size / 2
             loss.backward()
+            loss_D_value += d_loss_fake.data.cpu().numpy() / args.iter_size / 2
+
 
             # ============================================== #
             #                   Train G                      #
             # ============================================== #
 
             # Enable G backpropgation requires_grad
-            for param in model.parameters():
-                param.requires_grad = True
+            # for param in model.parameters():
+            #     param.requires_grad = True
             # Disable D backpropgation requires_grad
             for param in model_D1.parameters():
                 param.requires_grad = False
@@ -458,12 +463,11 @@ def main():
 
             # seg loss
             loss_seg1 = loss_calc(pred_source_real, label, args.gpu)
-            loss_source += loss_seg1.data.cpu().numpy() / args.iter_size
             loss = loss_seg1
-
             # proper normalization
-            loss = loss / args.iter_size / BATCH_SIZE
+            loss = loss / args.iter_size
             loss.backward()
+            loss_source += loss_seg1.data.cpu().numpy() / args.iter_size
 
             # ===================================== #
             #         Train G target                #
@@ -474,30 +478,30 @@ def main():
             images, _, _, target_name = batch
             images = Variable(images).cuda(args.gpu)
             pred_target_fake = model(images)
-            # pred_target_fake = interp(pred_target_fake)
-            pred_target_fake = inter_mini(pred_target_fake)
+            pred_target_fake = interp(pred_target_fake)
 
-            # mini_target_image = inter_mini(images)
 
             # d_out_fake = model_D1(F.softmax(pred_target1), label=mini_target_image)
-            # d_out_fake = model_D1(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
+            d_out_fake = model_D1(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
 
-            d_out_fake = model_D1(F.softmax(pred_target_fake), label=None)
-
-            d_loss_fake = bce_loss(d_out_fake,
-                                   Variable(torch.FloatTensor(d_out_fake.data.size()).fill_(source_label)).cuda(
-                                       args.gpu))
+            # d_loss_fake = bce_loss(d_out_fake,
+            #                        Variable(torch.FloatTensor(d_out_fake.data.size()).fill_(source_label)).cuda(
+            #                            args.gpu))
 
             # use hinge loss
-            # if LOSS_OPTION == 'wgan-gp':
-            #     d_loss_fake = - d_out_fake.mean()
-            # elif LOSS_OPTION == 'hinge':
-            #     d_loss_fake = - d_out_fake.mean()
+            if LOSS_OPTION == 'wgan-gp':
+                d_loss_fake = - d_out_fake.mean()
+            elif LOSS_OPTION == 'hinge':
+                d_loss_fake = - d_out_fake.mean()
+            elif LOSS_OPTION == 'bce':
+                d_loss_fake = bce_loss(d_out_fake,
+                                       Variable(torch.FloatTensor(d_out_fake.data.size()).fill_(source_label)).cuda(
+                                           args.gpu))
+            LAMBDA_ADV_G = 0.001
 
-            loss_target += d_loss_fake
-            LAMBDA_ADV_G = 1
-            loss = LAMBDA_ADV_G * d_loss_fake / args.iter_size / BATCH_SIZE
+            loss = LAMBDA_ADV_G * d_loss_fake / args.iter_size
             loss.backward()
+            loss_target += d_loss_fake.data.cpu().numpy() / args.iter_size
 
 
 
