@@ -37,12 +37,12 @@ DATA_DIRECTORY = './data/GTA5'
 DATA_LIST_PATH = './dataset/gta5_list/train.txt'
 IGNORE_LABEL = 255
 INPUT_SIZE = '1280,720'
-INPUT_SIZE = '512,256'
+# INPUT_SIZE = '512,256'
 # INPUT_SIZE = '320,180'
 DATA_DIRECTORY_TARGET = './data/Cityscapes/data'
 DATA_LIST_PATH_TARGET = './dataset/cityscapes_list/train.txt'
-# INPUT_SIZE_TARGET = '1024,512'
-INPUT_SIZE_TARGET = '512,256'
+INPUT_SIZE_TARGET = '1024,512'
+# INPUT_SIZE_TARGET = '512,256'
 # INPUT_SIZE_TARGET = '256,128'
 
 LEARNING_RATE = 2.5e-4
@@ -52,8 +52,8 @@ NUM_STEPS = 250000
 NUM_STEPS_STOP = 100000  # early stopping
 POWER = 0.9
 RANDOM_SEED = 1234
-RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_init-f81d91e8.pth'
-# RESTORE_FROM = './snapshots/GTA2Cityscapes_multi/GTA5_10000.pth'
+# RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_init-f81d91e8.pth'
+RESTORE_FROM = '.\snapshots\single_DA_baseline\GTA5_50000.pth'
 SAVE_NUM_IMAGES = 2
 SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = './snapshots/'
@@ -62,8 +62,7 @@ WEIGHT_DECAY = 0.0005
 LEARNING_RATE_D = 1e-4
 LAMBDA_SEG = 0.1
 LAMBDA_ADV_TARGET1 = 0.0002
-LAMBDA_ADV_TARGET2 = 0.0002
-LAMBDA_ADV_SOURCE1 = 0.0002
+LAMBDA_ADV_TARGET2 = 0.001
 
 TARGET = 'cityscapes'
 SET = 'train'
@@ -205,6 +204,7 @@ def lr_poly(base_lr, iter, max_iter, power):
 
 def adjust_learning_rate(optimizer, i_iter):
     lr = lr_poly(args.learning_rate, i_iter, args.num_steps, args.power)
+    # ASPP layer learning rate *10
     optimizer.param_groups[0]['lr'] = lr
     if len(optimizer.param_groups) > 1:
         optimizer.param_groups[1]['lr'] = lr * 10
@@ -256,8 +256,23 @@ def main():
         else:
             saved_state_dict = torch.load(args.restore_from)
 
-        new_params = model.state_dict().copy()
-
+        # new_params = model.state_dict().copy()
+        # for i in saved_state_dict:
+        #     print(i)
+        #     # Scale.layer5.conv2d_list.3.weight
+        #     i_parts = i.split('.')
+        #     # print i_parts
+        #     if not args.num_classes == 19 or not i_parts[1] == 'layer5':
+        #         new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
+                # print i_parts
+        # for i in saved_state_dict:
+        #     # Scale.layer5.conv2d_list.3.weight
+        #     i_parts = i.split('.')
+        #     # print i_parts
+        #     if not args.num_classes == 19 or not i_parts[1] == 'layer5':
+        #         new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
+        #         # print i_parts
+        new_params = saved_state_dict
         model.load_state_dict(new_params)
 
     model.train()
@@ -299,14 +314,14 @@ def main():
 
     # implement model.optim_parameters(args) to handle different models' lr setting
 
-    LEARNING_RATE_G = 2.5e-4
-    LEARNING_RATE_D = 1e-4
-    args.learning_rate_G = LEARNING_RATE_G
-    args.learning_rate_D = LEARNING_RATE_D
-    # optimizer = optim.SGD(model.optim_parameters(args),
-    #                      lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    # LEARNING_RATE_G = 2.5e-4
+    # LEARNING_RATE_D = 1e-4
+    # args.learning_rate_G = LEARNING_RATE_G
+    # args.learning_rate_D = LEARNING_RATE_D
     optimizer = optim.SGD(model.optim_parameters(args),
-                          lr=LEARNING_RATE_G, momentum=args.momentum, weight_decay=args.weight_decay)
+                         lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    # optimizer = optim.SGD(model.optim_parameters(args),
+    #                       lr=LEARNING_RATE_G, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer.zero_grad()
 
     optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
@@ -326,10 +341,7 @@ def main():
 
     # INPUT_SIZE = '1280,720'
     interp = nn.Upsample(size=(input_size[1], input_size[0]), align_corners=False, mode='bilinear')
-
-
-
-    # interp_target = nn.Upsample(size=(input_size_target[1], input_size_target[0]), align_corners=False, mode='bilinear')
+    interp_target = nn.Upsample(size=(input_size_target[1], input_size_target[0]), align_corners=False, mode='bilinear')
     # inter_mini = nn.Upsample(size=(int(input_size[1]/2), int(input_size[0]/2)), align_corners=False, mode='bilinear')
     # inter_mini = nn.Upsample(size=(int(input_size[1]), int(input_size[0])), align_corners=False, mode='bilinear')
     inter_mini = nn.Upsample(size=(input_size[1]/8, input_size[0]/8), align_corners=False, mode='bilinear')
@@ -399,7 +411,7 @@ def main():
             images, _, _, target_name = batch
             images = Variable(images).cuda(args.gpu)
             pred_target_fake = model(images)
-            pred_target_fake = interp(pred_target_fake)
+            pred_target_fake = interp_target(pred_target_fake)
 
 
             # d_out_fake = model_D1(F.softmax(pred_target1), label=mini_target_image)
