@@ -100,7 +100,9 @@ def main():
         if index % 100 == 0:
             print('%d processd' % index)
         image, _, _, name = batch
+        # output1, output2 = model(Variable(image, volatile=True).cuda(gpu0))
         output1, output2 = model(Variable(image, volatile=True).cuda(gpu0))
+
         output = interp(output2).cpu().data[0].numpy()
 
         output = output.transpose(1,2,0)

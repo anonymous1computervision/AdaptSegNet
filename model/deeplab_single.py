@@ -133,7 +133,7 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
-        # self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
+        self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
         self.layer6 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
 
 
@@ -224,7 +224,8 @@ class ResNet(nn.Module):
 
     def optim_parameters(self, args):
         return [{'params': self.get_1x_lr_params_NOscale(), 'lr': args.learning_rate},
-                {'params': self.get_10x_lr_params(), 'lr':  10 * args.learning_rate}]
+                # {'params': self.get_10x_lr_params(), 'lr':  10 * args.learning_rate}]
+                {'params': self.get_10x_lr_params(), 'lr': args.learning_rate}]
 
 
 def Res_Deeplab(num_classes=21):

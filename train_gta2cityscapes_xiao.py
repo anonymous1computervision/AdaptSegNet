@@ -52,14 +52,16 @@ NUM_STEPS = 250000
 NUM_STEPS_STOP = 100000  # early stopping
 POWER = 0.9
 RANDOM_SEED = 1234
-# RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_init-f81d91e8.pth'
-RESTORE_FROM = '.\snapshots\single_DA_baseline\GTA5_50000.pth'
+RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_init-f81d91e8.pth'
+# RESTORE_FROM = '.\snapshots\single_DA_baseline\GTA5_50000.pth'
 SAVE_NUM_IMAGES = 2
 SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = './snapshots/'
 WEIGHT_DECAY = 0.0005
 
+# LEARNING_RATE_ = 1e-4
 LEARNING_RATE_D = 1e-4
+
 LAMBDA_SEG = 0.1
 LAMBDA_ADV_TARGET1 = 0.0002
 LAMBDA_ADV_TARGET2 = 0.001
@@ -207,14 +209,18 @@ def adjust_learning_rate(optimizer, i_iter):
     # ASPP layer learning rate *10
     optimizer.param_groups[0]['lr'] = lr
     if len(optimizer.param_groups) > 1:
-        optimizer.param_groups[1]['lr'] = lr * 10
+        # optimizer.param_groups[1]['lr'] = lr * 10
+        optimizer.param_groups[1]['lr'] = lr
+
 
 
 def adjust_learning_rate_D(optimizer, i_iter):
     lr = lr_poly(args.learning_rate_D, i_iter, args.num_steps, args.power)
     optimizer.param_groups[0]['lr'] = lr
     if len(optimizer.param_groups) > 1:
-        optimizer.param_groups[1]['lr'] = lr * 10
+        # optimizer.param_groups[1]['lr'] = lr * 10
+        optimizer.param_groups[1]['lr'] = lr
+
 
 def label_to_channel(labels, num_classes=19):
     # map value to each category
@@ -256,23 +262,23 @@ def main():
         else:
             saved_state_dict = torch.load(args.restore_from)
 
-        # new_params = model.state_dict().copy()
-        # for i in saved_state_dict:
-        #     print(i)
-        #     # Scale.layer5.conv2d_list.3.weight
-        #     i_parts = i.split('.')
-        #     # print i_parts
-        #     if not args.num_classes == 19 or not i_parts[1] == 'layer5':
-        #         new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
+        new_params = model.state_dict().copy()
+        for i in saved_state_dict:
+            print(i)
+            # Scale.layer5.conv2d_list.3.weight
+            i_parts = i.split('.')
+            # print i_parts
+            if not args.num_classes == 19 or not i_parts[1] == 'layer5':
+                new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
+                print(i_parts)
+        for i in saved_state_dict:
+            # Scale.layer5.conv2d_list.3.weight
+            i_parts = i.split('.')
+            # print i_parts
+            if not args.num_classes == 19 or not i_parts[1] == 'layer5':
+                new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
                 # print i_parts
-        # for i in saved_state_dict:
-        #     # Scale.layer5.conv2d_list.3.weight
-        #     i_parts = i.split('.')
-        #     # print i_parts
-        #     if not args.num_classes == 19 or not i_parts[1] == 'layer5':
-        #         new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
-        #         # print i_parts
-        new_params = saved_state_dict
+        # new_params = saved_state_dict
         model.load_state_dict(new_params)
 
     model.train()

@@ -82,10 +82,11 @@ def main():
         os.makedirs(args.save)
 
     model = Res_Deeplab(num_classes=args.num_classes)
-
+    saved_state_dict = 0
     if args.restore_from[:4] == 'http' :
         saved_state_dict = model_zoo.load_url(args.restore_from)
     else:
+        print("(args.restore_from =", args.restore_from)
         saved_state_dict = torch.load(args.restore_from)
     model.load_state_dict(saved_state_dict)
 
@@ -101,7 +102,7 @@ def main():
         if index % 100 == 0:
             print('%d processd' % index)
         image, _, _, name = batch
-        output1 = model(Variable(image, volatile=True).cuda(gpu0)).detach()
+        output1 = model(Variable(image, volatile=True).cuda(gpu0))
         output = interp(output1).cpu().data[0].numpy()
 
         output = output.transpose(1,2,0)
