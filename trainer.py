@@ -257,13 +257,11 @@ class AdaptSeg_Trainer(nn.Module):
 
     def _adjust_learning_rate_D(self, optimizer, i_iter):
         lr = self._lr_poly(self.lr_d, i_iter, self.num_steps, self.decay_power)
-        # print("_adjust_learning_rate_D param_groups =", len(optimizer.param_groups))
         for i, group in enumerate(optimizer.param_groups):
             optimizer.param_groups[i]['lr'] = lr
 
     def _adjust_learning_rate_G(self, optimizer, i_iter):
         lr = self._lr_poly(self.lr_g, i_iter, self.num_steps, self.decay_power)
-        # print("_adjust_learning_rate_G param_groups =", len(optimizer.param_groups))
         for i, group in enumerate(optimizer.param_groups):
             optimizer.param_groups[i]['lr'] = lr
 
@@ -303,14 +301,10 @@ class AdaptSeg_Trainer(nn.Module):
         # save label
         label_name = os.path.join("data", "GTA5", "labels", self.source_label_path[0])
         save_name = os.path.join(dir_name, "Image_source_domain_seg", '%s_label.png' % self.i_iter)
-        print("label_name =", label_name)
-        print("save_name =", save_name)
         shutil.copyfile(label_name, save_name)
 
         target_name = os.path.join("data", "Cityscapes", "data", "leftImg8bit", "train", self.target_image_path[0])
         save_name = os.path.join(dir_name, "Image_target_domain_seg", '%s_label.png' % self.i_iter)
-        print("target_name =", target_name)
-        print("save_name =", save_name)
         shutil.copyfile(target_name, save_name)
 
         # save output image
@@ -336,13 +330,10 @@ class AdaptSeg_Trainer(nn.Module):
                 saved_state_dict = torch.load(restore_from)
             new_params = self.model.state_dict().copy()
             for i in saved_state_dict:
-                # print(i)
                 # Scale.layer5.conv2d_list.3.weight
                 i_parts = i.split('.')
-                # print i_parts
                 if not num_classes == 19 or not i_parts[1] == 'layer5':
                     new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
-                    # print(i_parts)
             # new_params = saved_state_dict
             self.model.load_state_dict(new_params)
             self.opt_init()
