@@ -59,7 +59,6 @@ SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = './snapshots/'
 WEIGHT_DECAY = 0.0005
 
-# LEARNING_RATE_ = 1e-4
 LEARNING_RATE_D = 1e-4
 
 LAMBDA_SEG = 0.1
@@ -207,9 +206,10 @@ def lr_poly(base_lr, iter, max_iter, power):
 def adjust_learning_rate(optimizer, i_iter):
     lr = lr_poly(args.learning_rate, i_iter, args.num_steps, args.power)
     # ASPP layer learning rate *10
+
     optimizer.param_groups[0]['lr'] = lr
     if len(optimizer.param_groups) > 1:
-        # optimizer.param_groups[1]['lr'] = lr * 10
+    #     # optimizer.param_groups[1]['lr'] = lr * 10
         optimizer.param_groups[1]['lr'] = lr
 
 
@@ -218,7 +218,7 @@ def adjust_learning_rate_D(optimizer, i_iter):
     lr = lr_poly(args.learning_rate_D, i_iter, args.num_steps, args.power)
     optimizer.param_groups[0]['lr'] = lr
     if len(optimizer.param_groups) > 1:
-        # optimizer.param_groups[1]['lr'] = lr * 10
+    #     # optimizer.param_groups[1]['lr'] = lr * 10
         optimizer.param_groups[1]['lr'] = lr
 
 
@@ -264,20 +264,13 @@ def main():
 
         new_params = model.state_dict().copy()
         for i in saved_state_dict:
-            print(i)
+            # print(i)
             # Scale.layer5.conv2d_list.3.weight
             i_parts = i.split('.')
             # print i_parts
             if not args.num_classes == 19 or not i_parts[1] == 'layer5':
                 new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
-                print(i_parts)
-        for i in saved_state_dict:
-            # Scale.layer5.conv2d_list.3.weight
-            i_parts = i.split('.')
-            # print i_parts
-            if not args.num_classes == 19 or not i_parts[1] == 'layer5':
-                new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
-                # print i_parts
+                # print(i_parts)
         # new_params = saved_state_dict
         model.load_state_dict(new_params)
 
