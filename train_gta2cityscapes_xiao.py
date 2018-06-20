@@ -291,7 +291,7 @@ def main():
     # create dir
     if not os.path.exists(args.snapshot_dir):
         os.makedirs(args.snapshot_dir)
-
+    print("input size =", input_size)
     trainloader = data.DataLoader(
         GTA5DataSet(args.data_dir, args.data_list, max_iters=args.num_steps * args.iter_size * args.batch_size,
                     crop_size=input_size,
@@ -299,7 +299,7 @@ def main():
         batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
 
     trainloader_iter = enumerate(trainloader)
-
+    print("input_size_target  =", input_size_target)
     targetloader = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target,
                                                      max_iters=args.num_steps * args.iter_size * args.batch_size,
                                                      crop_size=input_size_target,

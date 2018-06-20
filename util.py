@@ -4,7 +4,6 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 """
 from torch.utils.serialization import load_lua
 from torch.utils.data import DataLoader
-from networks import Vgg16
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
 from torchvision import transforms
@@ -49,7 +48,6 @@ def get_all_data_loaders(conf):
     GTA_size = (conf["input_size_h"], conf["input_size_w"])
     City_size = (conf["input_target_size_h"], conf["input_target_size_w"])
     IMG_MEAN = (conf["img_mean_r"], conf["img_mean_g"], conf["img_mean_b"])
-
     # source domain data
     train_loader = data.DataLoader(
         GTA5DataSet(conf['data_directory'], conf['data_list_path'], max_iters=num_steps * iter_size * batch_size,
@@ -62,7 +60,7 @@ def get_all_data_loaders(conf):
         cityscapesDataSet(conf['data_directory_target'], conf['data_list_path_target'],
                     max_iters=num_steps * iter_size * batch_size,
                     crop_size=City_size,
-                    scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN),
+                    scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN, set="train"),
         batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
 
     return train_loader, target_loader
@@ -217,21 +215,21 @@ def get_model_list(dirname, key):
     return last_model_name
 
 
-def load_vgg16(model_dir):
-    """ Use the model from https://github.com/abhiskk/fast-neural-style/blob/master/neural_style/utils.py """
-    if not os.path.exists(model_dir):
-        os.mkdir(model_dir)
-    if not os.path.exists(os.path.join(model_dir, 'vgg16.weight')):
-        if not os.path.exists(os.path.join(model_dir, 'vgg16.t7')):
-            os.system('wget https://www.dropbox.com/s/76l3rt4kyi3s8x7/vgg16.t7?dl=1 -O ' + os.path.join(model_dir, 'vgg16.t7'))
-        vgglua = load_lua(os.path.join(model_dir, 'vgg16.t7'))
-        vgg = Vgg16()
-        for (src, dst) in zip(vgglua.parameters()[0], vgg.parameters()):
-            dst.data[:] = src
-        torch.save(vgg.state_dict(), os.path.join(model_dir, 'vgg16.weight'))
-    vgg = Vgg16()
-    vgg.load_state_dict(torch.load(os.path.join(model_dir, 'vgg16.weight')))
-    return vgg
+# def load_vgg16(model_dir):
+#     """ Use the model from https://github.com/abhiskk/fast-neural-style/blob/master/neural_style/utils.py """
+#     if not os.path.exists(model_dir):
+#         os.mkdir(model_dir)
+#     if not os.path.exists(os.path.join(model_dir, 'vgg16.weight')):
+#         if not os.path.exists(os.path.join(model_dir, 'vgg16.t7')):
+#             os.system('wget https://www.dropbox.com/s/76l3rt4kyi3s8x7/vgg16.t7?dl=1 -O ' + os.path.join(model_dir, 'vgg16.t7'))
+#         vgglua = load_lua(os.path.join(model_dir, 'vgg16.t7'))
+#         vgg = Vgg16()
+#         for (src, dst) in zip(vgglua.parameters()[0], vgg.parameters()):
+#             dst.data[:] = src
+#         torch.save(vgg.state_dict(), os.path.join(model_dir, 'vgg16.weight'))
+#     vgg = Vgg16()
+#     vgg.load_state_dict(torch.load(os.path.join(model_dir, 'vgg16.weight')))
+#     return vgg
 
 
 def vgg_preprocess(batch):
