@@ -54,7 +54,7 @@ class AdaptSeg_Trainer(nn.Module):
         self.decay_power = hyperparameters['decay_power']
 
         # init optimizer
-        self.opt_init()
+        self.opt_init(hyperparameters)
 
 
 
@@ -77,16 +77,16 @@ class AdaptSeg_Trainer(nn.Module):
         self.inter_mini = nn.Upsample(size=(self.input_size_target[0], self.input_size_target[1]), align_corners=False,
                                     mode='bilinear')
 
-    def opt_init(self):
+    def opt_init(self, hyperparameters):
         # Setup the optimizers
-        self.lr_g = self.hyperparameters['lr_g']
-        self.lr_d = self.hyperparameters['lr_d']
+        self.lr_g = hyperparameters['lr_g']
+        self.lr_d = hyperparameters['lr_d']
 
-        momentum = self.hyperparameters['momentum']
-        weight_decay = self.hyperparameters['weight_decay']
-        beta1 = self.hyperparameters['beta1']
-        beta2 = self.hyperparameters['beta2']
-        self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
+        momentum = hyperparameters['momentum']
+        weight_decay = hyperparameters['weight_decay']
+        beta1 = hyperparameters['beta1']
+        beta2 = hyperparameters['beta2']
+        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
                                      lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
         # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
         #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
@@ -336,7 +336,6 @@ class AdaptSeg_Trainer(nn.Module):
                     new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
             # new_params = saved_state_dict
             self.model.load_state_dict(new_params)
-            self.opt_init()
 
 
 def paint_predict_image(predict_image):
