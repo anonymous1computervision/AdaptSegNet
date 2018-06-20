@@ -56,6 +56,11 @@ num_steps = config['num_steps']
 # log setting
 log_path = config["log_path"]
 test_summary = config["test_summary"]
+snapshot_save_iter = config["snapshot_save_iter"]
+snapshot_save_dir = config["snapshot_save_dir"]
+image_save_iter = config["image_save_iter"]
+image_save_dir = config["image_save_dir"]
+
 # train_writer = tensorboardX.SummaryWriter(os.path.join(log_path, "logs", test_summary))
 
 # data loader
@@ -64,15 +69,45 @@ train_loader, target_loader = get_all_data_loaders(config)
 # model init
 trainer = AdaptSeg_Trainer(config)
 
+if config["restore"]:
+    trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
+
 # Start training
 while True:
-    for it, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
+    for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
+        # ====================== #
+        #   Main training code   #
+        # ====================== #
+
+        # train G use source image
         images, labels, _, names = train_batch
+        trainer.gen_source_update(images, labels)
+
+        # train G use target image
         images, _, _, target_name = target_batch
+        trainer.gen_target_update(images)
 
-        trainer.update_learning_rate()
+        # train discriminator use prior generator image
+        trainer.dis_update()
 
-        # Main training code
-        trainer.gen_update(images_a, images_b, config)
-        trainer.dis_update(images_a, images_b, config)
+        # update loss function
+        trainer.update_learning_rate(i_iter)
+
+        # show log
+        trainer.show_each_loss()
+
+        # save image to check
+        if i_iter % image_save_iter == 0:
+            trainer.(snapshot_save_dir=image_save_dir)
+
+
+        # save checkpoint .pth
+        if i_iter % snapshot_save_iter == 0:
+            trainer.save_model(snapshot_save_dir=snapshot_save_dir)
+
+        # save final model .pth
+        if i_iter == num_steps - 1:
+            trainer.save_model(snapshot_save_dir=snapshot_save_dir)
+
+
 

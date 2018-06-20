@@ -1,13 +1,15 @@
 # logger options
 test_summary: first_test
-image_save_iter: 1000         # How often do you want to save output images during training
 image_display_iter: 100       # How often do you want to display output images during training
 display_size: 8               # How many images do you want to display each time
 snapshot_save_iter: 10000     # How often do you want to save trained models
 log_iter: 1                   # How often do you want to log the training stats
 save_num_images: 2
 save_per_every: 5000          # save pth
-snapshot_dir: ./snapshots/
+save_model_dir: ./model_save/
+image_save_iter: 50         #  How often do you want to save output images during training
+snapshots_dir: ./check_output/ #each image_save_iter epochs will show image, can check model output
+
 log_path: ./check_output/log
 
 # optimization options
@@ -33,7 +35,8 @@ gen:
   lambda_adv_target1: 0.0002
   lambda_adv_target1: 0.001
 
-# dis:
+dis:
+  adv_loss_opt: bce  # [wgan-gp / hinge / bce]
 
   
 
