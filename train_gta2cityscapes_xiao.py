@@ -208,22 +208,18 @@ def lr_poly(base_lr, iter, max_iter, power):
 def adjust_learning_rate(optimizer, i_iter):
     lr = lr_poly(args.learning_rate, i_iter, args.num_steps, args.power)
     # ASPP layer learning rate *10
-    print("lr =", lr, "in adjust G opt lr =", optimizer.param_groups[0]['lr'])
     optimizer.param_groups[0]['lr'] = lr
     if len(optimizer.param_groups) > 1:
     #     # optimizer.param_groups[1]['lr'] = lr * 10
         optimizer.param_groups[1]['lr'] = lr
-        print("lr =", lr, "in adjust G group1 opt lr =", optimizer.param_groups[1]['lr'])
 
 
 def adjust_learning_rate_D(optimizer, i_iter):
     lr = lr_poly(args.learning_rate_D, i_iter, args.num_steps, args.power)
     optimizer.param_groups[0]['lr'] = lr
-    print("lr =", lr, "in adjust D opt lr =", optimizer.param_groups[0]['lr'])
     if len(optimizer.param_groups) > 1:
     #     # optimizer.param_groups[1]['lr'] = lr * 10
         optimizer.param_groups[1]['lr'] = lr
-        print("lr =", lr, "in adjust D group1 opt lr =", optimizer.param_groups[1]['lr'])
 
 
 def label_to_channel(labels, num_classes=19):
@@ -251,7 +247,8 @@ def main():
 
     h, w = map(int, args.input_size_target.split(','))
     input_size_target = (h, w)
-
+    print("input size =", input_size)
+    print("input_size_target =", input_size_target)
     cudnn.enabled = True
     gpu = args.gpu
 
@@ -285,8 +282,8 @@ def main():
 
     # init D
     # model_D1 = XiaoDiscriminator(num_classes=args.num_classes)
-    # model_D1 = FCDiscriminator(num_classes=args.num_classes)
-    model_D1 = XiaoAttentionDiscriminator(num_classes=args.num_classes)
+    model_D1 = FCDiscriminator(num_classes=args.num_classes)
+    # model_D1 = XiaoAttentionDiscriminator(num_classes=args.num_classes)
     model_D1.train()
     model_D1.cuda(args.gpu)
 
@@ -295,7 +292,6 @@ def main():
     # create dir
     if not os.path.exists(args.snapshot_dir):
         os.makedirs(args.snapshot_dir)
-    print("input size =", input_size)
     trainloader = data.DataLoader(
         GTA5DataSet(args.data_dir, args.data_list, max_iters=args.num_steps * args.iter_size * args.batch_size,
                     crop_size=input_size,
@@ -303,7 +299,6 @@ def main():
         batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
 
     trainloader_iter = enumerate(trainloader)
-    print("input_size_target  =", input_size_target)
     targetloader = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target,
                                                      max_iters=args.num_steps * args.iter_size * args.batch_size,
                                                      crop_size=input_size_target,
@@ -321,14 +316,16 @@ def main():
     # LEARNING_RATE_D = 1e-4
     # args.learning_rate_G = LEARNING_RATE_G
     # args.learning_rate_D = LEARNING_RATE_D
-    optimizer = optim.SGD(model.optim_parameters(args),
-                         lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    # optimizer = optim.SGD(model.optim_parameters(args),
+    #                      lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()),
+                          lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     # optimizer = optim.SGD(model.optim_parameters(args),
     #                       lr=LEARNING_RATE_G, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer.zero_grad()
 
-    # optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
-    optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D, betas=(0.9, 0.99))
     # next try
 
     # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D,
@@ -396,7 +393,6 @@ def main():
             # resize to source size
             pred_source_real = interp(pred_source_real)
 
-
             # seg loss
             loss_seg1 = loss_calc(pred_source_real, label, args.gpu)
             loss = loss_seg1
@@ -414,6 +410,7 @@ def main():
             images, _, _, target_name = batch
             images = Variable(images).cuda(args.gpu)
             pred_target_fake = model(images)
+
             pred_target_fake = interp_target(pred_target_fake)
 
 

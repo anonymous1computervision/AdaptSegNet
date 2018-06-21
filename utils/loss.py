@@ -34,9 +34,3 @@ class CrossEntropy2d(nn.Module):
         predict = predict[target_mask.view(n, h, w, 1).repeat(1, 1, 1, c)].view(-1, c)
         loss = F.cross_entropy(predict, target, weight=weight, size_average=self.size_average)
         return loss
-
-class loss_hinge_dis(nn.Module):
-    def __init__(self, size_average=True, ignore_label=255):
-        super(CrossEntropy2d, self).__init__()
-        self.size_average = size_average
-        self.ignore_label = ignore_label

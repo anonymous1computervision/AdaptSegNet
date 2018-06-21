@@ -66,7 +66,8 @@ def main():
     # Start training
     while True:
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
-            trainer.adjust_opt(i_iter)
+            trainer.init_each_epoch(i_iter)
+            trainer.update_learning_rate()
 
             # ====================== #
             #   Main training code   #
@@ -74,6 +75,8 @@ def main():
 
             # train G use source image
             src_images, labels, _, names = train_batch
+            # print("get source image shape", src_images.shape)
+            # print("get source labels shape", labels.shape)
             src_images, labels = Variable(src_images).cuda(gpu), Variable(labels).cuda(gpu)
             # todo: label do not use cuda save memory
             # todo: pass variable do not create a cuda variable
@@ -88,8 +91,6 @@ def main():
             # train discriminator use prior generator image
             trainer.dis_update()
 
-            # update loss function
-            trainer.update_learning_rate()
 
             # show log
             trainer.show_each_loss()

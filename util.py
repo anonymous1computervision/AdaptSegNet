@@ -45,9 +45,12 @@ def get_all_data_loaders(conf):
     num_workers = conf['num_workers']
     random_scale_opt = conf["random_scale"]
     mirror_opt = conf["random_mirror"]
-    GTA_size = (conf["input_size_h"], conf["input_size_w"])
-    City_size = (conf["input_target_size_h"], conf["input_target_size_w"])
+    # image resize function (w, h)
+    GTA_size = (conf["input_size_w"], conf["input_size_h"])
+    City_size = (conf["input_target_size_w"], conf["input_target_size_h"])
     IMG_MEAN = (conf["img_mean_r"], conf["img_mean_g"], conf["img_mean_b"])
+    print("GTA_size input size =", GTA_size)
+    print("City_size input_size_target =", City_size)
     # source domain data
     train_loader = data.DataLoader(
         GTA5DataSet(conf['data_directory'], conf['data_list_path'], max_iters=num_steps * iter_size * batch_size,

@@ -59,21 +59,11 @@ class AdaptSeg_Trainer(nn.Module):
         self.lr_g = hyperparameters['lr_g']
         self.lr_d = hyperparameters['lr_d']
 
-        momentum = hyperparameters['momentum']
-        weight_decay = hyperparameters['weight_decay']
-        beta1 = hyperparameters['beta1']
-        beta2 = hyperparameters['beta2']
-        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-                                     lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
-        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-        #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
-        self.optimizer_G.zero_grad()
-        self._adjust_learning_rate_G(self.optimizer_G, 0)
-
-        self.optimizer_D = optim.Adam(self.model_D.parameters(), lr=self.lr_d, betas=(beta1, beta2))
-        self.optimizer_D.zero_grad()
-        self._adjust_learning_rate_D(self.optimizer_D, 0)
-
+        self.momentum = hyperparameters['momentum']
+        self.weight_decay = hyperparameters['weight_decay']
+        self.beta1 = hyperparameters['beta1']
+        self.beta2 = hyperparameters['beta2']
+        self.init_opt()
 
         # for [log / check output]
         self.loss_d_value = 0
@@ -91,11 +81,19 @@ class AdaptSeg_Trainer(nn.Module):
         self.adv_loss_opt = hyperparameters['dis']['adv_loss_opt']
         self.source_image = None
         self.target_image = None
-        self.inter_mini = nn.Upsample(size=(self.input_size_target[0], self.input_size_target[1]), align_corners=False,
+        self.inter_mini = nn.Upsample(size=self.input_size_target, align_corners=False,
                                     mode='bilinear')
+    def init_opt(self):
+        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+                                     lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+        #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
+        self.optimizer_G.zero_grad()
+        self._adjust_learning_rate_G(self.optimizer_G, 0)
 
-
-
+        self.optimizer_D = optim.Adam(self.model_D.parameters(), lr=self.lr_d, betas=(self.beta1, self.beta2))
+        self.optimizer_D.zero_grad()
+        self._adjust_learning_rate_D(self.optimizer_D, 0)
 
     def forward(self, images):
         self.eval()
@@ -113,6 +111,8 @@ class AdaptSeg_Trainer(nn.Module):
 
                 :return:
                 """
+        self.optimizer_G.zero_grad()
+
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
@@ -123,7 +123,7 @@ class AdaptSeg_Trainer(nn.Module):
         pred_source_real = self.model(images)
 
         # resize to source size
-        interp = nn.Upsample(size=(self.input_size[1], self.input_size[0]), align_corners=False, mode='bilinear')
+        interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
         pred_source_real = interp(pred_source_real)
 
         # in source domain compute segmentation loss
@@ -131,6 +131,7 @@ class AdaptSeg_Trainer(nn.Module):
         # proper normalization
         seg_loss = self.lambda_seg * seg_loss
         seg_loss.backward()
+        self.optimizer_G.step()
 
         # save image for discriminator use
         self.source_image = pred_source_real.detach()
@@ -146,6 +147,9 @@ class AdaptSeg_Trainer(nn.Module):
                 :param image_path: just for save path to record model predict, use in  snapshot_image_save function
                 :return:
                 """
+        self.optimizer_G.zero_grad()
+
+
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
@@ -156,7 +160,7 @@ class AdaptSeg_Trainer(nn.Module):
         pred_target_fake = self.model(images)
 
         # resize to target size
-        interp_target = nn.Upsample(size=(self.input_size_target[1], self.input_size_target[0]), align_corners=False,
+        interp_target = nn.Upsample(size=self.input_size_target, align_corners=False,
                                     mode='bilinear')
         pred_target_fake = interp_target(pred_target_fake)
 
@@ -167,6 +171,7 @@ class AdaptSeg_Trainer(nn.Module):
         adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
         loss = self.lambda_adv_target * adv_loss
         loss.backward()
+        self.optimizer_G.step()
 
         # save image for discriminator use
         self.target_image = pred_target_fake.detach()
@@ -179,7 +184,9 @@ class AdaptSeg_Trainer(nn.Module):
                 use [gen_source_update / gen_target_update]'s image to discriminator,
                 so you  don' t need to give any parameter
                 """
-        # Enable D backpropgation, train source G and train D
+        self.optimizer_D.zero_grad()
+
+        # Enable D backpropgation, train D
         for param in self.model_D.parameters():
             param.requires_grad = True
         # we don't train target's G weight, we only train source'G
@@ -187,14 +194,19 @@ class AdaptSeg_Trainer(nn.Module):
         # compute loss function
         d_out_real = self.model_D(F.softmax(self.source_image), label=None)
         loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
-        loss_real.backward()
+        loss_real /= 2
+        # loss_real.backward()
 
         d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
         loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
-        loss_fake.backward()
+        loss_fake /= 2
+        # loss_fake.backward()
+        loss = loss_real + loss_fake
+        loss.backward()
+        self.optimizer_D.step()
 
         # record log
-        self.loss_d_value +=loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
+        self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
 
     def show_each_loss(self):
         print("iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
@@ -232,7 +244,8 @@ class AdaptSeg_Trainer(nn.Module):
         if loss_opt == 'wgan-gp':
             d_loss_fake = - d_out_fake.mean()
         elif loss_opt == 'hinge':
-            d_loss_fake = - d_out_fake.mean()
+            # d_loss_fake = - d_out_fake.mean()
+            d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
         elif loss_opt == 'bce':
             bce_loss = torch.nn.BCEWithLogitsLoss()
             d_loss_fake = bce_loss(d_out_fake,
@@ -264,25 +277,21 @@ class AdaptSeg_Trainer(nn.Module):
         for i, group in enumerate(optimizer.param_groups):
             optimizer.param_groups[i]['lr'] = lr
 
-    def adjust_opt(self, i_iter):
+    def init_each_epoch(self, i_iter):
         self.i_iter = i_iter
         self.loss_d_value = 0
         self.loss_source_value = 0
         self.loss_target_value = 0
+
+    def update_learning_rate(self):
         if self.optimizer_G:
             self.optimizer_G.zero_grad()
-            self._adjust_learning_rate_G(self.optimizer_G, i_iter)
+            self._adjust_learning_rate_G(self.optimizer_G, self.i_iter)
 
         if self.optimizer_D:
             self.optimizer_D.zero_grad()
-            self._adjust_learning_rate_D(self.optimizer_D, i_iter)
+            self._adjust_learning_rate_D(self.optimizer_D, self.i_iter)
 
-    def update_learning_rate(self):
-        if self.optimizer_D:
-            self.optimizer_D.step()
-
-        if self.optimizer_G:
-            self.optimizer_G.step()
 
     def snapshot_image_save(self, dir_name="check_output/"):
         """
@@ -290,7 +299,7 @@ class AdaptSeg_Trainer(nn.Module):
                 will output image to config["image_save_dir"]
                 """
         if not os.path.exists(os.path.exists(os.path.join(dir_name, "Image_source_domain_seg"))):
-           os.makedirs(os.path.join(dir_name, "Image_source_domain_seg"))
+            os.makedirs(os.path.join(dir_name, "Image_source_domain_seg"))
         if not os.path.exists(os.path.exists(os.path.join(dir_name, "Image_target_domain_seg"))):
             os.makedirs(os.path.join(dir_name, "Image_target_domain_seg"))
 
@@ -322,16 +331,20 @@ class AdaptSeg_Trainer(nn.Module):
             print("check restore from", restore_from)
             if restore_from[:4] == 'http':
                 saved_state_dict = model_zoo.load_url(restore_from)
+                new_params = self.model.state_dict().copy()
+                for i in saved_state_dict:
+                    # Scale.layer5.conv2d_list.3.weight
+                    i_parts = i.split('.')
+                    if not num_classes == 19 or not i_parts[1] == 'layer5':
+                        new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
+                # new_params = saved_state_dict
+                self.model.load_state_dict(new_params)
             else:
+                print("use own pre-trained")
                 saved_state_dict = torch.load(restore_from)
-            new_params = self.model.state_dict().copy()
-            for i in saved_state_dict:
-                # Scale.layer5.conv2d_list.3.weight
-                i_parts = i.split('.')
-                if not num_classes == 19 or not i_parts[1] == 'layer5':
-                    new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
-            # new_params = saved_state_dict
-            self.model.load_state_dict(new_params)
+                self.model.load_state_dict(saved_state_dict)
+
+            self.init_opt()
 
 
 def paint_predict_image(predict_image):
