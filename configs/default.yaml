@@ -2,13 +2,13 @@
 test_summary: first_test
 log_iter: 1                   # How often do you want to log the training stats
 snapshot_save_iter: 5000     # How often do you want to save trained models
-snapshot_save_dir: ./model_save/
+snapshot_save_dir: ./snapshots/GTA2Cityscapes_multi/
 image_save_iter: 50         #  How often do you want to save output images during training
 image_save_dir: ./check_output/ #each image_save_iter epochs will show image, can check model output
 log_dir: ./check_output/log
 
 # optimization options
-num_steps: 100000    # maximum number of training iterations
+num_steps: 250000    # maximum number of training iterations
 batch_size: 1                 # batch size default 1 SGD
 iter_size: 1                  # each iteration size default 1 SGD
 decay_power: 0.9

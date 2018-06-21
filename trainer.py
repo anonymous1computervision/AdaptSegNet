@@ -17,7 +17,9 @@ from PIL import Image
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
 from model.discriminator import FCDiscriminator
-from model.xiao_discriminator import XiaoDiscriminator
+# from model.xiao_discriminator import XiaoDiscriminator
+from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
+
 from utils.loss import CrossEntropy2d
 
 class AdaptSeg_Trainer(nn.Module):
@@ -50,15 +52,30 @@ class AdaptSeg_Trainer(nn.Module):
         self.model_D.train()
         self.model_D.cuda(self.gpu)
 
-        # dynamic adjust lr setting
+        # for dynamic adjust lr setting
         self.decay_power = hyperparameters['decay_power']
 
         # init optimizer
-        self.opt_init(hyperparameters)
+        self.lr_g = hyperparameters['lr_g']
+        self.lr_d = hyperparameters['lr_d']
+
+        momentum = hyperparameters['momentum']
+        weight_decay = hyperparameters['weight_decay']
+        beta1 = hyperparameters['beta1']
+        beta2 = hyperparameters['beta2']
+        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+                                     lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
+        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+        #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
+        self.optimizer_G.zero_grad()
+        self._adjust_learning_rate_G(self.optimizer_G, 0)
+
+        self.optimizer_D = optim.Adam(self.model_D.parameters(), lr=self.lr_d, betas=(beta1, beta2))
+        self.optimizer_D.zero_grad()
+        self._adjust_learning_rate_D(self.optimizer_D, 0)
 
 
-
-        # for [log / save model / check output]
+        # for [log / check output]
         self.loss_d_value = 0
         self.loss_source_value = 0
         self.loss_target_value = 0
@@ -77,25 +94,7 @@ class AdaptSeg_Trainer(nn.Module):
         self.inter_mini = nn.Upsample(size=(self.input_size_target[0], self.input_size_target[1]), align_corners=False,
                                     mode='bilinear')
 
-    def opt_init(self, hyperparameters):
-        # Setup the optimizers
-        self.lr_g = hyperparameters['lr_g']
-        self.lr_d = hyperparameters['lr_d']
 
-        momentum = hyperparameters['momentum']
-        weight_decay = hyperparameters['weight_decay']
-        beta1 = hyperparameters['beta1']
-        beta2 = hyperparameters['beta2']
-        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-                                     lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
-        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-        #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
-        self.optimizer_G.zero_grad()
-        self._adjust_learning_rate_G(self.optimizer_G, 0)
-
-        self.optimizer_D = optim.Adam(self.model_D.parameters(), lr=self.lr_d, betas=(beta1, beta2))
-        self.optimizer_D.zero_grad()
-        self._adjust_learning_rate_D(self.optimizer_D, 0)
 
 
     def forward(self, images):
@@ -278,15 +277,12 @@ class AdaptSeg_Trainer(nn.Module):
             self.optimizer_D.zero_grad()
             self._adjust_learning_rate_D(self.optimizer_D, i_iter)
 
-
-    def update_learning_rate(self, i_iter):
+    def update_learning_rate(self):
         if self.optimizer_D:
             self.optimizer_D.step()
 
         if self.optimizer_G:
             self.optimizer_G.step()
-
-
 
     def snapshot_image_save(self, dir_name="check_output/"):
         """

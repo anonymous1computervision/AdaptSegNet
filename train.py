@@ -42,7 +42,6 @@ def main():
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-
     snapshot_save_dir = config["snapshot_save_dir"]
     if not os.path.exists(snapshot_save_dir):
         os.makedirs(snapshot_save_dir)
@@ -56,7 +55,7 @@ def main():
 
     # model init
     trainer = AdaptSeg_Trainer(config)
-    trainer.cuda(gpu)
+    # trainer.cuda(gpu)
 
     if config["restore"]:
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
@@ -67,7 +66,6 @@ def main():
     # Start training
     while True:
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
-
             trainer.adjust_opt(i_iter)
 
             # ====================== #
@@ -77,10 +75,13 @@ def main():
             # train G use source image
             src_images, labels, _, names = train_batch
             src_images, labels = Variable(src_images).cuda(gpu), Variable(labels).cuda(gpu)
+            # todo: label do not use cuda save memory
+            # todo: pass variable do not create a cuda variable
             trainer.gen_source_update(src_images, labels, names)
 
             # train G use target image
             target_images, _, _, target_name = target_batch
+            # todo: pass variable do not create a cuda variable
             target_images = Variable(target_images).cuda(gpu)
             trainer.gen_target_update(target_images, target_name)
 
@@ -88,7 +89,7 @@ def main():
             trainer.dis_update()
 
             # update loss function
-            trainer.update_learning_rate(i_iter)
+            trainer.update_learning_rate()
 
             # show log
             trainer.show_each_loss()
