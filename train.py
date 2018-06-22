@@ -24,7 +24,9 @@ from util import get_all_data_loaders, get_config
 
 def main():
 
-
+    # cuda setting
+    cudnn.enabled = True
+    cudnn.benchmark = True
     # config setting
     CONFIG_PATH = "./configs/default.yaml"
     config = get_config(CONFIG_PATH)
@@ -53,19 +55,20 @@ def main():
     # data loader
     train_loader, target_loader = get_all_data_loaders(config)
 
+
     # model init
     trainer = AdaptSeg_Trainer(config)
     # trainer.cuda(gpu)
 
     if config["restore"]:
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
-    # cuda setting
-    cudnn.enabled = True
-    cudnn.benchmark = True
+
+
 
     # Start training
     while True:
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
+            # pdb.set_trace()
             trainer.init_each_epoch(i_iter)
             trainer.update_learning_rate()
 
@@ -77,16 +80,16 @@ def main():
             src_images, labels, _, names = train_batch
             # print("get source image shape", src_images.shape)
             # print("get source labels shape", labels.shape)
-            src_images, labels = Variable(src_images).cuda(gpu), Variable(labels).cuda(gpu)
+            # src_images, labels = Variable(src_images).cuda(gpu), Variable(labels).cuda(gpu)
             # todo: label do not use cuda save memory
             # todo: pass variable do not create a cuda variable
-            trainer.gen_source_update(src_images, labels, names)
+            trainer.gen_source_update(Variable(src_images).cuda(gpu), labels, names)
 
             # train G use target image
             target_images, _, _, target_name = target_batch
             # todo: pass variable do not create a cuda variable
-            target_images = Variable(target_images).cuda(gpu)
-            trainer.gen_target_update(target_images, target_name)
+            # target_images = Variable(target_images).cuda(gpu)
+            trainer.gen_target_update(Variable(target_images).cuda(gpu), target_name)
 
             # train discriminator use prior generator image
             trainer.dis_update()

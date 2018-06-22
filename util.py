@@ -52,19 +52,31 @@ def get_all_data_loaders(conf):
     print("GTA_size input size =", GTA_size)
     print("City_size input_size_target =", City_size)
     # source domain data
+    # todo: use num_worker will increase gpu memory maybe a issue
+    # train_loader = data.DataLoader(
+    #     GTA5DataSet(conf['data_directory'], conf['data_list_path'], max_iters=num_steps * iter_size * batch_size,
+    #                 crop_size=GTA_size,
+    #                 scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN),
+    #     batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
     train_loader = data.DataLoader(
         GTA5DataSet(conf['data_directory'], conf['data_list_path'], max_iters=num_steps * iter_size * batch_size,
                     crop_size=GTA_size,
                     scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN),
-        batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+        batch_size=batch_size, shuffle=True, pin_memory=True)
 
     # target domain data
+    # target_loader = data.DataLoader(
+    #     cityscapesDataSet(conf['data_directory_target'], conf['data_list_path_target'],
+    #                 max_iters=num_steps * iter_size * batch_size,
+    #                 crop_size=City_size,
+    #                 scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN, set="train"),
+    #     batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
     target_loader = data.DataLoader(
         cityscapesDataSet(conf['data_directory_target'], conf['data_list_path_target'],
-                    max_iters=num_steps * iter_size * batch_size,
-                    crop_size=City_size,
-                    scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN, set="train"),
-        batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+                          max_iters=num_steps * iter_size * batch_size,
+                          crop_size=City_size,
+                          scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN, set="train"),
+        batch_size=batch_size, shuffle=True, pin_memory=True)
 
     return train_loader, target_loader
 
