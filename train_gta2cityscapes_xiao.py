@@ -282,8 +282,8 @@ def main():
 
     # init D
     # model_D1 = XiaoDiscriminator(num_classes=args.num_classes)
-    model_D1 = FCDiscriminator(num_classes=args.num_classes)
-    # model_D1 = XiaoAttentionDiscriminator(num_classes=args.num_classes)
+    # model_D1 = FCDiscriminator(num_classes=args.num_classes)
+    model_D1 = XiaoAttentionDiscriminator(num_classes=args.num_classes)
     model_D1.train()
     model_D1.cuda(args.gpu)
 
@@ -324,8 +324,8 @@ def main():
     #                       lr=LEARNING_RATE_G, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer.zero_grad()
 
-    optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
-    # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    # optimizer_D1 = optim.Adam(model_D1.parameters(), lr=args.learning_rate_D, betas=(0.9, 0.99))
+    optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D, betas=(0.9, 0.99))
     # next try
 
     # optimizer_D1 = optim.Adam(filter(lambda p: p.requires_grad, model_D1.parameters()), lr=args.learning_rate_D,

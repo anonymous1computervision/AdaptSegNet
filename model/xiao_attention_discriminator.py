@@ -12,51 +12,70 @@ class XiaoAttentionDiscriminator(nn.Module):
 
     def __init__(self, num_classes, ndf=64):
         super(XiaoAttentionDiscriminator, self).__init__()
-        layer1 = []
-        layer2 = []
-        layer3 = []
-        last = []
 
-        # layer1.append(SpectralNorm(nn.Conv2d(3, conv_dim, 4, 2, 1)))
-        conv_dim = ndf
+        self.model_pre = []
+        # channe = 64
+        self.model_pre += [FirstResBlock_2018_SN(num_classes, ndf, downsample=False, use_BN=False)]
+        self.model_pre += [ResBlock_2018_SN(ndf, ndf, downsample=True, use_BN=False)]
+        # channe = 128
+        self.model_pre += [ResBlock_2018_SN(ndf, ndf * 2, downsample=False, use_BN=False)]
+        self.model_pre += [ResBlock_2018_SN(ndf * 2, ndf * 2, downsample=True, use_BN=False)]
 
-        layer1.append(SpectralNorm(nn.Conv2d(num_classes, conv_dim, 4, 2, 1)))
+        # channel = 128
+        self.model_pre += [ResBlock_2018_SN(ndf * 2, ndf * 4, downsample=False, use_BN=False)]
+        # use cGANs with projection
+        # channel = 256
+        self.model_pre += [ResBlock_2018_SN(ndf * 4, ndf * 4, downsample=True, use_BN=False)]
 
-        layer1.append(nn.LeakyReLU(0.1))
+        # self.proj_conv = SpectralNorm(nn.Conv2d(ndf * 4, num_classes, kernel_size=3, stride=1, padding=1))
+        # self.proj_block = []
+        # self.proj_block += [ResBlock_2018_SN(num_classes, 1, downsample=True, use_BN=False)]
+        # self.proj_block += [nn.ReLU()]
+        # self.proj_block += [ResBlock_2018_SN(ndf*2, ndf*4, downsample=False, use_BN=False)]
+        # self.proj_block += [ResBlock_2018_SN(ndf*4, 1, downsample=False, use_BN=False)]
 
-        curr_dim = conv_dim
+        self.model_block = []
+        # channel = 512
+        self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=False, use_BN=False)]
+        # channel = 1024
+        self.model_block += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=True, use_BN=False)]
 
-        layer2.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
-        layer2.append(nn.LeakyReLU(0.1))
-        curr_dim = curr_dim * 2
+        # create attention model
+        model_attn = []
+        model_attn += [SpectralNorm(nn.Conv2d(ndf*4, num_classes, 4, 2, 1))]
+        model_attn += [nn.LeakyReLU(0.1)]
+        self.attn1 = Self_Attn(num_classes, 'relu')
+        # self.attn2 = Self_Attn(ndf*8, 'relu')
 
-        layer3.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
-        layer3.append(nn.LeakyReLU(0.1))
-        curr_dim = curr_dim * 2
+        model_attn += [self.attn1]
+        # model_attn += [SpectralNorm(nn.Conv2d(ndf*4, ndf*8, 4, 2, 1))]
+        # model_attn += [nn.LeakyReLU(0.1)]
+        # model_attn += [self.attn2]
 
-        layer4 = []
-        layer4.append(SpectralNorm(nn.Conv2d(curr_dim, curr_dim * 2, 4, 2, 1)))
-        layer4.append(nn.LeakyReLU(0.1))
-        self.l4 = nn.Sequential(*layer4)
-        curr_dim = curr_dim * 2
+        # create classifier model
+        self.model_classifier = [ResBlock_2018_SN(num_classes, 1, downsample=False, use_BN=False)]
 
-        self.l1 = nn.Sequential(*layer1)
-        self.l2 = nn.Sequential(*layer2)
-        self.l3 = nn.Sequential(*layer3)
 
-        last.append(nn.Conv2d(curr_dim, 1, 4))
-        self.last = nn.Sequential(*last)
+        # create sequential model
+        self.model_pre = nn.Sequential(*self.model_pre)
+        self.model_block = nn.Sequential(*self.model_block)
+        # self.proj_block = nn.Sequential(*self.proj_block)
+        self.model_attn = nn.Sequential(*model_attn)
+        self.model_classifier = nn.Sequential(*self.model_classifier)
 
-        self.attn1 = Self_Attn(256, 'relu')
-        self.attn2 = Self_Attn(512, 'relu')
 
     def forward(self, x, label=None):
-        out = self.l1(x)
-        out = self.l2(out)
-        out = self.l3(out)
-        out, p1 = self.attn1(out)
-        out = self.l4(out)
-        out, p2 = self.attn2(out)
-        out = self.last(out)
+        x = self.model_pre(x)
+        # print("x shape", x.shape)
+
+        out = self.model_block(x)
+        # print("out shape", out.shape)
+
+        attn_out = self.model_attn(x)
+        # print("attn_out shape", attn_out.shape)
+
+        # use attention
+        out = out * attn_out
+        out = self.model_classifier(out)
 
         return out

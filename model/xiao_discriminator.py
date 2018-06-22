@@ -70,6 +70,7 @@ class XiaoDiscriminator(nn.Module):
         # print("proj_x shape = ", proj_x.shape)
         # pdb.set_trace()
 
+
         x = self.model_pre(x)
         proj_x = self.proj_conv(x)
         # print("proj shape", proj_x.shape)
