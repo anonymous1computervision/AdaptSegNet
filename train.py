@@ -28,7 +28,7 @@ def main():
     cudnn.enabled = True
     cudnn.benchmark = True
     # config setting
-    CONFIG_PATH = "./configs/default.yaml"
+    CONFIG_PATH = "./configs/attention_v1.yaml"
     config = get_config(CONFIG_PATH)
 
     gpu = config["gpu"]
@@ -92,7 +92,7 @@ def main():
             trainer.gen_target_update(Variable(target_images).cuda(gpu), target_name)
 
             # train discriminator use prior generator image
-            trainer.dis_update()
+            trainer.dis_update(labels=labels)
 
 
             # show log

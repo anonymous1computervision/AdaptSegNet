@@ -45,7 +45,9 @@ class AdaptSeg_Trainer(nn.Module):
             self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
 
         # init D
-        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+
 
         self.model.train()
         self.model.cuda(self.gpu)
@@ -79,6 +81,8 @@ class AdaptSeg_Trainer(nn.Module):
 
         # for discriminator
         self.adv_loss_opt = hyperparameters['dis']['adv_loss_opt']
+        self.lambda_attn = hyperparameters['dis']['lambda_attn']
+
         self.source_image = None
         self.target_image = None
         self.inter_mini = nn.Upsample(size=self.input_size_target, align_corners=False,
@@ -91,7 +95,8 @@ class AdaptSeg_Trainer(nn.Module):
         self.optimizer_G.zero_grad()
         self._adjust_learning_rate_G(self.optimizer_G, 0)
 
-        self.optimizer_D = optim.Adam(self.model_D.parameters(), lr=self.lr_d, betas=(self.beta1, self.beta2))
+        self.optimizer_D = optim.Adam([p for p in self.model_D.parameters() if p.requires_grad],
+                                      lr=self.lr_d, betas=(self.beta1, self.beta2))
         self.optimizer_D.zero_grad()
         self._adjust_learning_rate_D(self.optimizer_D, 0)
 
@@ -165,7 +170,7 @@ class AdaptSeg_Trainer(nn.Module):
         pred_target_fake = interp_target(pred_target_fake)
 
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
-        d_out_fake = self.model_D(F.softmax(pred_target_fake))
+        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake))
         # compute loss function
         # wants to fool discriminator
         adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
@@ -179,7 +184,7 @@ class AdaptSeg_Trainer(nn.Module):
         # record log
         self.loss_target_value += adv_loss.data.cpu().numpy()
 
-    def dis_update(self):
+    def dis_update(self, labels=None):
         """
                 use [gen_source_update / gen_target_update]'s image to discriminator,
                 so you  don' t need to give any parameter
@@ -191,17 +196,19 @@ class AdaptSeg_Trainer(nn.Module):
             param.requires_grad = True
         # we don't train target's G weight, we only train source'G
         self.target_image = self.target_image.detach()
-        # compute loss function
-        d_out_real = self.model_D(F.softmax(self.source_image), label=None)
+        # compute adv loss function
+        d_out_real, attn = self.model_D(F.softmax(self.source_image), label=None)
         loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
         loss_real /= 2
-        # loss_real.backward()
 
-        d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
+        d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None)
         loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
         loss_fake /= 2
-        # loss_fake.backward()
-        loss = loss_real + loss_fake
+        # compute attn loss function
+        interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
+        loss_attn = self._compute_seg_loss(interp(attn), labels)
+        loss = loss_real + loss_fake + self.lambda_attn*loss_attn
+
         loss.backward()
         self.optimizer_D.step()
 
