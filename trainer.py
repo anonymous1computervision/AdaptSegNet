@@ -16,9 +16,10 @@ from PIL import Image
 
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
-from model.discriminator import FCDiscriminator
+# from model.discriminator import FCDiscriminator
 # from model.xiao_discriminator import XiaoDiscriminator
-from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
+# from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
+from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
 
 from utils.loss import CrossEntropy2d
 
@@ -46,8 +47,8 @@ class AdaptSeg_Trainer(nn.Module):
 
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
-
+        # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.model.train()
         self.model.cuda(self.gpu)
@@ -136,6 +137,8 @@ class AdaptSeg_Trainer(nn.Module):
         # proper normalization
         seg_loss = self.lambda_seg * seg_loss
         seg_loss.backward()
+
+        # update loss
         self.optimizer_G.step()
 
         # save image for discriminator use
@@ -176,6 +179,8 @@ class AdaptSeg_Trainer(nn.Module):
         adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
         loss = self.lambda_adv_target * adv_loss
         loss.backward()
+
+        # update loss
         self.optimizer_G.step()
 
         # save image for discriminator use
@@ -204,12 +209,16 @@ class AdaptSeg_Trainer(nn.Module):
         d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None)
         loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
         loss_fake /= 2
+
         # compute attn loss function
         interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
         loss_attn = self._compute_seg_loss(interp(attn), labels)
-        loss = loss_real + loss_fake + self.lambda_attn*loss_attn
 
+        # compute total loss function
+        loss = loss_real + loss_fake + self.lambda_attn*loss_attn
         loss.backward()
+
+        # update loss
         self.optimizer_D.step()
 
         # record log
@@ -352,6 +361,7 @@ class AdaptSeg_Trainer(nn.Module):
                 self.model.load_state_dict(saved_state_dict)
 
             self.init_opt()
+
 
 
 def paint_predict_image(predict_image):

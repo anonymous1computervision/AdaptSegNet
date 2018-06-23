@@ -292,18 +292,13 @@ def main():
     # create dir
     if not os.path.exists(args.snapshot_dir):
         os.makedirs(args.snapshot_dir)
-    pdb.set_trace()
     trainloader = data.DataLoader(
         GTA5DataSet(args.data_dir, args.data_list, max_iters=args.num_steps * args.iter_size * args.batch_size,
                     crop_size=input_size,
                     scale=args.random_scale, mirror=args.random_mirror, mean=IMG_MEAN),
         batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
-    pdb.set_trace()
 
     trainloader_iter = enumerate(trainloader)
-    pdb.set_trace()
-    aa, bb = next(trainloader_iter)
-    a, b, c, d = bb
 
     targetloader = data.DataLoader(cityscapesDataSet(args.data_dir_target, args.data_list_target,
                                                      max_iters=args.num_steps * args.iter_size * args.batch_size,
@@ -313,10 +308,8 @@ def main():
                                    batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers,
                                    pin_memory=True)
 
-    pdb.set_trace()
 
     targetloader_iter = enumerate(targetloader)
-    pdb.set_trace()
     # implement model.optim_parameters(args) to handle different models' lr setting
 
     # LEARNING_RATE_G = 2.5e-4
