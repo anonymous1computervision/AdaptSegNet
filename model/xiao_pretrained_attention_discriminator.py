@@ -16,12 +16,12 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
 
         # channel 19 to 3
         self.model_pre = []
-        self.model_pre += [FirstResBlock_2018_SN(num_classes, 3, downsample=False, use_BN=False)]
+        self.model_pre += [FirstResBlock_2018_SN(num_classes, 64, downsample=False, use_BN=False)]
 
         # use pretrianed model
         self.resnet18 = models.resnet18(pretrained=True)
-        # remove last fc layer
-        modules = list(self.resnet18.children())[:-1]
+        # remove first 3 to n_channel and last fc layer
+        modules = list(self.resnet18.children())[1:-1]
         # for n_layer, p in enumerate(modules):
         #     print("layer =", n_layer)
         #     print("p =", p)
