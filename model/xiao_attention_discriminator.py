@@ -37,26 +37,26 @@ class XiaoAttentionDiscriminator(nn.Module):
 
         self.model_block = []
         # channel = 512
-        self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 4, downsample=True, use_BN=False)]
+        self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=False, use_BN=False)]
         # channel = 1024
-        self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=True, use_BN=False)]
-        self.model_block += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=False, use_BN=False)]
+        self.model_block += [ResBlock_2018_SN(ndf * 8, ndf * 8, downsample=True, use_BN=False)]
+        # self.model_block += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=False, use_BN=False)]
 
         # create attention model
         model_attn = []
-        self.attn1 = Self_Attn(ndf*4, 'relu')
-        self.attn2 = Self_Attn(ndf*8, 'relu')
-        model_attn += [SpectralNorm(nn.Conv2d(ndf*4, ndf*4, 4, 2, 1))]
-        model_attn += [nn.LeakyReLU(0.1)]
-        model_attn += [self.attn1]
+        self.attn1 = Self_Attn(ndf*8, 'relu')
+        # self.attn2 = Self_Attn(ndf*8, 'relu')
         model_attn += [SpectralNorm(nn.Conv2d(ndf*4, ndf*8, 4, 2, 1))]
         model_attn += [nn.LeakyReLU(0.1)]
-        model_attn += [self.attn2]
-        model_attn += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=False, use_BN=False)]
+        model_attn += [self.attn1]
+        # model_attn += [SpectralNorm(nn.Conv2d(ndf*4, ndf*8, 4, 2, 1))]
+        # model_attn += [nn.LeakyReLU(0.1)]
+        # model_attn += [self.attn2]
+        # model_attn += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=False, use_BN=False)]
 
 
         # create classifier model
-        self.model_classifier = [ResBlock_2018_SN(num_classes, 1, downsample=False, use_BN=False)]
+        self.model_classifier = [ResBlock_2018_SN(ndf*8, 1, downsample=False, use_BN=False)]
 
 
         # create sequential model

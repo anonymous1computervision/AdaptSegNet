@@ -79,6 +79,7 @@ class AdaptSeg_Trainer(nn.Module):
         # for generator
         self.lambda_seg = hyperparameters['gen']['lambda_seg']
         self.lambda_adv_target = hyperparameters['gen']['lambda_adv_target']
+        self.decay_power = hyperparameters['decay_power']
 
         # for discriminator
         self.adv_loss_opt = hyperparameters['dis']['adv_loss_opt']
