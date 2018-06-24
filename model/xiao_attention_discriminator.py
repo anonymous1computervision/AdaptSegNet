@@ -1,3 +1,5 @@
+import pdb
+
 import torch as torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -5,7 +7,6 @@ import torch.nn.functional as F
 from .networks import FirstResBlock_2018_SN
 from .networks import ResBlock_2018_SN
 from .networks import Self_Attn
-
 from .networks import SpectralNorm
 
 class XiaoAttentionDiscriminator(nn.Module):
@@ -36,21 +37,23 @@ class XiaoAttentionDiscriminator(nn.Module):
 
         self.model_block = []
         # channel = 512
-        self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=False, use_BN=False)]
+        self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 4, downsample=True, use_BN=False)]
         # channel = 1024
-        self.model_block += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=True, use_BN=False)]
+        self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=True, use_BN=False)]
+        self.model_block += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=False, use_BN=False)]
 
         # create attention model
         model_attn = []
-        model_attn += [SpectralNorm(nn.Conv2d(ndf*4, num_classes, 4, 2, 1))]
+        self.attn1 = Self_Attn(ndf*4, 'relu')
+        self.attn2 = Self_Attn(ndf*8, 'relu')
+        model_attn += [SpectralNorm(nn.Conv2d(ndf*4, ndf*4, 4, 2, 1))]
         model_attn += [nn.LeakyReLU(0.1)]
-        self.attn1 = Self_Attn(num_classes, 'relu')
-        # self.attn2 = Self_Attn(ndf*8, 'relu')
-
         model_attn += [self.attn1]
-        # model_attn += [SpectralNorm(nn.Conv2d(ndf*4, ndf*8, 4, 2, 1))]
-        # model_attn += [nn.LeakyReLU(0.1)]
-        # model_attn += [self.attn2]
+        model_attn += [SpectralNorm(nn.Conv2d(ndf*4, ndf*8, 4, 2, 1))]
+        model_attn += [nn.LeakyReLU(0.1)]
+        model_attn += [self.attn2]
+        model_attn += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=False, use_BN=False)]
+
 
         # create classifier model
         self.model_classifier = [ResBlock_2018_SN(num_classes, 1, downsample=False, use_BN=False)]
@@ -73,7 +76,7 @@ class XiaoAttentionDiscriminator(nn.Module):
 
         attn_out = self.model_attn(x)
         # print("attn_out shape", attn_out.shape)
-
+        # pdb.set_trace()
         # use attention
         out = out * attn_out
         out = self.model_classifier(out)

@@ -17,8 +17,8 @@ from PIL import Image
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
 # from model.discriminator import FCDiscriminator
-# from model.xiao_discriminator import XiaoDiscriminator
-# from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
+from model.xiao_discriminator import XiaoDiscriminator
+from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
 from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
 
 from utils.loss import CrossEntropy2d
@@ -47,8 +47,8 @@ class AdaptSeg_Trainer(nn.Module):
 
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.model.train()
         self.model.cuda(self.gpu)
@@ -202,7 +202,7 @@ class AdaptSeg_Trainer(nn.Module):
         # we don't train target's G weight, we only train source'G
         self.target_image = self.target_image.detach()
         # compute adv loss function
-        d_out_real, attn = self.model_D(F.softmax(self.source_image), label=None)
+        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None)
         loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
         loss_real /= 2
 
@@ -211,11 +211,12 @@ class AdaptSeg_Trainer(nn.Module):
         loss_fake /= 2
 
         # compute attn loss function
-        interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
-        loss_attn = self._compute_seg_loss(interp(attn), labels)
+        # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
+        # loss_attn = self._compute_seg_loss(interp(attn), labels)
 
         # compute total loss function
-        loss = loss_real + loss_fake + self.lambda_attn*loss_attn
+        # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
+        loss = loss_real + loss_fake
         loss.backward()
 
         # update loss
