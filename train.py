@@ -13,6 +13,7 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 import os
 import pdb
 
+import torch
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 from torch.utils import data
@@ -20,6 +21,7 @@ from torch.utils import data
 from dataset.gta5_dataset import GTA5DataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
 from trainer import AdaptSeg_Trainer
+from attn_trainer import AdaptSeg_Attn_Trainer
 from util import get_all_data_loaders, get_config
 
 def main():
@@ -28,7 +30,9 @@ def main():
     cudnn.enabled = True
     cudnn.benchmark = True
     # config setting
-    CONFIG_PATH = "./configs/attention_v1.yaml"
+    CONFIG_PATH = "./configs/attention_v3_attn.yaml"
+    # CONFIG_PATH = "./configs/attention_v2.yaml"
+
     config = get_config(CONFIG_PATH)
 
     gpu = config["gpu"]
@@ -57,7 +61,10 @@ def main():
 
 
     # model init
-    trainer = AdaptSeg_Trainer(config)
+    if config["g_model"] == "attn":
+        trainer = AdaptSeg_Attn_Trainer(config)
+    else:
+        trainer = AdaptSeg_Trainer(config)
     # trainer.cuda(gpu)
 
     if config["restore"]:
@@ -65,10 +72,10 @@ def main():
 
 
 
+
     # Start training
     while True:
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
-            # pdb.set_trace()
             trainer.init_each_epoch(i_iter)
             trainer.update_learning_rate()
 
@@ -77,24 +84,23 @@ def main():
             # ====================== #
 
             # train G use source image
+            pdb.set_trace()
             src_images, labels, _, names = train_batch
             # print("get source image shape", src_images.shape)
             # print("get source labels shape", labels.shape)
-            # src_images, labels = Variable(src_images).cuda(gpu), Variable(labels).cuda(gpu)
-            # todo: label do not use cuda save memory
-            # todo: pass variable do not create a cuda variable
-            trainer.gen_source_update(Variable(src_images).cuda(gpu), labels, names)
-
+            pdb.set_trace()
+            src_images = Variable(src_images).cuda(gpu)
+            trainer.gen_source_update(src_images, labels, names)
+            pdb.set_trace()
             # train G use target image
             target_images, _, _, target_name = target_batch
-            # todo: pass variable do not create a cuda variable
-            # target_images = Variable(target_images).cuda(gpu)
-            trainer.gen_target_update(Variable(target_images).cuda(gpu), target_name)
-
+            target_images = Variable(target_images).cuda(gpu)
+            pdb.set_trace()
+            trainer.gen_target_update(target_images, target_name)
+            pdb.set_trace()
             # train discriminator use prior generator image
             trainer.dis_update(labels=labels)
-
-
+            pdb.set_trace()
             # show log
             trainer.show_each_loss()
 
