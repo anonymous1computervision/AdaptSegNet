@@ -23,16 +23,21 @@ class XiaoAttentionDiscriminator(nn.Module):
 
         # channel = 128
         self.model_pre += [ResBlock_2018_SN(ndf * 2, ndf * 4, downsample=False, use_BN=False)]
+        # self.model_pre += [SpectralNorm(nn.Conv2d(ndf * 2, ndf * 4, kernel_size=3, stride=1, padding=1))]
+
         # use cGANs with projection
         # channel = 256
         self.model_pre += [ResBlock_2018_SN(ndf * 4, ndf * 4, downsample=True, use_BN=False)]
-
+        # self.model_pre += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 4, kernel_size=4, stride=2, padding=1))]
         # self.proj_conv = SpectralNorm(nn.Conv2d(ndf * 4, num_classes, kernel_size=3, stride=1, padding=1))
         self.proj_block = []
         # channel = 512
-        self.proj_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=False, use_BN=False)]
+        # self.proj_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=False, use_BN=False)]
+        self.proj_block += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 8, kernel_size=4, stride=2, padding=1))]
+        self.proj_block += [SpectralNorm(nn.Conv2d(ndf * 8, ndf * 16, kernel_size=3, stride=1, padding=1))]
+
         # channel = 1024
-        self.proj_block += [ResBlock_2018_SN(ndf * 8, ndf * 16, downsample=True, use_BN=False)]
+        # self.proj_block += [ResBlock_2018_SN(ndf * 8, ndf * 16, downsample=True, use_BN=False)]
 
         # self.proj_block += [ResBlock_2018_SN(num_classes, 1, downsample=True, use_BN=False)]
         # self.proj_block += [nn.ReLU()]
@@ -41,11 +46,11 @@ class XiaoAttentionDiscriminator(nn.Module):
 
         self.model_block = []
         # channel = 512
-        self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 4, downsample=True, use_BN=False)]
+        self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 2, downsample=True, use_BN=False)]
         # channel = 1024
         # self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 4, downsample=True, use_BN=False)]
 
-        self.model_block += [ResBlock_2018_SN(ndf * 4, num_classes, downsample=True, use_BN=False)]
+        self.model_block += [ResBlock_2018_SN(ndf * 2, num_classes, downsample=True, use_BN=False)]
 
 
         # create classifier model

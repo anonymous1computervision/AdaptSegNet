@@ -84,24 +84,23 @@ def main():
             # ====================== #
 
             # train G use source image
-            pdb.set_trace()
             src_images, labels, _, names = train_batch
             # print("get source image shape", src_images.shape)
             # print("get source labels shape", labels.shape)
-            pdb.set_trace()
             src_images = Variable(src_images).cuda(gpu)
             trainer.gen_source_update(src_images, labels, names)
-            pdb.set_trace()
+            del src_images
             # train G use target image
+
             target_images, _, _, target_name = target_batch
             target_images = Variable(target_images).cuda(gpu)
-            pdb.set_trace()
             trainer.gen_target_update(target_images, target_name)
-            pdb.set_trace()
-            # train discriminator use prior generator image
+            del target_images
+            # # train discriminator use prior generator image
+
             trainer.dis_update(labels=labels)
-            pdb.set_trace()
             # show log
+
             trainer.show_each_loss()
 
 
@@ -112,6 +111,7 @@ def main():
 
             # save checkpoint .pth
             if i_iter % snapshot_save_iter == 0 and i_iter > 0:
+                # print("save model")
                 trainer.save_model(snapshot_save_dir=snapshot_save_dir)
 
             # save final model .pth

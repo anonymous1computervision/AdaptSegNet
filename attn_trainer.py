@@ -148,6 +148,8 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # get predict output
         pred_source_real, conv_last_2 = self.model(images)
         # print("conv last 2 shape", conv_last_2.shape)
+        # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
+        # pred_source_real = interp(pred_source_real)
         pred_source_real = self._resize(pred_source_real, size=self.input_size)
         # in source domain compute segmentation loss
         seg_loss = self._compute_seg_loss(pred_source_real, labels)
@@ -172,11 +174,6 @@ class AdaptSeg_Attn_Trainer(nn.Module):
 
         # record log
         self.loss_source_value += seg_loss.data.cpu().numpy()
-
-        for param in self.model.parameters():
-            param.grad = None
-        for param in self.model_attn.parameters():
-            param.grad = None
 
     def gen_target_update(self, images, image_path):
         """
@@ -239,16 +236,16 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # we don't train target's G weight, we only train source'G
         self.target_image = self.target_image.detach()
         # compute adv loss function
-        d_out_real, d_attn = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
+        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
         loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
 
         # attention resize to source size
-        d_attn = self._resize(d_attn, size=self.input_size)
+        # d_attn = self._resize(d_attn, size=self.input_size)
 
         # in source domain compute attention loss
-        attn_loss = self._compute_seg_loss(d_attn, labels)/2
+        # attn_loss = self._compute_seg_loss(d_attn, labels)/2
 
-        loss_real = loss_real + self.lambda_attn * attn_loss
+        # loss_real = loss_real + self.lambda_attn * attn_loss
         loss_real /= 2
 
         for param in self.model_attn.parameters():

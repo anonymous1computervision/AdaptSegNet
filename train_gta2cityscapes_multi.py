@@ -303,6 +303,7 @@ def main():
     target_label = 1
 
     for i_iter in range(args.num_steps):
+        pdb.set_trace()
 
         loss_seg_value1 = 0
         loss_adv_target_value1 = 0

@@ -342,7 +342,6 @@ def main():
     target_label = 1
 
     for i_iter in range(args.num_steps):
-
         loss_seg_value1 = 0
         loss_adv_target_value1 = 0
         loss_D_value1 = 0
