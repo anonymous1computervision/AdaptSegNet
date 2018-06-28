@@ -19,7 +19,7 @@ beta1: 0.9                    # Adam parameter
 beta2: 0.99                  # Adam parameter
 lr_g: 0.00025                    # initial learning rate SGD
 lr_d: 0.0001                     # initial learning rate Adam D and Attn
-lr_attn: 0.0001
+lr_attn: 0.00025
 
 # model options
 model: DeepLab

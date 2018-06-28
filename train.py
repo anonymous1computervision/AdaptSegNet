@@ -30,7 +30,7 @@ def main():
     cudnn.enabled = True
     cudnn.benchmark = True
     # config setting
-    CONFIG_PATH = "./configs/attention_v3_attn.yaml"
+    CONFIG_PATH = "./configs/attention_v4_attn.yaml"
     # CONFIG_PATH = "./configs/attention_v2.yaml"
 
     config = get_config(CONFIG_PATH)

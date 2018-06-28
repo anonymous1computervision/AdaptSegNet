@@ -64,6 +64,8 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # init optimizer
         self.lr_g = hyperparameters['lr_g']
         self.lr_d = hyperparameters['lr_d']
+        self.lr_attn = hyperparameters['lr_attn']
+
 
         self.momentum = hyperparameters['momentum']
         self.weight_decay = hyperparameters['weight_decay']
@@ -106,7 +108,7 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         self._adjust_learning_rate_D(self.optimizer_D, 0)
 
         self.optimizer_Attn = optim.Adam([p for p in self.model_attn.parameters() if p.requires_grad],
-                                      lr=self.lr_d, betas=(self.beta1, self.beta2))
+                                      lr=self.lr_attn, betas=(self.beta1, self.beta2))
         self.optimizer_Attn.zero_grad()
         # TODO" to attn version
         self._adjust_learning_rate_D(self.optimizer_Attn, 0)
@@ -339,6 +341,10 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         for i, group in enumerate(optimizer.param_groups):
             optimizer.param_groups[i]['lr'] = lr
 
+    def _adjust_learning_rate_Attn(self, optimizer, i_iter):
+        lr = self._lr_poly(self.lr_attn, i_iter, self.num_steps, self.decay_power)
+        for i, group in enumerate(optimizer.param_groups):
+            optimizer.param_groups[i]['lr'] = lr
     def init_each_epoch(self, i_iter):
         self.i_iter = i_iter
         self.loss_d_value = 0
@@ -358,7 +364,7 @@ class AdaptSeg_Attn_Trainer(nn.Module):
 
         if self.optimizer_Attn:
             self.optimizer_Attn.zero_grad()
-            self._adjust_learning_rate_D(self.optimizer_Attn, self.i_iter)
+            self._adjust_learning_rate_Attn(self.optimizer_Attn, self.i_iter)
 
     def snapshot_image_save(self, dir_name="check_output/"):
         """
