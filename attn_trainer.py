@@ -241,48 +241,34 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         self.target_image = self.target_image.detach()
         # compute adv loss function
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
-        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None)
-        # Todo:for memory issue divide 2 bp
+        d_out_real, attn = self.model_D(F.softmax(self.source_image), label=None)
         loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
         loss_real /= 2
-        self.loss_d_value += loss_real.data.cpu().numpy()
-        loss_real.backward()
-        self.optimizer_D.step()
 
-
-        _, attn = self.model_D(F.softmax(self.source_image), label=None)
-        # attention resize to source size
+        # attention
         d_attn = self._resize(attn, size=self.input_size)
-
         # in source domain compute attention loss
         loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
-        self.loss_d_value += loss_attn.data.cpu().numpy()
-        # loss = loss_real + loss_attn
-        loss_attn.backward()
-        self.optimizer_D.step()
 
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
         d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None)
         loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
         loss_fake /= 2
-        self.loss_d_value += loss_fake.data.cpu().numpy()
-        loss_fake.backward()
 
         # compute attn loss function
         # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
         # loss_attn = self._compute_seg_loss(interp(attn), labels)
 
         # compute total loss function
-        # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
-        # loss = loss_real + loss_fake + loss_attn
-        # loss.backward()
+        loss = loss_real + loss_fake + self.lambda_attn*loss_attn
+        loss.backward()
 
         # update loss
         self.optimizer_D.step()
         # self.optimizer_Attn.step()
 
         # record log
-        # self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
+        self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
 
     def show_each_loss(self):
         print("attn trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
