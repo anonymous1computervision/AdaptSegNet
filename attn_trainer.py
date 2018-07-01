@@ -233,8 +233,8 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         for param in self.model_D.parameters():
             param.requires_grad = True
         for param in self.model_attn.parameters():
-            param.requires_grad = True
-
+            # param.requires_grad = True
+            param.requires_grad = False
         # we don't train target's G weight, we only train source'G
         self.target_image = self.target_image.detach()
         # compute adv loss function

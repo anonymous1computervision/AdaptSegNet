@@ -88,6 +88,14 @@ def main():
     else:
         print("(args.restore_from =", args.restore_from)
         saved_state_dict = torch.load(args.restore_from)
+        # new_params = model.state_dict().copy()
+        # for i in saved_state_dict:
+        #     # Scale.layer5.conv2d_list.3.weight
+        #     i_parts = i.split('.')
+        #     if not i_parts[0] == 'layer5':
+        #         new_params['.'.join(i_parts)] = saved_state_dict[i]
+        # new_params = saved_state_dict
+        # model.load_state_dict(new_params)
     model.load_state_dict(saved_state_dict)
 
     model.eval()
