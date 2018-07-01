@@ -53,8 +53,8 @@ class AdaptSeg_Attn_Trainer(nn.Module):
 
         self.model.train()
         self.model.cuda(self.gpu)
-        self.model_attn.train()
-        self.model_attn.cuda(self.gpu)
+        # self.model_attn.train()
+        # self.model_attn.cuda(self.gpu)
         self.model_D.train()
         self.model_D.cuda(self.gpu)
 
@@ -65,8 +65,6 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         self.lr_g = hyperparameters['lr_g']
         self.lr_d = hyperparameters['lr_d']
         self.lr_attn = hyperparameters['lr_attn']
-
-
         self.momentum = hyperparameters['momentum']
         self.weight_decay = hyperparameters['weight_decay']
         self.beta1 = hyperparameters['beta1']
@@ -84,6 +82,7 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # for generator
         self.lambda_seg = hyperparameters['gen']['lambda_seg']
         self.lambda_adv_target = hyperparameters['gen']['lambda_adv_target']
+        self.lambda_g_attention = hyperparameters['gen']['lambda_attn']
         self.decay_power = hyperparameters['decay_power']
 
         # for discriminator
@@ -107,11 +106,10 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         self.optimizer_D.zero_grad()
         self._adjust_learning_rate_D(self.optimizer_D, 0)
 
-        self.optimizer_Attn = optim.Adam([p for p in self.model_attn.parameters() if p.requires_grad],
-                                      lr=self.lr_attn, betas=(self.beta1, self.beta2))
-        self.optimizer_Attn.zero_grad()
-        # TODO" to attn version
-        self._adjust_learning_rate_D(self.optimizer_Attn, 0)
+        # self.optimizer_Attn = optim.Adam([p for p in self.model_attn.parameters() if p.requires_grad],
+        #                               lr=self.lr_attn, betas=(self.beta1, self.beta2))
+        # self.optimizer_Attn.zero_grad()
+        # self._adjust_learning_rate_D(self.optimizer_Attn, 0)
 
     def forward(self, images):
         self.eval()
@@ -136,7 +134,7 @@ class AdaptSeg_Attn_Trainer(nn.Module):
                 :return:
                 """
         self.optimizer_G.zero_grad()
-        self.optimizer_Attn.zero_grad()
+        # self.optimizer_Attn.zero_grad()
         self.optimizer_D.zero_grad()
 
         # Disable D backpropgation, we only train G
@@ -148,7 +146,7 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         self.source_label_path = label_path
 
         # get predict output
-        pred_source_real, conv_last_2 = self.model(images)
+        pred_source_real, attn = self.model(images)
         # print("conv last 2 shape", conv_last_2.shape)
         # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
         # pred_source_real = interp(pred_source_real)
@@ -156,20 +154,22 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # in source domain compute segmentation loss
         seg_loss = self._compute_seg_loss(pred_source_real, labels)
         seg_loss = self.lambda_seg * seg_loss
-        seg_loss.backward(retain_graph=True)
+        # seg_loss.backward(retain_graph=True)
 
-        pred_source_attn_real = self.model_attn(conv_last_2)
+        # pred_source_attn_real = self.model_attn(conv_last_2)
         # attention use low resolution
-        pred_source_attn_real = self._resize(pred_source_attn_real, size=self.input_size)
+        pred_source_attn_real = self._resize(attn, size=self.input_size)
         # in source domain compute attention loss
         attn_loss = self._compute_seg_loss(pred_source_attn_real, labels)
         # proper normalization
-        attn_loss = self.lambda_attn * attn_loss
-        attn_loss.backward()
+        attn_loss = self.lambda_g_attention * attn_loss
+        loss = seg_loss + attn_loss
+        # attn_loss.backward()
+        loss.backward()
 
         # update loss
         self.optimizer_G.step()
-        self.optimizer_Attn.step()
+        # self.optimizer_Attn.step()
 
         # save image for discriminator use
         self.source_image = pred_source_real.detach()
@@ -186,7 +186,7 @@ class AdaptSeg_Attn_Trainer(nn.Module):
                 :return:
                 """
         self.optimizer_G.zero_grad()
-        self.optimizer_Attn.zero_grad()
+        # self.optimizer_Attn.zero_grad()
         self.optimizer_D.zero_grad()
 
         # Disable D backpropgation, we only train G
@@ -204,7 +204,9 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         pred_target_fake = self._resize(pred_target_fake, size=self.input_size_target)
 
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
-        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), model_attn=self.model_attn)
+        # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), model_attn=self.model_attn)
+        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake))
+
         # compute loss function
         # wants to fool discriminator
         adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
@@ -226,7 +228,7 @@ class AdaptSeg_Attn_Trainer(nn.Module):
                 so you  don' t need to give any parameter
                 """
         self.optimizer_G.zero_grad()
-        self.optimizer_Attn.zero_grad()
+        # self.optimizer_Attn.zero_grad()
         self.optimizer_D.zero_grad()
 
         # Enable D backpropgation, train D
@@ -238,24 +240,33 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # we don't train target's G weight, we only train source'G
         self.target_image = self.target_image.detach()
         # compute adv loss function
-        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
+        # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
+        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None)
+        # Todo:for memory issue divide 2 bp
         loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+        loss_real /= 2
+        self.loss_d_value += loss_real.data.cpu().numpy()
+        loss_real.backward()
+        self.optimizer_D.step()
 
+
+        _, attn = self.model_D(F.softmax(self.source_image), label=None)
         # attention resize to source size
-        # d_attn = self._resize(d_attn, size=self.input_size)
+        d_attn = self._resize(attn, size=self.input_size)
 
         # in source domain compute attention loss
-        # attn_loss = self._compute_seg_loss(d_attn, labels)/2
+        loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        self.loss_d_value += loss_attn.data.cpu().numpy()
+        # loss = loss_real + loss_attn
+        loss_attn.backward()
+        self.optimizer_D.step()
 
-        # loss_real = loss_real + self.lambda_attn * attn_loss
-        loss_real /= 2
-
-        for param in self.model_attn.parameters():
-            param.requires_grad = False
-
-        d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
+        # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
+        d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None)
         loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
         loss_fake /= 2
+        self.loss_d_value += loss_fake.data.cpu().numpy()
+        loss_fake.backward()
 
         # compute attn loss function
         # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
@@ -263,18 +274,18 @@ class AdaptSeg_Attn_Trainer(nn.Module):
 
         # compute total loss function
         # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
-        loss = loss_real + loss_fake
-        loss.backward()
+        # loss = loss_real + loss_fake + loss_attn
+        # loss.backward()
 
         # update loss
         self.optimizer_D.step()
-        self.optimizer_Attn.step()
+        # self.optimizer_Attn.step()
 
         # record log
-        self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
+        # self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
 
     def show_each_loss(self):
-        print("iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
+        print("attn trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
             self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
 
     def _compute_adv_loss_real(self, d_out_real, loss_opt="bce", label=0):
@@ -362,9 +373,9 @@ class AdaptSeg_Attn_Trainer(nn.Module):
             self.optimizer_D.zero_grad()
             self._adjust_learning_rate_D(self.optimizer_D, self.i_iter)
 
-        if self.optimizer_Attn:
-            self.optimizer_Attn.zero_grad()
-            self._adjust_learning_rate_Attn(self.optimizer_Attn, self.i_iter)
+        # if self.optimizer_Attn:
+        #     self.optimizer_Attn.zero_grad()
+        #     self._adjust_learning_rate_Attn(self.optimizer_Attn, self.i_iter)
 
     def snapshot_image_save(self, dir_name="check_output/"):
         """
