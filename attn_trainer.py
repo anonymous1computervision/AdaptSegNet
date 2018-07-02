@@ -16,7 +16,7 @@ from PIL import Image
 
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single_attention import Res_Deeplab
-# from model.discriminator import FCDiscriminator
+from model.discriminator import FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from model.xiao_attention import XiaoAttention
 from model.xiao_discriminator_addition_attention import XiaoAttentionDiscriminator
@@ -47,8 +47,8 @@ class AdaptSeg_Attn_Trainer(nn.Module):
             self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
         self.model_attn = XiaoAttention(hyperparameters["num_classes"])
         # init D
-        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.model.train()
@@ -140,8 +140,8 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
-        for param in self.model_attn.parameters():
-            param.requires_grad = True
+        # for param in self.model_attn.parameters():
+        #     param.requires_grad = True
 
         self.source_label_path = label_path
 
@@ -192,8 +192,8 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
-        for param in self.model_attn.parameters():
-            param.requires_grad = False
+        # for param in self.model_attn.parameters():
+        #     param.requires_grad = False
 
         self.target_image_path = image_path
 
@@ -205,8 +205,9 @@ class AdaptSeg_Attn_Trainer(nn.Module):
 
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), model_attn=self.model_attn)
-        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake))
-
+        # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake))
+        d_out_fake = self.model_D(F.softmax(pred_target_fake))
+        # todo:這邊或許也能D的搭配attn做優化
         # compute loss function
         # wants to fool discriminator
         adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
@@ -234,24 +235,26 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # Enable D backpropgation, train D
         for param in self.model_D.parameters():
             param.requires_grad = True
-        for param in self.model_attn.parameters():
-            # param.requires_grad = True
-            param.requires_grad = False
+        # for param in self.model_attn.parameters():
+        #     # param.requires_grad = True
+        #     param.requires_grad = False
         # we don't train target's G weight, we only train source'G
         self.target_image = self.target_image.detach()
         # compute adv loss function
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
-        d_out_real, attn = self.model_D(F.softmax(self.source_image), label=None)
+        # d_out_real, attn = self.model_D(F.softmax(self.source_image), label=None)
+        d_out_real = self.model_D(F.softmax(self.source_image), label=None)
         loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
         loss_real /= 2
 
         # attention
-        d_attn = self._resize(attn, size=self.input_size)
+        # d_attn = self._resize(attn, size=self.input_size)
         # in source domain compute attention loss
-        loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
 
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
-        d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None)
+        # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None)
+        d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
         loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
         loss_fake /= 2
 
@@ -260,7 +263,8 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # loss_attn = self._compute_seg_loss(interp(attn), labels)
 
         # compute total loss function
-        loss = loss_real + loss_fake + self.lambda_attn*loss_attn
+        # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
+        loss = loss_real + loss_fake
         loss.backward()
 
         # update loss
