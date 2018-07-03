@@ -47,8 +47,8 @@ class AdaptSeg_Attn_Trainer(nn.Module):
             self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
         # self.model_attn = XiaoAttention(hyperparameters["num_classes"])
         # init D
-        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.model.train()
@@ -64,7 +64,7 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # init optimizer
         self.lr_g = hyperparameters['lr_g']
         self.lr_d = hyperparameters['lr_d']
-        self.lr_attn = hyperparameters['lr_attn']
+        # self.lr_attn = hyperparameters['lr_attn']
         self.momentum = hyperparameters['momentum']
         self.weight_decay = hyperparameters['weight_decay']
         self.beta1 = hyperparameters['beta1']
@@ -87,7 +87,7 @@ class AdaptSeg_Attn_Trainer(nn.Module):
 
         # for discriminator
         self.adv_loss_opt = hyperparameters['dis']['adv_loss_opt']
-        self.lambda_attn = hyperparameters['dis']['lambda_attn']
+        # self.lambda_attn = hyperparameters['dis']['lambda_attn']
 
         self.source_image = None
         self.target_image = None
@@ -210,6 +210,7 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # compute loss function
         # wants to fool discriminator
         adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
+
         loss = self.lambda_adv_target * adv_loss
         loss.backward()
 
