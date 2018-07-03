@@ -52,11 +52,11 @@ class XiaoAttentionDiscriminator(nn.Module):
 
         # self.model_block += [ResBlock_2018_SN(ndf * 2, num_classes, downsample=True, use_BN=False)]
 
-        self.model_block = []
+        # self.model_block = []
         # channel = 512
-        self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=False, use_BN=False)]
+        # self.model_block += [ResBlock_2018_SN(num_classes, 1, downsample=False, use_BN=False)]
         # channel = 1024
-        self.model_block += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=True, use_BN=False)]
+        # self.model_block += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=True, use_BN=False)]
 
         # create attention model
         self.model_attn = []
@@ -72,7 +72,7 @@ class XiaoAttentionDiscriminator(nn.Module):
 
         # create sequential model
         self.model_pre = nn.Sequential(*self.model_pre)
-        self.model_block = nn.Sequential(*self.model_block)
+        # self.model_block = nn.Sequential(*self.model_block)
         # self.proj_block = nn.Sequential(*self.proj_block)
         self.model_attn = nn.Sequential(*self.model_attn)
         self.model_classifier = nn.Sequential(*self.model_classifier)
@@ -82,7 +82,7 @@ class XiaoAttentionDiscriminator(nn.Module):
         x = self.model_pre(x)
         # print("x shape", x.shape)
         attn_out = self.model_attn(x)
-        x = self.model_block(x)
+        # x = self.model_block(x)
 
         # print("out shape", out.shape)
         # attn_out = self.model_attn(x)
@@ -92,6 +92,8 @@ class XiaoAttentionDiscriminator(nn.Module):
         # print("attn_out shape", attn_out.shape)
 
         # use attention
-        out = self.model_classifier(attn_out * x)
+        out = self.model_classifier(attn_out)
 
-        return out, attn_out
+        # return out, attn_out
+        return out
+

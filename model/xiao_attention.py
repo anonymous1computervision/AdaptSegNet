@@ -10,7 +10,7 @@ from .networks import SpectralNorm
 
 class XiaoAttention(nn.Module):
 
-    def __init__(self, num_classes, ndf=1024):
+    def __init__(self, num_classes=19, ndf=1024):
         super(XiaoAttention, self).__init__()
 
         # create attention model

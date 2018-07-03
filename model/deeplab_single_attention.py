@@ -1,5 +1,9 @@
 import torch.nn as nn
 import numpy as np
+
+from .networks import Self_Attn
+from .networks import SpectralNorm
+
 affine_par = True
 
 
@@ -131,7 +135,7 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
         # self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
         self.layer6 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
-        self.layer3_attn = nn.Conv2d(1024, 19, kernel_size=3, stride=1, padding=1)
+        # self.layer3_attn = nn.Conv2d(1024, 19, kernel_size=3, stride=1, padding=1)
 
 
         for m in self.modules():
@@ -143,6 +147,17 @@ class ResNet(nn.Module):
                 m.bias.data.zero_()
                 #        for i in m.parameters():
                 #            i.requires_grad = False
+
+        # avoid use normalize
+        # create attention model
+        model_attn = []
+        model_attn += [SpectralNorm(nn.Conv2d(1024, num_classes, 4, 2, 1))]
+
+        model_attn += [nn.LeakyReLU(0.1)]
+        self.attn1 = Self_Attn(num_classes, 'relu')
+        model_attn += [self.attn1]
+
+        self.model_attn = nn.Sequential(*model_attn)
 
     def _make_layer(self, block, planes, blocks, stride=1, dilation=1):
         downsample = None
@@ -173,7 +188,7 @@ class ResNet(nn.Module):
         x = self.layer2(x)
 
         x = self.layer3(x)
-        attn = self.layer3_attn(x)
+        attn = self.model_attn(x)
         # x1 = self.layer5(x)
 
         x = self.layer4(x)
@@ -199,6 +214,7 @@ class ResNet(nn.Module):
         b.append(self.layer2)
         b.append(self.layer3)
         b.append(self.layer4)
+        # b.append(self.layer3_attn)
 
         for i in range(len(b)):
             for j in b[i].modules():

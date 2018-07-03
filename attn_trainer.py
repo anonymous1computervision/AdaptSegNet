@@ -45,10 +45,10 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         # init G
         if hyperparameters["model"] == 'DeepLab':
             self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
-        self.model_attn = XiaoAttention(hyperparameters["num_classes"])
+        # self.model_attn = XiaoAttention(hyperparameters["num_classes"])
         # init D
-        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.model.train()
@@ -155,7 +155,6 @@ class AdaptSeg_Attn_Trainer(nn.Module):
         seg_loss = self._compute_seg_loss(pred_source_real, labels)
         seg_loss = self.lambda_seg * seg_loss
         # seg_loss.backward(retain_graph=True)
-
         # pred_source_attn_real = self.model_attn(conv_last_2)
         # attention use low resolution
         pred_source_attn_real = self._resize(attn, size=self.input_size)
