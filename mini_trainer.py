@@ -16,7 +16,7 @@ from PIL import Image
 
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
-# from model.discriminator import FCDiscriminator
+from model.discriminator import FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
 from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
@@ -46,8 +46,8 @@ class Mini_AdaptSeg_Trainer(nn.Module):
             self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
 
         # init D
-        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.model.train()
@@ -175,7 +175,7 @@ class Mini_AdaptSeg_Trainer(nn.Module):
         # pred_target_fake = interp_target(pred_target_fake)
 
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
-        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake))
+        d_out_fake = self.model_D(F.softmax(pred_target_fake))
         # compute loss function
         # wants to fool discriminator
         adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
@@ -205,11 +205,11 @@ class Mini_AdaptSeg_Trainer(nn.Module):
         # we don't train target's G weight, we only train source'G
         self.target_image = self.target_image.detach()
         # compute adv loss function
-        d_out_real, attn = self.model_D(F.softmax(self.source_image), label=None)
+        d_out_real = self.model_D(F.softmax(self.source_image), label=None)
         loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
         loss_real /= 2
 
-        d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None)
+        d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
         loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
         loss_fake /= 2
 
