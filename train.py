@@ -22,6 +22,7 @@ from dataset.gta5_dataset import GTA5DataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
 from trainer import AdaptSeg_Trainer
 from attn_trainer import AdaptSeg_Attn_Trainer
+from mini_trainer import Mini_AdaptSeg_Trainer
 from util import get_all_data_loaders, get_config
 
 def main():
@@ -30,7 +31,8 @@ def main():
     cudnn.enabled = True
     cudnn.benchmark = True
     # config setting
-    CONFIG_PATH = "./configs/attention_v7_attn.yaml"
+    # CONFIG_PATH = "./configs/attention_v7_attn.yaml"
+    CONFIG_PATH = "./configs/default-mini.yaml"
     # CONFIG_PATH = "./configs/attention_v1.yaml"
 
     config = get_config(CONFIG_PATH)
@@ -63,6 +65,8 @@ def main():
     # model init
     if config["g_model"] == "attn":
         trainer = AdaptSeg_Attn_Trainer(config)
+    if config["g_model"] == "mini":
+        trainer = Mini_AdaptSeg_Trainer(config)
     else:
         trainer = AdaptSeg_Trainer(config)
     # trainer.cuda(gpu)
