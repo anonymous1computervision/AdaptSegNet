@@ -80,6 +80,9 @@ def main():
     # Start training
     while True:
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
+            # if memory issue can clear cache
+            # torch.cuda.empty_cache()
+            
             trainer.init_each_epoch(i_iter)
             trainer.update_learning_rate()
 
@@ -94,19 +97,18 @@ def main():
             src_images = Variable(src_images).cuda(gpu)
             trainer.gen_source_update(src_images, labels, names)
             del src_images
-            # train G use target image
 
+            # train G use target image
             target_images, _, _, target_name = target_batch
             target_images = Variable(target_images).cuda(gpu)
             trainer.gen_target_update(target_images, target_name)
             del target_images
+
             # # train discriminator use prior generator image
-
             trainer.dis_update(labels=labels)
+
             # show log
-
             trainer.show_each_loss()
-
 
             # save image to check
             if i_iter % image_save_iter == 0:
