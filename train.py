@@ -82,7 +82,7 @@ def main():
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
             # if memory issue can clear cache
             # torch.cuda.empty_cache()
-            
+
             trainer.init_each_epoch(i_iter)
             trainer.update_learning_rate()
 

@@ -144,6 +144,9 @@ class Mini_AdaptSeg_Trainer(nn.Module):
         self.optimizer_G.step()
 
         # save image for discriminator use
+        # resize to source size
+        interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
+        pred_source_real = interp(pred_source_real)
         self.source_image = pred_source_real.detach()
 
         # record log
@@ -170,9 +173,9 @@ class Mini_AdaptSeg_Trainer(nn.Module):
         # get predict output
         pred_target_fake = self.model(images)
         # resize to target size
-        # interp_target = nn.Upsample(size=self.input_size_target, align_corners=False,
-        #                             mode='bilinear')
-        # pred_target_fake = interp_target(pred_target_fake)
+        interp_target = nn.Upsample(size=self.input_size_target, align_corners=False,
+                                    mode='bilinear')
+        pred_target_fake = interp_target(pred_target_fake)
 
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
         d_out_fake = self.model_D(F.softmax(pred_target_fake))
