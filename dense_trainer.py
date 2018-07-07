@@ -17,14 +17,14 @@ from PIL import Image
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
 import model.fc_densenet as fc_densenet
-from model.discriminator import FCDiscriminator
+# from model.discriminator import FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
 from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
 
 from utils.loss import CrossEntropy2d
 
-class AdaptSeg_Trainer(nn.Module):
+class DenseSeg_Trainer(nn.Module):
     def __init__(self, hyperparameters):
         super(AdaptSeg_Trainer, self).__init__()
         self.hyperparameters = hyperparameters
@@ -43,14 +43,12 @@ class AdaptSeg_Trainer(nn.Module):
         cudnn.benchmark = True
 
         # init G
-        if hyperparameters["model"] == 'DeepLab':
-            self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
-        elif hyperparameters["model"] == 'FC-DenseNet':
-            self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
+        if hyperparameters["model"] == 'FC-DenseNet':
+            self.model = fc_densenet.FCDenseNet103(hyperparameters["num_classes"])
             print("use fc densenet model")
         # init D
-        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.model.train()
