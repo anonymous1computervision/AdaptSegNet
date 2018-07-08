@@ -17,16 +17,16 @@ from PIL import Image
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
 import model.fc_densenet as fc_densenet
-# from model.discriminator import FCDiscriminator
+from model.discriminator import FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
 from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
 
 from utils.loss import CrossEntropy2d
 
-class DenseSeg_Trainer(nn.Module):
+class FC_Dense_Trainer(nn.Module):
     def __init__(self, hyperparameters):
-        super(DenseSeg_Trainer, self).__init__()
+        super(FC_Dense_Trainer, self).__init__()
         self.hyperparameters = hyperparameters
         # input size setting
         self.input_size = (hyperparameters["input_size_h"], hyperparameters["input_size_w"])
@@ -44,17 +44,17 @@ class DenseSeg_Trainer(nn.Module):
 
         # init G
         if hyperparameters["model"] == 'FC-DenseNet':
-            self.model = fc_densenet.FCDenseNet103(hyperparameters["num_classes"])
+            self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
             print("use fc densenet model")
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.model.train()
         self.model.cuda(self.gpu)
-        self.model_D.train()
-        self.model_D.cuda(self.gpu)
+        # self.model_D.train()
+        # self.model_D.cuda(self.gpu)
 
         # for dynamic adjust lr setting
         self.decay_power = hyperparameters['decay_power']
@@ -98,10 +98,10 @@ class DenseSeg_Trainer(nn.Module):
         self.optimizer_G.zero_grad()
         self._adjust_learning_rate_G(self.optimizer_G, 0)
 
-        self.optimizer_D = optim.Adam([p for p in self.model_D.parameters() if p.requires_grad],
-                                      lr=self.lr_d, betas=(self.beta1, self.beta2))
-        self.optimizer_D.zero_grad()
-        self._adjust_learning_rate_D(self.optimizer_D, 0)
+        # self.optimizer_D = optim.Adam([p for p in self.model_D.parameters() if p.requires_grad],
+        #                               lr=self.lr_d, betas=(self.beta1, self.beta2))
+        # self.optimizer_D.zero_grad()
+        # self._adjust_learning_rate_D(self.optimizer_D, 0)
 
     def forward(self, images):
         self.eval()
@@ -119,27 +119,32 @@ class DenseSeg_Trainer(nn.Module):
 
                 :return:
                 """
+        pdb.set_trace()
         self.optimizer_G.zero_grad()
 
         # Disable D backpropgation, we only train G
-        for param in self.model_D.parameters():
-            param.requires_grad = False
+        # for param in self.model_D.parameters():
+        #     param.requires_grad = False
 
         self.source_label_path = label_path
 
         # get predict output
         pred_source_real = self.model(images)
+        pdb.set_trace()
 
         # resize to source size
         interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
         pred_source_real = interp(pred_source_real)
+        pdb.set_trace()
 
         # in source domain compute segmentation loss
         seg_loss = self._compute_seg_loss(pred_source_real, labels)
         # proper normalization
         seg_loss = self.lambda_seg * seg_loss
+        pdb.set_trace()
 
         seg_loss.backward()
+        pdb.set_trace()
 
         # update loss
         self.optimizer_G.step()
@@ -310,9 +315,9 @@ class DenseSeg_Trainer(nn.Module):
             self.optimizer_G.zero_grad()
             self._adjust_learning_rate_G(self.optimizer_G, self.i_iter)
 
-        if self.optimizer_D:
-            self.optimizer_D.zero_grad()
-            self._adjust_learning_rate_D(self.optimizer_D, self.i_iter)
+        # if self.optimizer_D:
+        #     self.optimizer_D.zero_grad()
+        #     self._adjust_learning_rate_D(self.optimizer_D, self.i_iter)
 
 
     def snapshot_image_save(self, dir_name="check_output/"):
@@ -330,13 +335,13 @@ class DenseSeg_Trainer(nn.Module):
         save_name = os.path.join(dir_name, "Image_source_domain_seg", '%s_label.png' % self.i_iter)
         shutil.copyfile(label_name, save_name)
 
-        target_name = os.path.join("data", "Cityscapes", "data", "leftImg8bit", "train", self.target_image_path[0])
-        save_name = os.path.join(dir_name, "Image_target_domain_seg", '%s_label.png' % self.i_iter)
-        shutil.copyfile(target_name, save_name)
+        # target_name = os.path.join("data", "Cityscapes", "data", "leftImg8bit", "train", self.target_image_path[0])
+        # save_name = os.path.join(dir_name, "Image_target_domain_seg", '%s_label.png' % self.i_iter)
+        # shutil.copyfile(target_name, save_name)
 
         # save output image
         paint_predict_image(self.source_image).save('check_output/Image_source_domain_seg/%s.png' % self.i_iter)
-        paint_predict_image(self.target_image).save('check_output/Image_target_domain_seg/%s.png' % self.i_iter)
+        # paint_predict_image(self.target_image).save('check_output/Image_target_domain_seg/%s.png' % self.i_iter)
 
     def save_model(self, snapshot_save_dir="./model_save"):
         """
@@ -345,7 +350,7 @@ class DenseSeg_Trainer(nn.Module):
                 """
         print('taking pth in shapshot dir ...')
         torch.save(self.model.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '.pth'))
-        torch.save(self.model_D.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D1.pth'))
+        # torch.save(self.model_D.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D1.pth'))
 
     def restore(self, model_name=None, num_classes=19, restore_from=None):
         if model_name == 'DeepLab':

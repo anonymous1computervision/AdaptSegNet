@@ -21,22 +21,23 @@ lr_g: 0.00025                    # initial learning rate SGD
 lr_d: 0.0001                    # initial learning rate Adam
 
 # model options
-model: FC-DenseNet
-g_model: default
-restore: false
-restore_from: None
+model: DeepLab
+g_model: in
+restore: true
+restore_from: http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_init-f81d91e8.pth
 # restore_from: ./snapshots/GTA2Cityscapes_multi/GTA5_50000.pth
 # restore_from: ./snapshots/single_DA_baseline_disable10x/GTA5_50000.pth
 # restore_from: E:/AdaptionSeg_20180620-single_DA-refactor-try5k/model_save/GTA5_5000.pth
 
 gen:
+  style_dim: 8                # length of style code
+  mlp_dim: 256                # number of filters in MLP
   lambda_seg: 1
   lambda_adv_target: 0.001
 
-
 dis:
   adv_loss_opt: bce  # [wgan-gp / hinge / bce]
-  lambda_attn: 0
+
   
 
 # data options
@@ -50,18 +51,12 @@ random_mirror: true
 random_scale: true                         # Whether to randomly mirror the inputs during the training.
 data_directory: ./data/GTA5                 # dataset folder location
 data_list_path: ./dataset/gta5_list/train.txt # dataset training txt location
-input_size_h: 360         # resize to the height of source image (GTA5)
-input_size_w: 640        # resize to the width of source image (GTA5)
-# input_size_h: 720         # resize to the height of source image (GTA5)
-# input_size_w: 1280        # resize to the width of source image (GTA5)
-# input_size_h: 224         # resize to the height of source image (GTA5)
-# input_size_w: 224        # resize to the width of source image (GTA5)
+input_size_h: 720         # resize to the height of source image (GTA5)
+input_size_w: 1280        # resize to the width of source image (GTA5)
 data_directory_target: ./data/Cityscapes/data
 data_list_path_target: ./dataset/cityscapes_list/train.txt
-# input_target_size_h: 512  # resize to the height of target image (CityScapes)
-# input_target_size_w: 1024        # resize to the width of target image (CityScapes)
-input_target_size_h: 256  # resize to the height of target image (CityScapes)
-input_target_size_w: 512        # resize to the width of target image (CityScapes)
+input_target_size_h: 512  # resize to the height of target image (CityScapes)
+input_target_size_w: 1024        # resize to the width of target image (CityScapes)
 
 #gpu setting
 gpu: 0

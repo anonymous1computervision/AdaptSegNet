@@ -97,6 +97,7 @@ def main():
         #         new_params['.'.join(i_parts)] = saved_state_dict[i]
         # new_params = saved_state_dict
         # model.load_state_dict(new_params)
+    #     todo: try to restore all model not only Res_Deeplab
     model.load_state_dict(saved_state_dict)
 
     model.eval()
@@ -106,7 +107,7 @@ def main():
                                     batch_size=1, shuffle=False, pin_memory=True)
 
     interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
-
+    print("Are u sure use style encoder?")
     for index, batch in enumerate(testloader):
         if index % 100 == 0:
             print('%d processd' % index)

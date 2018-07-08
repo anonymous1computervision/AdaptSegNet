@@ -23,8 +23,7 @@ from dataset.cityscapes_dataset import cityscapesDataSet
 from trainer import AdaptSeg_Trainer
 from attn_trainer import AdaptSeg_Attn_Trainer
 from mini_trainer import Mini_AdaptSeg_Trainer
-from in_trainer import AdaptSeg_IN_Trainer
-from dense_trainer import DenseSeg_Trainer
+from fc_dense_trainer import FC_Dense_Trainer
 from util import get_all_data_loaders, get_config
 
 def main():
@@ -35,8 +34,7 @@ def main():
     # config setting
     # CONFIG_PATH = "./configs/attention_v7_attn.yaml"
     # CONFIG_PATH = "./configs/default-mini.yaml"
-    CONFIG_PATH = "./configs/default-in.yaml"
-    # CONFIG_PATH = "./configs/default-fc-dense.yaml"
+    CONFIG_PATH = "./configs/default-fc-dense.yaml"
     # CONFIG_PATH = "./configs/attention_v1.yaml"
 
     config = get_config(CONFIG_PATH)
@@ -71,12 +69,10 @@ def main():
         trainer = AdaptSeg_Attn_Trainer(config)
     elif config["g_model"] == "mini":
         trainer = Mini_AdaptSeg_Trainer(config)
-    elif config["g_model"] == "in":
-        trainer = AdaptSeg_IN_Trainer(config)
-        print("use AdaptSeg_IN_Trainer")
     elif config["model"] == "FC-DenseNet":
-        trainer = AdaptSeg_Trainer(config)
-        print("use FC-DenseNet")
+        # trainer = AdaptSeg_Trainer(config)
+        trainer = FC_Dense_Trainer((config))
+        print("use FC-DenseNet trainer")
     else:
         trainer = AdaptSeg_Trainer(config)
     # trainer.cuda(gpu)
@@ -91,7 +87,7 @@ def main():
     while True:
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
             # if memory issue can clear cache
-            torch.cuda.empty_cache()
+            # torch.cuda.empty_cache()
 
             trainer.init_each_epoch(i_iter)
             trainer.update_learning_rate()
@@ -109,13 +105,13 @@ def main():
             del src_images
 
             # train G use target image
-            target_images, _, _, target_name = target_batch
-            target_images = Variable(target_images).cuda(gpu)
-            trainer.gen_target_update(target_images, target_name)
-            del target_images
+            # target_images, _, _, target_name = target_batch
+            # target_images = Variable(target_images).cuda(gpu)
+            # trainer.gen_target_update(target_images, target_name)
+            # del target_images
 
             # # train discriminator use prior generator image
-            trainer.dis_update(labels=labels)
+            # trainer.dis_update(labels=labels)
 
             # show log
             trainer.show_each_loss()
@@ -126,12 +122,9 @@ def main():
                 trainer.snapshot_image_save(dir_name=image_save_dir)
 
             # save checkpoint .pth
-            # if i_iter % snapshot_save_iter == 0 and i_iter > 0:
-            if i_iter % snapshot_save_iter == 0:
+            if i_iter % snapshot_save_iter == 0 and i_iter > 0:
                 # print("save model")
                 trainer.save_model(snapshot_save_dir=snapshot_save_dir)
-                torch.save(trainer.state_dict(),
-                           os.path.join(snapshot_save_dir, 'GTA5_' + str(i_iter) + '_trainer_all.pth'))
 
             # save final model .pth
             if i_iter == num_steps - 1:
