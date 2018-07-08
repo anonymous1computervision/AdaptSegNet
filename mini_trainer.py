@@ -128,13 +128,14 @@ class Mini_AdaptSeg_Trainer(nn.Module):
         # get predict output
         pred_source_real = self.model(images)
         # resize to source size
-        # interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
-        # pred_source_real = interp(pred_source_real)
+        # todo:try if it will reach origin accuracy
+        interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
+        pred_source_real = interp(pred_source_real)
 
-        mini_label = label_to_mini(size=pred_source_real.shape[-2:], labels=labels)
+        # mini_label = label_to_mini(size=pred_source_real.shape[-2:], labels=labels)
         # in source domain compute segmentation loss
-        # seg_loss = self._compute_seg_loss(pred_source_real, labels)
-        seg_loss = self._compute_seg_loss(pred_source_real, mini_label)
+        seg_loss = self._compute_seg_loss(pred_source_real, labels)
+        # seg_loss = self._compute_seg_loss(pred_source_real, mini_label)
         # proper normalization
         seg_loss = self.lambda_seg * seg_loss
 
@@ -145,8 +146,8 @@ class Mini_AdaptSeg_Trainer(nn.Module):
 
         # save image for discriminator use
         # resize to source size
-        interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
-        pred_source_real = interp(pred_source_real)
+        # interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
+        # pred_source_real = interp(pred_source_real)
         self.source_image = pred_source_real.detach()
 
         # record log

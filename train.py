@@ -33,8 +33,8 @@ def main():
     cudnn.benchmark = True
     # config setting
     # CONFIG_PATH = "./configs/attention_v7_attn.yaml"
-    # CONFIG_PATH = "./configs/default-mini.yaml"
-    CONFIG_PATH = "./configs/default-fc-dense.yaml"
+    CONFIG_PATH = "./configs/default-mini.yaml"
+    # CONFIG_PATH = "./configs/default-fc-dense.yaml"
     # CONFIG_PATH = "./configs/attention_v1.yaml"
 
     config = get_config(CONFIG_PATH)
