@@ -302,22 +302,22 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
         # loss_attn.backward()
         # loss_real = loss_real + loss_attn
-        loss_real.backward()
+        # loss_real.backward()
 
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None)
         d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
         loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
         loss_fake /= 2
-        loss_fake.backward()
+        # loss_fake.backward()
         # compute attn loss function
         # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
         # loss_attn = self._compute_seg_loss(interp(attn), labels)
 
         # compute total loss function
         # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
-        # loss = loss_real + loss_fake
-        # loss.backward()
+        loss = loss_real + loss_fake
+        loss.backward()
 
         # update loss
         self.optimizer_D.step()
@@ -327,7 +327,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
 
     def show_each_loss(self):
-        print("attn trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
+        print("Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
             self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
 
     def _compute_adv_loss_real(self, d_out_real, loss_opt="bce", label=0):
