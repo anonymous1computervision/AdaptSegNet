@@ -131,7 +131,9 @@ class ResNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True)  # change
         self.layer1 = self._make_layer(block, 64, layers[0])
+        # self.in2 = AdaptiveInstanceNorm2d(256)
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        # self.in3 = AdaptiveInstanceNorm2d(512)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
         # self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
@@ -175,8 +177,9 @@ class ResNet(nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
         x = self.layer1(x)
+        # x = self.in2(x)
         x = self.layer2(x)
-
+        # x = self.in3(x)
         x = self.layer3(x)
         # x1 = self.layer5(x)
 

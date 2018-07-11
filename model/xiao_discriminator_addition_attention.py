@@ -78,4 +78,4 @@ class XiaoAttentionDiscriminator(nn.Module):
         out = out * attn_out
         out = self.model_classifier(out)
 
-        return out, attn_out
+        return out

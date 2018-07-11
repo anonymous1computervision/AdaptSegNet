@@ -57,8 +57,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # self.model_attn = XiaoAttention(hyperparameters["num_classes"])
         # init D
-        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
