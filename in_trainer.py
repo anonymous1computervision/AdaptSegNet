@@ -271,7 +271,6 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # compute loss function
         # wants to fool discriminator
         adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
-
         loss = self.lambda_adv_target * adv_loss
         loss.backward()
 
@@ -306,8 +305,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None)
         d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
-        # loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
-        # loss_real /= 2
+        loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+        loss_real /= 2
         # loss_real.backward()
         # attention
         # d_attn = self._resize(attn, size=self.input_size)
@@ -320,8 +319,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None)
         d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
-        # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
-        # loss_fake /= 2
+        loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+        loss_fake /= 2
         # loss_fake.backward()
         # compute attn loss function
         # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
@@ -330,8 +329,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # compute total loss function
         # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
 
-        # loss = loss_real + loss_fake
-        loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+        loss = loss_real + loss_fake
+        # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
         loss.backward()
 
 
@@ -342,6 +341,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # record log
         # self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
         self.loss_d_value += loss.data.cpu().numpy()
+
     def show_each_loss(self):
         print("Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
             self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))

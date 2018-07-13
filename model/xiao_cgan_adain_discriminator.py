@@ -48,18 +48,19 @@ class XiaoCganDiscriminator(nn.Module):
         # ==================== #
         #   model_block        #
         # ==================== #
-        self.model_block = []
-        # channel = 512
-        self.model_block.append(SpectralNorm(nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1)))
-        # use some trick
-        self.model_block += [nn.ReLU(inplace=True)]
-        self.model_block += [nn.AdaptiveAvgPool2d(ndf * 8)]
+        # self.model_block = []
+        # # channel = 512
+        # self.model_block.append(SpectralNorm(nn.Conv2d(ndf * 4, ndf * 4, 3, 1, 1)))
+        # # use some trick
+        # self.model_block += [nn.ReLU(inplace=True)]
+        # self.model_block += [nn.AdaptiveAvgPool2d(ndf * 8)]
 
         # ==================== #
         #          fc          #
         # ==================== #
-        self.fc = nn.Linear(ndf * 8, 1)
-        nn.init.xavier_uniform_(self.fc.weight.data, 1.)
+        # self.fc = nn.Linear(ndf * 8, 1)
+        # nn.init.xavier_uniform_(self.fc.weight.data, 1.)
+        # self.model_block += [self.fc]
 
         # ==================== #
         #     self-attention   #
@@ -84,11 +85,9 @@ class XiaoCganDiscriminator(nn.Module):
         self.attn1 = Self_Attn(256, 'relu')
         # self.attn2 = Self_Attn(512, 'relu')
 
-        self.model_block += [self.fc]
-
         # create model
         self.model_pre = nn.Sequential(*self.model_pre)
-        self.model_block = nn.Sequential(*self.model_block)
+        # self.model_block = nn.Sequential(*self.model_block)
         self.proj_conv = nn.Sequential(*self.proj_conv)
 
 
@@ -119,12 +118,15 @@ class XiaoCganDiscriminator(nn.Module):
         # print("proj_x shape =", proj_x.shape)
         # print("proj shape", proj_x.shape)
 
+        # inspired by residul
+        output = x + y*proj_x
 
-        output = self.model_block(x)
+        # output = self.model_block(x)
+        # output += proj_x
         # output += torch.sum(proj_x*label)
         # output += torch.mean(proj_x * label)
-        normalize = 8 / 256
-        output += torch.sum(proj_x * y) * normalize
+        # normalize = 8 / 256
+        # output += torch.sum(proj_x * y) * normalize
 
 
         return output
