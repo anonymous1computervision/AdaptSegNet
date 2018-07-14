@@ -49,6 +49,9 @@ class XiaoCganDiscriminator(nn.Module):
         # ==================== #
         self.proj_conv = []
         self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, num_classes, kernel_size=3, stride=1, padding=1))]
+        # use self attention too
+        self.proj_attn = Self_Attn(num_classes, 'relu')
+        self.proj_conv += [self.proj_attn]
         self.proj_conv += [nn.ReLU(inplace=True)]
 
         # ==================== #
