@@ -17,7 +17,8 @@ from PIL import Image
 
 from model.networks import StyleEncoder, MLP
 # from model.deeplab_multi import Res_Deeplab
-from model.deeplab_single_IN import Res_Deeplab
+from model.deeplab_single import Res_Deeplab
+# from model.deeplab_single_IN import Res_Deeplab
 from model.discriminator import FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from model.xiao_attention import XiaoAttention
@@ -51,27 +52,25 @@ class AdaptSeg_IN_Trainer(nn.Module):
             # self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
             self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
 
-            style_dim = hyperparameters["gen"]["style_dim"]
-            mlp_dim = hyperparameters["gen"]["mlp_dim"]
-            self.enc_style = StyleEncoder(4, input_dim=3, dim=64, style_dim=style_dim, norm='none', activ="relu", pad_type="reflect")
+            # style_dim = hyperparameters["gen"]["style_dim"]
+            # mlp_dim = hyperparameters["gen"]["mlp_dim"]
+            # self.enc_style = StyleEncoder(4, input_dim=3, dim=64, style_dim=style_dim, norm='none', activ="relu", pad_type="reflect")
             # MLP to generate AdaIN parameters
-            self.mlp = MLP(style_dim, self.get_num_adain_params(self.model), mlp_dim, 3, norm='none', activ="relu")
-            # init
-            # nn.init.xavier_uniform_(self.enc_style.weight.data, np.sqrt(2))
-            # nn.init.xavier_uniform_(self.mlp.weight.data, np.sqrt(2))
+            # self.mlp = MLP(style_dim, self.get_num_adain_params(self.model), mlp_dim, 3, norm='none', activ="relu")
+
 
         # self.model_attn = XiaoAttention(hyperparameters["num_classes"])
         # init D
-        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = XiaoCganDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = XiaoCganDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
-        self.mlp.train()
-        self.mlp.cuda(self.gpu)
-        self.enc_style.train()
-        self.enc_style.cuda(self.gpu)
+        # self.mlp.train()
+        # self.mlp.cuda(self.gpu)
+        # self.enc_style.train()
+        # self.enc_style.cuda(self.gpu)
         self.model.train()
         self.model.cuda(self.gpu)
         # self.model_attn.train()
@@ -120,11 +119,11 @@ class AdaptSeg_IN_Trainer(nn.Module):
                                  mode='bilinear')
 
     def init_opt(self):
-        g_parameters = chain(self.model.parameters(), self.enc_style.parameters(), self.mlp.parameters())
-        self.optimizer_G = optim.SGD([p for p in g_parameters if p.requires_grad],
+        # g_parameters = chain(self.model.parameters(), self.enc_style.parameters(), self.mlp.parameters())
+        # self.optimizer_G = optim.SGD([p for p in g_parameters if p.requires_grad],
+        #                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
                                      lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
-        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-        #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
         self.optimizer_G.zero_grad()
         self._adjust_learning_rate_G(self.optimizer_G, 0)
 
@@ -165,8 +164,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
     def forward(self, images):
         self.eval()
-        style_code = self.enc_style(images)
-        self.adain(style_code)
+        # style_code = self.enc_style(images)
+        # self.adain(style_code)
         predict_seg = self.model(images)
         self.train()
         return predict_seg
@@ -202,8 +201,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.source_label_path = label_path
 
         # use in
-        style_code = self.enc_style(images)
-        self.adain(style_code)
+        # style_code = self.enc_style(images)
+        # self.adain(style_code)
         # get predict output
         pred_source_real = self.model(images)
         # print("conv last 2 shape", conv_last_2.shape)
@@ -257,8 +256,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.target_image_path = image_path
 
         # use adaptive In
-        style_code = self.enc_style(images)
-        self.adain(style_code)
+        # style_code = self.enc_style(images)
+        # self.adain(style_code)
         # get predict output
         pred_target_fake = self.model(images)
 
@@ -471,8 +470,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
                 will output model to config["snapshot_save_dir"]
                 """
         print('taking pth in shapshot dir ...')
-        torch.save(self.enc_style.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_S_ENCODER.pth'))
-        torch.save(self.enc_style.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_MLP.pth'))
+        # torch.save(self.enc_style.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_S_ENCODER.pth'))
+        # torch.save(self.mlp.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_MLP.pth'))
         torch.save(self.model.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '.pth'))
         torch.save(self.model_D.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D1.pth'))
 
@@ -486,10 +485,17 @@ class AdaptSeg_IN_Trainer(nn.Module):
                 for i in saved_state_dict:
                     # Scale.layer5.conv2d_list.3.weight
                     i_parts = i.split('.')
+                    # todo:會不會是這邊沒有回去
                     if not num_classes == 19 or (not i_parts[1] == 'layer5' and not i_parts[1] == 'bn1'):
                         new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
                 # new_params = saved_state_dict
+                print("before model load")
+                print("self.model.state_dict()")
+                print(str(self.model.state_dict())[:100])
                 self.model.load_state_dict(new_params)
+                print("after model load")
+                print("self.model.state_dict()")
+                print(str(self.model.state_dict())[:100])
             else:
                 print("use own pre-trained")
                 saved_state_dict = torch.load(restore_from)

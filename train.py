@@ -37,6 +37,7 @@ def main():
     # CONFIG_PATH = "./configs/default-mini.yaml"
     # CONFIG_PATH = "./configs/default-in-hinge.yaml"
     CONFIG_PATH = "./configs/default-in.yaml"
+    # CONFIG_PATH = "./configs/default.yaml"
     # CONFIG_PATH = "./configs/default-in-bce-adv_lambda.yaml"
     # CONFIG_PATH = "./configs/default-fc-dense.yaml"
     # CONFIG_PATH = "./configs/attention_v1.yaml"

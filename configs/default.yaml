@@ -22,6 +22,7 @@ lr_d: 0.0001                    # initial learning rate Adam
 
 # model options
 model: DeepLab
+g_model: default
 restore: true
 restore_from: http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_init-f81d91e8.pth
 # restore_from: ./snapshots/GTA2Cityscapes_multi/GTA5_50000.pth
@@ -34,6 +35,7 @@ gen:
 
 dis:
   adv_loss_opt: bce  # [wgan-gp / hinge / bce]
+  lambda_attn: 0
 
   
 

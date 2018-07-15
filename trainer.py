@@ -362,7 +362,13 @@ class AdaptSeg_Trainer(nn.Module):
                     if not num_classes == 19 or not i_parts[1] == 'layer5':
                         new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
                 # new_params = saved_state_dict
+                print("before model load")
+                print("self.model.state_dict()")
+                print(str(self.model.state_dict())[:100])
                 self.model.load_state_dict(new_params)
+                print("after model load")
+                print("self.model.state_dict()")
+                print(str(self.model.state_dict())[:100])
             else:
                 print("use own pre-trained")
                 saved_state_dict = torch.load(restore_from)
