@@ -171,6 +171,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.train()
         return predict_seg
 
+
+
     def _resize(self, img, size=None):
         # resize to source size
         interp = nn.Upsample(size=size, align_corners=False, mode='bilinear')

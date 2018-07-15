@@ -9,13 +9,16 @@ from torch.autograd import Variable
 import torchvision.models as models
 import torch.nn.functional as F
 from torch.utils import data, model_zoo
+import torch.backends.cudnn as cudnn
+
+
 # from model.deeplab_multi import Res_Deeplab
 # from model.deeplab_single import Res_Deeplab
 # from model.deeplab_single_attention import Res_Deeplab
 # from model.networks import StyleEncoder, MLP
 # from model.deeplab_multi import Res_Deeplab
 # from model.deeplab_single_IN import Res_Deeplab
-from in_trainer import  AdaptSeg_IN_Trainer
+from in_trainer import AdaptSeg_IN_Trainer
 from util import get_all_data_loaders, get_config
 
 from dataset.cityscapes_dataset import cityscapesDataSet
@@ -111,30 +114,34 @@ def main():
 
     model.eval()
     model.cuda(gpu0)
-
+    cudnn.enabled = True
+    cudnn.benchmark = True
     testloader = data.DataLoader(cityscapesDataSet(args.data_dir, args.data_list, crop_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
                                     batch_size=1, shuffle=False, pin_memory=True)
 
     interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
     print("Are u sure use style encoder?")
-    for index, batch in enumerate(testloader):
-        if index % 100 == 0:
-            print('%d processd' % index)
-        image, _, _, name = batch
-        output1 = model(Variable(image, volatile=True).cuda(gpu0))
-        # output1, _ = model(Variable(image, volatile=True).cuda(gpu0))
+    with torch.no_grad():
+        for index, batch in enumerate(testloader):
+            # if memory issue can clear cache
+            # torch.cuda.empty_cache()
+            if index % 100 == 0:
+                print('%d processd' % index)
+            image, _, _, name = batch
+            output1 = model(Variable(image).cuda(gpu0))
+            # output1, _ = model(Variable(image, volatile=True).cuda(gpu0))
 
-        output = interp(output1).cpu().data[0].numpy()
+            output = interp(output1).cpu().data[0].numpy()
 
-        output = output.transpose(1,2,0)
-        output = np.asarray(np.argmax(output, axis=2), dtype=np.uint8)
+            output = output.transpose(1,2,0)
+            output = np.asarray(np.argmax(output, axis=2), dtype=np.uint8)
 
-        output_col = colorize_mask(output)
-        output = Image.fromarray(output)
+            output_col = colorize_mask(output)
+            output = Image.fromarray(output)
 
-        name = name[0].split('/')[-1]
-        output.save('%s/%s' % (args.save, name))
-        output_col.save('%s/%s_color.png' % (args.save, name.split('.')[0]))
+            name = name[0].split('/')[-1]
+            output.save('%s/%s' % (args.save, name))
+            output_col.save('%s/%s_color.png' % (args.save, name.split('.')[0]))
 
 
 if __name__ == '__main__':

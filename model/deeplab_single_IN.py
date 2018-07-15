@@ -131,6 +131,7 @@ class ResNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True)  # change
         self.layer1 = self._make_layer(block, 64, layers[0])
+        self.in2 = AdaptiveInstanceNorm2d(256)
         # self.in2 = AdaptiveInstanceNorm2d(256)
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         # self.in3 = AdaptiveInstanceNorm2d(512)
@@ -177,7 +178,7 @@ class ResNet(nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
         x = self.layer1(x)
-        # x = self.in2(x)
+        x = self.in2(x)
         x = self.layer2(x)
         # x = self.in3(x)
         x = self.layer3(x)
