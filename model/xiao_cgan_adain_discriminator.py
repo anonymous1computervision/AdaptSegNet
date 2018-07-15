@@ -128,10 +128,16 @@ class XiaoCganDiscriminator(nn.Module):
         # MLP to generate AdaIN parameters
         self.mlp = MLP(STYLE_DIM, self.get_num_adain_params(self.c_block), MLP_DIM, 3, norm='none', activ="relu")
 
+
+        # ==================== #
+        #     model_classifier #
+        # ==================== #
+        self.model_classifier = [ResBlock_2018_SN(num_classes, 1, downsample=False, use_BN=False)]
         # create model
         self.model_pre = nn.Sequential(*self.model_pre)
         self.model_block = nn.Sequential(*self.model_block)
         self.proj_conv = nn.Sequential(*self.proj_conv)
+        self.model_classifier = nn.Sequential(*self.model_classifier)
         self.relu = nn.ReLU(inplace=True)
 
         # self.leaky_relu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
@@ -167,7 +173,7 @@ class XiaoCganDiscriminator(nn.Module):
         cgan_out = proj_x*attn1
         # inspired by residul
         output += self.relu(cgan_out)
-
+        output = self.model_classifier(output)
         # output = self.model_block(x)
         # output += proj_x
         # output += torch.sum(proj_x*label)
