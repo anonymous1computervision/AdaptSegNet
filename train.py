@@ -35,8 +35,8 @@ def main():
     # config setting
     # CONFIG_PATH = "./configs/attention_v7_attn.yaml"
     # CONFIG_PATH = "./configs/default-mini.yaml"
-    # CONFIG_PATH = "./configs/default-in-hinge.yaml"
-    CONFIG_PATH = "./configs/default-in.yaml"
+    CONFIG_PATH = "./configs/default-in-hinge-v2.yaml"
+    # CONFIG_PATH = "./configs/default-in.yaml"
     # CONFIG_PATH = "./configs/default.yaml"
     # CONFIG_PATH = "./configs/default-in-bce-adv_lambda.yaml"
     # CONFIG_PATH = "./configs/default-fc-dense.yaml"
@@ -118,7 +118,7 @@ def main():
             del target_images
 
             # # train discriminator use prior generator image
-            trainer.dis_update(labels=labels)
+            trainer.dis_update()
 
             # show log
             trainer.show_each_loss()

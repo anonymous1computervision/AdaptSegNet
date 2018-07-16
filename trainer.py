@@ -206,6 +206,7 @@ class AdaptSeg_Trainer(nn.Module):
         # Enable D backpropgation, train D
         for param in self.model_D.parameters():
             param.requires_grad = True
+
         # we don't train target's G weight, we only train source'G
         self.target_image = self.target_image.detach()
         # compute adv loss function

@@ -17,12 +17,12 @@ from PIL import Image
 
 from model.networks import StyleEncoder, MLP
 # from model.deeplab_multi import Res_Deeplab
-from model.deeplab_single import Res_Deeplab
-# from model.deeplab_single_IN import Res_Deeplab
+from model.deeplab_single_IN import Res_Deeplab
 from model.discriminator import FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from model.xiao_attention import XiaoAttention
-from model.xiao_discriminator_addition_attention import XiaoAttentionDiscriminator
+from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
+# from model.xiao_discriminator_addition_attention import XiaoAttentionDiscriminator
 from model.xiao_cgan_adain_discriminator import XiaoCganDiscriminator
 
 from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
@@ -52,25 +52,27 @@ class AdaptSeg_IN_Trainer(nn.Module):
             # self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
             self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
 
-            # style_dim = hyperparameters["gen"]["style_dim"]
-            # mlp_dim = hyperparameters["gen"]["mlp_dim"]
-            # self.enc_style = StyleEncoder(4, input_dim=3, dim=64, style_dim=style_dim, norm='none', activ="relu", pad_type="reflect")
+            style_dim = hyperparameters["gen"]["style_dim"]
+            mlp_dim = hyperparameters["gen"]["mlp_dim"]
+            self.enc_style = StyleEncoder(4, input_dim=3, dim=64, style_dim=style_dim, norm='none', activ="relu", pad_type="reflect")
             # MLP to generate AdaIN parameters
-            # self.mlp = MLP(style_dim, self.get_num_adain_params(self.model), mlp_dim, 3, norm='none', activ="relu")
-
+            self.mlp = MLP(style_dim, self.get_num_adain_params(self.model), mlp_dim, 3, norm='none', activ="relu")
+            # init
+            # nn.init.xavier_uniform_(self.enc_style.weight.data, np.sqrt(2))
+            # nn.init.xavier_uniform_(self.mlp.weight.data, np.sqrt(2))
 
         # self.model_attn = XiaoAttention(hyperparameters["num_classes"])
         # init D
-        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoCganDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
-        # self.mlp.train()
-        # self.mlp.cuda(self.gpu)
-        # self.enc_style.train()
-        # self.enc_style.cuda(self.gpu)
+        self.mlp.train()
+        self.mlp.cuda(self.gpu)
+        self.enc_style.train()
+        self.enc_style.cuda(self.gpu)
         self.model.train()
         self.model.cuda(self.gpu)
         # self.model_attn.train()
@@ -113,17 +115,25 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.target_image = None
         # self.inter_mini = nn.Upsample(size=self.input_size_target, align_corners=False,
         #                             mode='bilinear')
-        self.inter_mini = nn.Upsample(size=(int(self.input_size[0] / 4), int(self.input_size[1] / 4)), align_corners=False,
-                                 mode='bilinear')
-        self.interp_mini = nn.Upsample(size=(int(self.input_size_target[0] / 4), int(self.input_size_target[1] / 4)), align_corners=False,
-                                 mode='bilinear')
+        # self.inter_mini_i = nn.Upsample(size=(int(self.input_size[0] / 4), int(self.input_size[1] / 4)), align_corners=False,
+        #                          mode='bilinear')
+        # self.interp_mini_i = nn.Upsample(size=(int(self.input_size_target[0] / 4), int(self.input_size_target[1] / 4)), align_corners=False,
+        #                          mode='bilinear')
+        #
+        # self.inter_mini = nn.Upsample(size=(int(self.input_size[0] / 8), int(self.input_size[1] / 8)), align_corners=False,
+        #                          mode='bilinear')
+        # self.interp_mini = nn.Upsample(size=(int(self.input_size_target[0] / 8), int(self.input_size_target[1] / 8)), align_corners=False,
+        #                          mode='bilinear')
 
     def init_opt(self):
-        # g_parameters = chain(self.model.parameters(), self.enc_style.parameters(), self.mlp.parameters())
+        g_parameters = chain(self.model.parameters(), self.enc_style.parameters(), self.mlp.parameters())
         # self.optimizer_G = optim.SGD([p for p in g_parameters if p.requires_grad],
-        #                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
-        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-                                     lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+                                     # lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+
+        #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
+        self.optimizer_G = optim.Adam([p for p in g_parameters if p.requires_grad],
+                                      lr=self.lr_g, betas=(self.beta1, self.beta2))
         self.optimizer_G.zero_grad()
         self._adjust_learning_rate_G(self.optimizer_G, 0)
 
@@ -164,13 +174,11 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
     def forward(self, images):
         self.eval()
-        # style_code = self.enc_style(images)
-        # self.adain(style_code)
+        style_code = self.enc_style(images)
+        self.adain(style_code)
         predict_seg = self.model(images)
         self.train()
         return predict_seg
-
-
 
     def _resize(self, img, size=None):
         # resize to source size
@@ -195,14 +203,16 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
+        for param in self.model.parameters():
+            param.requires_grad = True
         # for param in self.model_attn.parameters():
         #     param.requires_grad = True
 
         self.source_label_path = label_path
 
         # use in
-        # style_code = self.enc_style(images)
-        # self.adain(style_code)
+        style_code = self.enc_style(images)
+        self.adain(style_code)
         # get predict output
         pred_source_real = self.model(images)
         # print("conv last 2 shape", conv_last_2.shape)
@@ -250,14 +260,16 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
+        for param in self.model.parameters():
+            param.requires_grad = True
         # for param in self.model_attn.parameters():
         #     param.requires_grad = False
 
         self.target_image_path = image_path
 
         # use adaptive In
-        # style_code = self.enc_style(images)
-        # self.adain(style_code)
+        style_code = self.enc_style(images)
+        self.adain(style_code)
         # get predict output
         pred_target_fake = self.model(images)
 
@@ -266,12 +278,15 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), model_attn=self.model_attn)
-        # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake))
-        d_out_fake = self.model_D(F.softmax(pred_target_fake), label=self.interp_mini(images))
+        d_out_fake = self.model_D(F.softmax(pred_target_fake))
+        # d_out_fake = self.model_D(F.softmax(pred_target_fake), label=self.interp_mini(images))
+        # d_out_fake = self.model_D(self.interp_mini(F.softmax(pred_target_fake)), label=self.interp_mini_i(images))
+
         # todo:這邊或許也能D的搭配attn做優化
         # compute loss function
         # wants to fool discriminator
         adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
+
         loss = self.lambda_adv_target * adv_loss
         loss.backward()
 
@@ -297,6 +312,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # Enable D backpropgation, train D
         for param in self.model_D.parameters():
             param.requires_grad = True
+        for param in self.model.parameters():
+            param.requires_grad = False
         # for param in self.model_attn.parameters():
         #     # param.requires_grad = True
         #     param.requires_grad = False
@@ -304,10 +321,12 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.target_image = self.target_image.detach()
         # compute adv loss function
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
-        # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None)
-        d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
-        loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
-        loss_real /= 2
+        d_out_real = self.model_D(F.softmax(self.source_image), label=None)
+        # d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
+        # d_out_real = self.model_D(self.inter_mini(F.softmax(self.source_image)), label=self.inter_mini_i(self.source_input_image))
+
+        # loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+        # loss_real /= 2
         # loss_real.backward()
         # attention
         # d_attn = self._resize(attn, size=self.input_size)
@@ -318,10 +337,11 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # loss_real.backward()
 
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
-        # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None)
-        d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
-        loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
-        loss_fake /= 2
+        d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
+        # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
+
+        # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+        # loss_fake /= 2
         # loss_fake.backward()
         # compute attn loss function
         # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
@@ -330,8 +350,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # compute total loss function
         # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
 
-        loss = loss_real + loss_fake
-        # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+        # loss = loss_real + loss_fake
+        loss = self.loss_hinge_dis(d_out_fake, d_out_real)
         loss.backward()
 
 
@@ -342,7 +362,6 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # record log
         # self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
         self.loss_d_value += loss.data.cpu().numpy()
-
     def show_each_loss(self):
         print("Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
             self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
@@ -351,6 +370,10 @@ class AdaptSeg_IN_Trainer(nn.Module):
         loss = torch.mean(F.relu(1. - dis_real))
         loss += torch.mean(F.relu(1. + dis_fake))
         return loss
+
+    # def loss_hinge_gen(self, dis_fake):
+    #     loss = -torch.mean(dis_fake)
+    #     return loss
 
     def _compute_adv_loss_real(self, d_out_real, loss_opt="bce", label=0):
         """
@@ -364,7 +387,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
         if loss_opt == 'wgan-gp':
             d_loss_real = - d_out_real.mean()
         elif loss_opt == 'hinge':
-            d_loss_real = torch.nn.ReLU()(1.0 - d_out_real).mean()
+            d_loss_real = - d_out_real.mean()
         elif loss_opt == 'bce':
             bce_loss = torch.nn.BCEWithLogitsLoss()
             d_loss_real = bce_loss(d_out_real,
@@ -470,8 +493,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
                 will output model to config["snapshot_save_dir"]
                 """
         print('taking pth in shapshot dir ...')
-        # torch.save(self.enc_style.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_S_ENCODER.pth'))
-        # torch.save(self.mlp.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_MLP.pth'))
+        torch.save(self.enc_style.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_S_ENCODER.pth'))
+        torch.save(self.mlp.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_MLP.pth'))
         torch.save(self.model.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '.pth'))
         torch.save(self.model_D.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D1.pth'))
 
@@ -485,17 +508,10 @@ class AdaptSeg_IN_Trainer(nn.Module):
                 for i in saved_state_dict:
                     # Scale.layer5.conv2d_list.3.weight
                     i_parts = i.split('.')
-                    # todo:會不會是這邊沒有回去
                     if not num_classes == 19 or (not i_parts[1] == 'layer5' and not i_parts[1] == 'bn1'):
                         new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
                 # new_params = saved_state_dict
-                print("before model load")
-                print("self.model.state_dict()")
-                print(str(self.model.state_dict())[:100])
                 self.model.load_state_dict(new_params)
-                print("after model load")
-                print("self.model.state_dict()")
-                print(str(self.model.state_dict())[:100])
             else:
                 print("use own pre-trained")
                 saved_state_dict = torch.load(restore_from)
@@ -541,4 +557,3 @@ def paint_predict_image(predict_image):
 
         return output_color
     return output_to_image(predict_image)
-
