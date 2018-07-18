@@ -127,13 +127,13 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
     def init_opt(self):
         g_parameters = chain(self.model.parameters(), self.enc_style.parameters(), self.mlp.parameters())
-        # self.optimizer_G = optim.SGD([p for p in g_parameters if p.requires_grad],
-                                     # lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        self.optimizer_G = optim.SGD([p for p in g_parameters if p.requires_grad],
+                                     lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
 
         #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
-        self.optimizer_G = optim.Adam([p for p in g_parameters if p.requires_grad],
-                                      lr=self.lr_g, betas=(self.beta1, self.beta2))
+        # self.optimizer_G = optim.Adam([p for p in g_parameters if p.requires_grad],
+        #                               lr=self.lr_g, betas=(self.beta1, self.beta2))
         self.optimizer_G.zero_grad()
         self._adjust_learning_rate_G(self.optimizer_G, 0)
 
@@ -235,7 +235,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # loss.backward()
 
         # update loss
-        self.optimizer_G.step()
+        # todo:because adam so step once in target adv
+        # self.optimizer_G.step()
         # self.optimizer_Attn.step()
 
         # save image for discriminator use
@@ -253,9 +254,9 @@ class AdaptSeg_IN_Trainer(nn.Module):
                 :param image_path: just for save path to record model predict, use in  snapshot_image_save function
                 :return:
                 """
-        self.optimizer_G.zero_grad()
+        # self.optimizer_G.zero_grad()
         # self.optimizer_Attn.zero_grad()
-        self.optimizer_D.zero_grad()
+        # self.optimizer_D.zero_grad()
 
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
@@ -325,8 +326,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
         # d_out_real = self.model_D(self.inter_mini(F.softmax(self.source_image)), label=self.inter_mini_i(self.source_input_image))
 
-        # loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
-        # loss_real /= 2
+        loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+        loss_real /= 2
         # loss_real.backward()
         # attention
         # d_attn = self._resize(attn, size=self.input_size)
@@ -340,8 +341,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
 
-        # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
-        # loss_fake /= 2
+        loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+        loss_fake /= 2
         # loss_fake.backward()
         # compute attn loss function
         # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
@@ -350,8 +351,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # compute total loss function
         # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
 
-        # loss = loss_real + loss_fake
-        loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+        loss = loss_real + loss_fake
+        # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
         loss.backward()
 
 
