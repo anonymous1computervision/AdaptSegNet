@@ -28,6 +28,7 @@ from model.xiao_cgan_adain_discriminator import XiaoCganDiscriminator
 from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
 
 from utils.loss import CrossEntropy2d
+from util import weights_init
 
 class AdaptSeg_IN_Trainer(nn.Module):
     def __init__(self, hyperparameters):
@@ -60,11 +61,13 @@ class AdaptSeg_IN_Trainer(nn.Module):
             # init
             # nn.init.xavier_uniform_(self.enc_style.weight.data, np.sqrt(2))
             # nn.init.xavier_uniform_(self.mlp.weight.data, np.sqrt(2))
+            self.enc_style.apply(weights_init("xavier"))
+            self.mlp.apply(weights_init("xavier"))
 
         # self.model_attn = XiaoAttention(hyperparameters["num_classes"])
         # init D
-        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoCganDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
