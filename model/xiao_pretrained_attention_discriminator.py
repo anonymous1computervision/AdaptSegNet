@@ -76,12 +76,14 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
 
         # create attention model
         model_attn = []
-        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, 3, 1, 1))]
-        model_attn += [nn.LeakyReLU(0.1)]
-        self.attn1 = Self_Attn(num_classes, 'relu')
+
+        self.attn1 = Self_Attn(densenet_out_c, 'relu')
         # self.attn2 = Self_Attn(ndf*8, 'relu')
 
         model_attn += [self.attn1]
+        model_attn += [nn.LeakyReLU(0.1)]
+        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, 3, 1, 1))]
+        model_attn += [nn.LeakyReLU(0.1)]
         # model_attn += [SpectralNorm(nn.Conv2d(ndf*4, ndf*8, 4, 2, 1))]
         # model_attn += [nn.LeakyReLU(0.1)]
         # model_attn += [self.attn2]

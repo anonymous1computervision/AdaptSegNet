@@ -66,11 +66,11 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # self.model_attn = XiaoAttention(hyperparameters["num_classes"])
         # init D
-        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoCganDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.mlp.train()
         self.mlp.cuda(self.gpu)
@@ -239,7 +239,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # update loss
         # todo:because adam so step once in target adv
-        # self.optimizer_G.step()
+        self.optimizer_G.step()
         # self.optimizer_Attn.step()
 
         # save image for discriminator use
@@ -257,9 +257,9 @@ class AdaptSeg_IN_Trainer(nn.Module):
                 :param image_path: just for save path to record model predict, use in  snapshot_image_save function
                 :return:
                 """
-        # self.optimizer_G.zero_grad()
+        self.optimizer_G.zero_grad()
         # self.optimizer_Attn.zero_grad()
-        # self.optimizer_D.zero_grad()
+        self.optimizer_D.zero_grad()
 
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
@@ -282,7 +282,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), model_attn=self.model_attn)
-        d_out_fake = self.model_D(F.softmax(pred_target_fake))
+        # d_out_fake = self.model_D(F.softmax(pred_target_fake))
+        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label = images)
         # d_out_fake = self.model_D(F.softmax(pred_target_fake), label=self.interp_mini(images))
         # d_out_fake = self.model_D(self.interp_mini(F.softmax(pred_target_fake)), label=self.interp_mini_i(images))
 
@@ -299,7 +300,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # save image for discriminator use
         self.target_image = pred_target_fake.detach()
-        self.target_image_input_image = images.detach()
+        self.target_input_image = images.detach()
 
         # record log
         self.loss_target_value += loss.data.cpu().numpy()
@@ -325,7 +326,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.target_image = self.target_image.detach()
         # compute adv loss function
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
-        d_out_real = self.model_D(F.softmax(self.source_image), label=None)
+        # d_out_real = self.model_D(F.softmax(self.source_image), label=None)
+        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
         # d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
         # d_out_real = self.model_D(self.inter_mini(F.softmax(self.source_image)), label=self.inter_mini_i(self.source_input_image))
 
@@ -341,7 +343,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # loss_real.backward()
 
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
-        d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
+        # d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
+        d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
 
         loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
