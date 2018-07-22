@@ -100,6 +100,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.loss_d_value = 0
         self.loss_source_value = 0
         self.loss_target_value = 0
+        self.loss_d_attn_value = 0
         self.i_iter = 0
         self.source_label_path = None
         self.target_image_path = None
@@ -112,7 +113,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # for discriminator
         self.adv_loss_opt = hyperparameters['dis']['adv_loss_opt']
-        # self.lambda_attn = hyperparameters['dis']['lambda_attn']
+        self.lambda_attn = hyperparameters['dis']['lambda_attn']
 
         self.source_image = None
         self.target_image = None
@@ -327,7 +328,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # compute adv loss function
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
         # d_out_real = self.model_D(F.softmax(self.source_image), label=None)
-        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
+        d_out_real, attn = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
         # d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
         # d_out_real = self.model_D(self.inter_mini(F.softmax(self.source_image)), label=self.inter_mini_i(self.source_input_image))
 
@@ -335,11 +336,13 @@ class AdaptSeg_IN_Trainer(nn.Module):
         loss_real /= 2
         # loss_real.backward()
         # attention
-        # d_attn = self._resize(attn, size=self.input_size)
+        d_attn = self._resize(attn, size=self.input_size)
         # in source domain compute attention loss
-        # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        self.loss_d_attn_value += loss_attn.data.cpu().numpy()
+
         # loss_attn.backward()
-        # loss_real = loss_real + loss_attn
+        loss_real = loss_real + loss_attn
         # loss_real.backward()
 
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
@@ -370,8 +373,14 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
         self.loss_d_value += loss.data.cpu().numpy()
     def show_each_loss(self):
-        print("Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
-            self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
+        # print("Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
+        #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
+        print(
+            "Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
+                self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
+                float(self.loss_d_value), self.loss_d_attn_value))
+
+
 
     def loss_hinge_dis(self, dis_fake, dis_real):
         loss = torch.mean(F.relu(1. - dis_real))
@@ -455,6 +464,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.loss_d_value = 0
         self.loss_source_value = 0
         self.loss_target_value = 0
+        self.loss_d_attn_value = 0
         self.source_image = None
         self.target_image = None
 

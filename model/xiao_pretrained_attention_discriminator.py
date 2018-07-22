@@ -77,13 +77,13 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         # create attention model
         model_attn = []
 
-        # self.attn1 = Self_Attn(densenet_out_c, 'relu')
+        self.attn1 = Self_Attn(densenet_out_c, 'relu')
         # self.attn2 = Self_Attn(ndf*8, 'relu')
 
-        # model_attn += [self.attn1]
-        # model_attn += [nn.LeakyReLU(0.1)]
-        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, 3, 1, 1))]
+        model_attn += [self.attn1]
         model_attn += [nn.LeakyReLU(0.1)]
+        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, 3, 1, 1))]
+        # model_attn += [nn.LeakyReLU(0.1)]
         # model_attn += [SpectralNorm(nn.Conv2d(ndf*4, ndf*8, 4, 2, 1))]
         # model_attn += [nn.LeakyReLU(0.1)]
         # model_attn += [self.attn2]
@@ -103,6 +103,7 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         # use weight init
         self.model_pre.apply(weights_init("xavier"))
         self.model_block.apply(weights_init("xavier"))
+        self.proj_conv.apply(weights_init("xavier"))
         self.model_attn.apply(weights_init("xavier"))
         self.model_classifier.apply(weights_init("xavier"))
 
@@ -133,19 +134,20 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
             # print("cond_y shape =", cond_y.shape)
 
         attn_out = self.model_attn(cond_y)
-        # print("attn_out shape", attn_out.shape)
 
         proj = self.proj_conv(x)
         # print("proj shape", proj.shape)
 
-        attn_out = proj * attn_out
+        # todo: try use addition attention
+        # proj_out = proj + attn_out
+        proj_out = proj * attn_out
 
         # x = self.model_pre(x)
         # print("model pre x shape", x.shape)
 
 
         # use addition attention
-        out = out + attn_out
+        out = out + proj_out
         out = self.model_classifier(out)
 
         return out, attn_out

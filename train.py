@@ -118,7 +118,7 @@ def main():
             del target_images
 
             # # train discriminator use prior generator image
-            trainer.dis_update()
+            trainer.dis_update(labels=labels)
 
             # show log
             trainer.show_each_loss()
