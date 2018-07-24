@@ -38,7 +38,7 @@ def main():
     # CONFIG_PATH = "./configs/default-in-bce-v3.yaml"
     # CONFIG_PATH = "./configs/default.yaml"
     # CONFIG_PATH = "./configs/default.yaml"
-    CONFIG_PATH = "./configs/default-in-bce-adv_lambda-test.yaml"
+    CONFIG_PATH = "./configs/default-in-hinge-v3.yaml"
     # CONFIG_PATH = "./configs/default-fc-dense.yaml"
     # CONFIG_PATH = "./configs/attention_v1.yaml"
 
@@ -129,8 +129,8 @@ def main():
                 trainer.snapshot_image_save(dir_name=image_save_dir)
 
             # save checkpoint .pth
-            # if i_iter % snapshot_save_iter == 0 and i_iter > 0:
-            if i_iter % snapshot_save_iter == 0:
+            if i_iter % snapshot_save_iter == 0 and i_iter > 0:
+            # if i_iter % snapshot_save_iter == 0:
                 # print("save model")
                 trainer.save_model(snapshot_save_dir=snapshot_save_dir)
                 torch.save(trainer.state_dict(),

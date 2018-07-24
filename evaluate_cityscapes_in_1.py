@@ -91,7 +91,9 @@ def main():
     if not os.path.exists(args.save):
         os.makedirs(args.save)
 
-    CONFIG_PATH = "./configs/default-in.yaml"
+    # CONFIG_PATH = "./configs/default-in.yaml"
+    CONFIG_PATH = "./configs/default-in-hinge-v3.yaml"
+
     config = get_config(CONFIG_PATH)
 
     model = AdaptSeg_IN_Trainer(config)

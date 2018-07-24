@@ -57,6 +57,11 @@ def compute_mIoU(gt_dir, pred_dir, devkit_dir=''):
         print('===>' + name_classes[ind_class] + ':\t' + str(round(mIoUs[ind_class] * 100, 2)))
     print('===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2)))
 
+    print("for recording easily")
+    for ind_class in range(num_classes):
+        print(str(round(mIoUs[ind_class] * 100, 2)))
+    print(str(round(np.nanmean(mIoUs) * 100, 2)))
+
     return mIoUs
 
 

@@ -180,7 +180,7 @@ class AdaptSeg_Trainer(nn.Module):
         pred_target_fake = interp_target(pred_target_fake)
 
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
-        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label = images)
+        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         # compute loss function
         # wants to fool discriminator
         adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
