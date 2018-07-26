@@ -100,6 +100,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.loss_d_value = 0
         self.loss_source_value = 0
         self.loss_target_value = 0
+        self.loss_g_adv_d_attn_value = 0
         self.loss_d_attn_value = 0
         self.i_iter = 0
         self.source_label_path = None
@@ -108,6 +109,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # for generator
         self.lambda_seg = hyperparameters['gen']['lambda_seg']
         self.lambda_adv_target = hyperparameters['gen']['lambda_adv_target']
+        self.lambda_adv_attn_target = hyperparameters['gen']['lambda_adv_attn_target']
         # self.lambda_g_attention = hyperparameters['gen']['lambda_attn']
         self.decay_power = hyperparameters['decay_power']
 
@@ -241,7 +243,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # update loss
         # todo:because adam so step once in target adv
-        self.optimizer_G.step()
+        # self.optimizer_G.step()
         # self.optimizer_Attn.step()
 
         # save image for discriminator use
@@ -266,8 +268,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
-        for param in self.model.parameters():
-            param.requires_grad = True
+        # for param in self.model.parameters():
+        #     param.requires_grad = True
         # for param in self.model_attn.parameters():
         #     param.requires_grad = False
 
@@ -285,17 +287,29 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), model_attn=self.model_attn)
         # d_out_fake = self.model_D(F.softmax(pred_target_fake))
-        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label = images)
+        d_out_fake, attn = self.model_D(F.softmax(pred_target_fake), label=images)
         # d_out_fake = self.model_D(F.softmax(pred_target_fake), label=self.interp_mini(images))
         # d_out_fake = self.model_D(self.interp_mini(F.softmax(pred_target_fake)), label=self.interp_mini_i(images))
 
-        # todo:這邊或許也能D的搭配attn做優化
+
+        # todo:這邊或許也能D的搭配attn做優化 20180726 new 讓兩邊學到的相近
+        # d_attn = self._resize(attn, size=self.input_size_target)
+        # criterion = nn.MSELoss().cuda(self.gpu)
+        # loss_attn = self.lambda_adv_attn_target * criterion(pred_target_fake, d_attn)
+        # loss_attn.backward()
+
         # compute loss function
         # wants to fool discriminator
         # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
         adv_loss = self.loss_hinge_gen(d_out_fake)
-        adv_loss = self.lambda_adv_target * adv_loss
+        # adv_loss = self.lambda_adv_target * adv_loss
+        adv_loss = self.lambda_adv_target * adv_loss + loss_attn
+        # adv_loss += loss_attn
+        # adv_loss.backward()
         adv_loss.backward()
+
+
+
 
         # update loss
         self.optimizer_G.step()
@@ -306,6 +320,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # record log
         self.loss_target_value += adv_loss.data.cpu().numpy()
+        self.loss_g_adv_d_attn_value += loss_attn.data.cpu().numpy()
 
     def dis_update(self, labels=None):
         """
@@ -384,11 +399,15 @@ class AdaptSeg_IN_Trainer(nn.Module):
     def show_each_loss(self):
         # print("Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
         #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
-        print(
-            "Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
-                self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-                float(self.loss_d_value), self.loss_d_attn_value))
+        # print(
+        #     "Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
+        #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
+        #         float(self.loss_d_value), self.loss_d_attn_value))
 
+        print(
+            "Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_GvsD_attn = {4:.3f} loss_D1 = {5:.3f} loss_D1_attn = {6:.3f}".format(
+                self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
+                float(self.loss_g_adv_d_attn_value), float(self.loss_d_value), self.loss_d_attn_value))
 
 
     def loss_hinge_dis(self, dis_fake, dis_real):
@@ -474,6 +493,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.loss_source_value = 0
         self.loss_target_value = 0
         self.loss_d_attn_value = 0
+        self.loss_g_adv_d_attn_value = 0
         self.source_image = None
         self.target_image = None
 
