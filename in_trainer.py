@@ -302,8 +302,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # wants to fool discriminator
         # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
         adv_loss = self.loss_hinge_gen(d_out_fake)
-        # adv_loss = self.lambda_adv_target * adv_loss
-        adv_loss = self.lambda_adv_target * adv_loss + loss_attn
+        adv_loss = self.lambda_adv_target * adv_loss
+        # adv_loss = self.lambda_adv_target * adv_loss + loss_attn
         # adv_loss += loss_attn
         # adv_loss.backward()
         adv_loss.backward()
@@ -320,7 +320,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # record log
         self.loss_target_value += adv_loss.data.cpu().numpy()
-        self.loss_g_adv_d_attn_value += loss_attn.data.cpu().numpy()
+        # self.loss_g_adv_d_attn_value += loss_attn.data.cpu().numpy()
 
     def dis_update(self, labels=None):
         """
@@ -399,15 +399,15 @@ class AdaptSeg_IN_Trainer(nn.Module):
     def show_each_loss(self):
         # print("Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
         #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
-        # print(
-        #     "Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
-        #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-        #         float(self.loss_d_value), self.loss_d_attn_value))
-
         print(
-            "Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_GvsD_attn = {4:.3f} loss_D1 = {5:.3f} loss_D1_attn = {6:.3f}".format(
+            "Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
                 self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-                float(self.loss_g_adv_d_attn_value), float(self.loss_d_value), self.loss_d_attn_value))
+                float(self.loss_d_value), self.loss_d_attn_value))
+
+        # print(
+        #     "Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_GvsD_attn = {4:.3f} loss_D1 = {5:.3f} loss_D1_attn = {6:.3f}".format(
+        #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
+        #         float(self.loss_g_adv_d_attn_value), float(self.loss_d_value), self.loss_d_attn_value))
 
 
     def loss_hinge_dis(self, dis_fake, dis_real):

@@ -40,7 +40,7 @@ gen:
 
 dis:
   adv_loss_opt: bce  # [wgan-gp / hinge / bce]
-  lambda_attn: 0.05
+  lambda_attn: 0.01
   
 
 # data options
