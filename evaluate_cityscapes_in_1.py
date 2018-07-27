@@ -92,7 +92,7 @@ def main():
         os.makedirs(args.save)
 
     # CONFIG_PATH = "./configs/default-in.yaml"
-    CONFIG_PATH = "./configs/default-in-hinge-v3.yaml"
+    CONFIG_PATH = "./configs/default-in-bce-adv_lambda-test.yaml"
 
     config = get_config(CONFIG_PATH)
 

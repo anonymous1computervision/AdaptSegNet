@@ -12,11 +12,14 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 
 import os
 import pdb
+import json
 
 import torch
+import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 from torch.utils import data
+from PIL import Image
 
 from dataset.gta5_dataset import GTA5DataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
@@ -26,6 +29,7 @@ from mini_trainer import Mini_AdaptSeg_Trainer
 from in_trainer import AdaptSeg_IN_Trainer
 from dense_trainer import DenseSeg_Trainer
 from util import get_all_data_loaders, get_config
+from test_iou import output_to_image, compute_mIoU, get_test_mini_set
 
 def main():
 
@@ -38,7 +42,7 @@ def main():
     # CONFIG_PATH = "./configs/default-in-bce-v3.yaml"
     # CONFIG_PATH = "./configs/default.yaml"
     # CONFIG_PATH = "./configs/default.yaml"
-    CONFIG_PATH = "./configs/default-in-hinge-v4.yaml"
+    CONFIG_PATH = "./configs/default-hinge-v4.yaml"
     # CONFIG_PATH = "./configs/default-fc-dense.yaml"
     # CONFIG_PATH = "./configs/attention_v1.yaml"
 
@@ -95,7 +99,6 @@ def main():
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
             # if memory issue can clear cache
             torch.cuda.empty_cache()
-
             trainer.init_each_epoch(i_iter)
             trainer.update_learning_rate()
 
@@ -123,6 +126,7 @@ def main():
             # show log
             trainer.show_each_loss()
 
+
             # save image to check
             if i_iter % image_save_iter == 0:
                 print("image_save_dir", image_save_dir)
@@ -139,6 +143,26 @@ def main():
             # save final model .pth
             if i_iter == num_steps - 1:
                 trainer.save_model(snapshot_save_dir=snapshot_save_dir)
+
+
+            # test image to check and get mIOU
+            # if i_iter % 100 == 0 and i_iter > 0:
+            if i_iter % 100 == 0:
+                # torch.cuda.empty_cache()
+                testloader = get_test_mini_set()
+                # trainer.eval()
+                with torch.no_grad():
+                    for index, batch in enumerate(testloader):
+                        # if memory issue can clear cache
+                        image, _, _, name = batch
+                        output = trainer(Variable(image).cuda())
+                        output_to_image(output, name)
+                    compute_mIoU()
+                    # mIOU_record = compute_mIoU()
+                    # trainer.train()
+                    # del testloader
+                    # torch.cuda.empty_cache()
+
 
 if __name__ == "__main__":
     main()

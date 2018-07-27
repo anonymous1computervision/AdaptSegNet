@@ -287,7 +287,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), model_attn=self.model_attn)
         # d_out_fake = self.model_D(F.softmax(pred_target_fake))
-        d_out_fake, attn = self.model_D(F.softmax(pred_target_fake), label=images)
+        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         # d_out_fake = self.model_D(F.softmax(pred_target_fake), label=self.interp_mini(images))
         # d_out_fake = self.model_D(self.interp_mini(F.softmax(pred_target_fake)), label=self.interp_mini_i(images))
 
@@ -396,6 +396,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # record log
         # self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
         self.loss_d_value += loss.data.cpu().numpy()
+
+
     def show_each_loss(self):
         # print("Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
         #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))

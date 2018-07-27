@@ -22,7 +22,7 @@ lr_d: 0.001                    # initial learning rate Adam
 
 # model options
 model: DeepLab
-g_model: in
+g_model: default
 restore: true
 restore_from: http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_init-f81d91e8.pth
 # restore_from: E:/AdaptionSeg-v28-20180726-sgd-densenet-adain-lambda001-40k-attn-hinge-no-good/snapshots/GTA2Cityscapes_multi/GTA5_5000.pth

@@ -46,12 +46,14 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         self.model_pre += [SpectralNorm(nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1))]
         self.model_pre += [nn.LeakyReLU(0.1)]
 
-        self.proj_attn = Self_Attn(num_classes, 'relu')
+        # self.proj_attn = Self_Attn(num_classes, 'relu')
+        self.proj_attn = Self_Attn(ndf * 4, 'relu')
+
 
         self.proj_conv = []
-        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, num_classes, kernel_size=4, stride=2, padding=1))]
-        self.proj_conv += [nn.LeakyReLU(0.1)]
         self.proj_conv += [self.proj_attn]
+        self.proj_conv += [nn.LeakyReLU(0.1)]
+        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, num_classes, kernel_size=4, stride=2, padding=1))]
         self.proj_conv += [nn.ReLU()]
 
 
@@ -66,18 +68,28 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         # self.model_block += [nn.LeakyReLU(0.1)]
         # self.model_block += [SpectralNorm(nn.Conv2d(ndf * 2, ndf * 2, 4, 2, 1))]
         # self.model_block += [SpectralNorm(nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1))]
-        # self.model_block += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1))]
+        self.model_block += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 4, 4, 2, 1))]
         # self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=True, use_BN=False)]
-        self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 4, downsample=True, use_BN=False)]
+        # self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=True, use_BN=False)]
+        self.model_block += [nn.LeakyReLU(0.1)]
+        self.model_block += [Self_Attn(ndf * 4, 'relu')]
+        self.model_block += [nn.LeakyReLU(0.1)]
+        # self.model_block += [ResBlock_2018_SN(ndf * 8, ndf * 16, downsample=False, use_BN=False)]
+        self.model_block += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1))]
+        self.model_block += [nn.LeakyReLU(0.1)]
+        self.model_block += [Self_Attn(ndf * 8, 'relu')]
 
         # self.model_block += [SpectralNorm(nn.Conv2d(ndf * 4, num_classes, 4, 2, 1))]
         self.model_block += [nn.ReLU()]
-        self.model_block += [nn.AdaptiveAvgPool2d(ndf*4)]
+        self.model_block += [nn.AdaptiveAvgPool2d(ndf * 8)]
         # self.model_block += [nn.AdaptiveAvgPool2d(1)]
 
         # self.model_block += [nn.AdaptiveAvgPool2d(1)]
 
-        self.fc = nn.Linear(ndf*4, 1)
+        # self.fc = nn.Linear(ndf*4, 1)
+        self.fc = SpectralNorm(nn.Linear(ndf*8, 1))
+
+
         # self.model_block += [self.fc]
 
         # self.model_block += [self.fc]
@@ -139,7 +151,7 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         self.model_block.apply(weights_init("xavier"))
         # fc in model block, so do not need to apply again.
         # self.fc.apply(weights_init("xavier"))
-        nn.init.xavier_uniform_(self.fc.weight.data, 1.)
+        # nn.init.xavier_uniform_(self.fc.weight.data, 1.)
         self.proj_conv.apply(weights_init("xavier"))
         self.model_attn.apply(weights_init("xavier"))
         # self.model_classifier.apply(weights_init("xavier"))
@@ -196,7 +208,7 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         # print("model pre x shape", x.shape)
 
 
-        # use addition attention
+        # use projection
         out = out + proj_out
         # out = self.model_classifier(out)
 

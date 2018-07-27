@@ -292,3 +292,4 @@ def weights_init(init_type='gaussian'):
                 init.constant(m.bias.data, 0.0)
 
     return init_fun
+

@@ -75,6 +75,8 @@ class AdaptSeg_Trainer(nn.Module):
         self.loss_d_value = 0
         self.loss_source_value = 0
         self.loss_target_value = 0
+        self.loss_d_attn_value = 0
+
         self.i_iter = 0
         self.source_label_path = None
         self.target_image_path = None
@@ -106,9 +108,10 @@ class AdaptSeg_Trainer(nn.Module):
         self._adjust_learning_rate_D(self.optimizer_D, 0)
 
     def forward(self, images):
-        self.eval()
+        # self.eval()
+        # pdb.set_trace()
         predict_seg = self.model(images)
-        self.train()
+        # self.train()
         return predict_seg
 
     def gen_source_update(self, images, labels, label_path=None):
@@ -144,7 +147,7 @@ class AdaptSeg_Trainer(nn.Module):
         seg_loss.backward()
 
         # update loss
-        self.optimizer_G.step()
+        # self.optimizer_G.step()
 
         # save image for discriminator use
         self.source_image = pred_source_real.detach()
@@ -162,7 +165,7 @@ class AdaptSeg_Trainer(nn.Module):
                 :param image_path: just for save path to record model predict, use in  snapshot_image_save function
                 :return:
                 """
-        self.optimizer_G.zero_grad()
+        # self.optimizer_G.zero_grad()
 
 
         # Disable D backpropgation, we only train G
@@ -203,41 +206,92 @@ class AdaptSeg_Trainer(nn.Module):
                 use [gen_source_update / gen_target_update]'s image to discriminator,
                 so you  don' t need to give any parameter
                 """
+        self.optimizer_G.zero_grad()
+        # self.optimizer_Attn.zero_grad()
         self.optimizer_D.zero_grad()
 
         # Enable D backpropgation, train D
         for param in self.model_D.parameters():
             param.requires_grad = True
 
+        # for param in self.model_attn.parameters():
+        #     # param.requires_grad = True
+        #     param.requires_grad = False
         # we don't train target's G weight, we only train source'G
         self.target_image = self.target_image.detach()
         # compute adv loss function
-        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
-        loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
-        loss_real /= 2
+        # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
+        # d_out_real = self.model_D(F.softmax(self.source_image), label=None)
+        d_out_real, attn = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
+        # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
 
+        # d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
+        # d_out_real = self.model_D(self.inter_mini(F.softmax(self.source_image)), label=self.inter_mini_i(self.source_input_image))
+
+        # loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+        # loss_real /= 2
+        # loss_real.backward()
+
+
+        ####################
+        #  attention part  #
+        ####################
+
+        d_attn = self._resize(attn, size=self.input_size)
+        # in source domain compute attention loss
+        loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        self.loss_d_attn_value += loss_attn.data.cpu().numpy()
+
+        # loss_attn.backward()
+        # loss_real = loss_real + loss_attn
+        # loss_real.backward()
+
+        # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
+        # d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
         d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
-        loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
-        loss_fake /= 2
+        # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
 
+        # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+        # loss_fake /= 2
+        # loss_fake.backward()
         # compute attn loss function
         # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
         # loss_attn = self._compute_seg_loss(interp(attn), labels)
 
         # compute total loss function
         # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
-        loss = loss_real + loss_fake
+
+        # loss = loss_real + loss_fake
+        loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+        loss = loss + loss_attn
         loss.backward()
+
 
         # update loss
         self.optimizer_D.step()
+        # self.optimizer_Attn.step()
 
         # record log
-        self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
+        # self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
+        self.loss_d_value += loss.data.cpu().numpy()
+
+    def loss_hinge_dis(self, dis_fake, dis_real):
+        loss = torch.mean(F.relu(1. - dis_real))
+        loss += torch.mean(F.relu(1. + dis_fake))
+        return loss
+
+    def loss_hinge_gen(self, g_fake):
+        loss = -torch.mean(g_fake)
+        return loss
 
     def show_each_loss(self):
-        print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
-            self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
+        # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
+        #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
+        print(
+            "Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
+                self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
+                float(self.loss_d_value), self.loss_d_attn_value))
+
 
     def _compute_adv_loss_real(self, d_out_real, loss_opt="bce", label=0):
         """
@@ -291,6 +345,12 @@ class AdaptSeg_Trainer(nn.Module):
 
         return criterion(pred, label)
 
+    def _resize(self, img, size=None):
+        # resize to source size
+        interp = nn.Upsample(size=size, align_corners=False, mode='bilinear')
+        img = interp(img)
+        return img
+
     def _lr_poly(self, base_lr, i_iter, max_iter, power):
         return base_lr * ((1 - float(i_iter) / max_iter) ** power)
 
@@ -309,6 +369,8 @@ class AdaptSeg_Trainer(nn.Module):
         self.loss_d_value = 0
         self.loss_source_value = 0
         self.loss_target_value = 0
+        self.loss_d_attn_value = 0
+
 
     def update_learning_rate(self):
         if self.optimizer_G:
@@ -378,7 +440,6 @@ class AdaptSeg_Trainer(nn.Module):
                 self.model.load_state_dict(saved_state_dict)
 
             self.init_opt()
-
 
 
 def paint_predict_image(predict_image):
