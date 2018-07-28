@@ -288,7 +288,7 @@ class AdaptSeg_Trainer(nn.Module):
         # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
         #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
         print(
-            "Adain trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
+            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
                 self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
                 float(self.loss_d_value), self.loss_d_attn_value))
 

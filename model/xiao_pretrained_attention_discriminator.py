@@ -51,9 +51,9 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
 
 
         self.proj_conv = []
-        self.proj_conv += [self.proj_attn]
-        self.proj_conv += [nn.LeakyReLU(0.1)]
         self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, num_classes, kernel_size=4, stride=2, padding=1))]
+        self.proj_conv += [nn.LeakyReLU(0.1)]
+        self.proj_conv += [self.proj_attn]
         self.proj_conv += [nn.ReLU()]
 
 
@@ -68,20 +68,25 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         # self.model_block += [nn.LeakyReLU(0.1)]
         # self.model_block += [SpectralNorm(nn.Conv2d(ndf * 2, ndf * 2, 4, 2, 1))]
         # self.model_block += [SpectralNorm(nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1))]
+        # self.model_block += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 4, 4, 2, 1))]
+        # self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=True, use_BN=False)]
+        # self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=True, use_BN=False)]
+        # self.model_block += [nn.LeakyReLU(0.1)]
         self.model_block += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 4, 4, 2, 1))]
-        # self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=True, use_BN=False)]
-        # self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=True, use_BN=False)]
         self.model_block += [nn.LeakyReLU(0.1)]
-        self.model_block += [Self_Attn(ndf * 4, 'relu')]
-        self.model_block += [nn.LeakyReLU(0.1)]
-        # self.model_block += [ResBlock_2018_SN(ndf * 8, ndf * 16, downsample=False, use_BN=False)]
+        # self.model_block += [Self_Attn(ndf * 4, 'relu')]
+        # self.model_block += [nn.LeakyReLU(0.1)]
         self.model_block += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1))]
         self.model_block += [nn.LeakyReLU(0.1)]
-        self.model_block += [Self_Attn(ndf * 8, 'relu')]
+        # self.model_block += [ResBlock_2018_SN(ndf * 8, ndf * 16, downsample=False, use_BN=False)]
+        # self.model_block += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1))]
+        # self.model_block += [nn.LeakyReLU(0.1)]
+        # self.model_block += [Self_Attn(ndf * 8, 'relu')]
 
         # self.model_block += [SpectralNorm(nn.Conv2d(ndf * 4, num_classes, 4, 2, 1))]
         self.model_block += [nn.ReLU()]
-        self.model_block += [nn.AdaptiveAvgPool2d(ndf * 8)]
+        # this line is failed
+        # self.model_block += [nn.AdaptiveAvgPool2d(ndf * 8)]
         # self.model_block += [nn.AdaptiveAvgPool2d(1)]
 
         # self.model_block += [nn.AdaptiveAvgPool2d(1)]
@@ -121,9 +126,9 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         self.attn1 = Self_Attn(densenet_out_c, 'relu')
         # self.attn2 = Self_Attn(ndf*8, 'relu')
 
-        model_attn += [self.attn1]
-        model_attn += [nn.LeakyReLU(0.1)]
         model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, 3, 1, 1))]
+        model_attn += [nn.LeakyReLU(0.1)]
+        model_attn += [self.attn1]
         # model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, 4, 2, 1))]
         model_attn += [nn.ReLU()]
         # model_attn += [nn.LeakyReLU(0.1)]
@@ -171,6 +176,7 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         x = self.model_pre(x)
         out = self.model_block(x)
         out = torch.sum(torch.sum(out, 3), 2)  # Global pooling
+        # print("gap shape =", out.shape)
         out = self.fc(out)
         # print("model pre x shape", x.shape)
         # print("out smodel_block shape", out.shape)
