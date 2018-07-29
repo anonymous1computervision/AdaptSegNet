@@ -66,11 +66,11 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # self.model_attn = XiaoAttention(hyperparameters["num_classes"])
         # init D
-        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoCganDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.mlp.train()
         self.mlp.cuda(self.gpu)
@@ -109,13 +109,13 @@ class AdaptSeg_IN_Trainer(nn.Module):
         # for generator
         self.lambda_seg = hyperparameters['gen']['lambda_seg']
         self.lambda_adv_target = hyperparameters['gen']['lambda_adv_target']
-        self.lambda_adv_attn_target = hyperparameters['gen']['lambda_adv_attn_target']
+        # self.lambda_adv_attn_target = hyperparameters['gen']['lambda_adv_attn_target']
         # self.lambda_g_attention = hyperparameters['gen']['lambda_attn']
         self.decay_power = hyperparameters['decay_power']
 
         # for discriminator
         self.adv_loss_opt = hyperparameters['dis']['adv_loss_opt']
-        self.lambda_attn = hyperparameters['dis']['lambda_attn']
+        # self.lambda_attn = hyperparameters['dis']['lambda_attn']
 
         self.source_image = None
         self.target_image = None
@@ -343,8 +343,8 @@ class AdaptSeg_IN_Trainer(nn.Module):
         self.target_image = self.target_image.detach()
         # compute adv loss function
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
-        # d_out_real = self.model_D(F.softmax(self.source_image), label=None)
-        d_out_real, attn = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
+        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None)
+        # d_out_real, attn = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
 
         # d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
@@ -359,10 +359,10 @@ class AdaptSeg_IN_Trainer(nn.Module):
         #  attention part  #
         ####################
 
-        d_attn = self._resize(attn, size=self.input_size)
+        # d_attn = self._resize(attn, size=self.input_size)
         # in source domain compute attention loss
-        loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
-        self.loss_d_attn_value += loss_attn.data.cpu().numpy()
+        # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        # self.loss_d_attn_value += loss_attn.data.cpu().numpy()
 
         # loss_attn.backward()
         # loss_real = loss_real + loss_attn
@@ -385,7 +385,7 @@ class AdaptSeg_IN_Trainer(nn.Module):
 
         # loss = loss_real + loss_fake
         loss = self.loss_hinge_dis(d_out_fake, d_out_real)
-        loss = loss + loss_attn
+        # loss = loss + loss_attn
         loss.backward()
 
 

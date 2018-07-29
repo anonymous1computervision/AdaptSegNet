@@ -36,4 +36,4 @@ class FCDiscriminator(nn.Module):
 		#x = self.up_sample(x)
 		#x = self.sigmoid(x)
 
-		return x
+		return x, None

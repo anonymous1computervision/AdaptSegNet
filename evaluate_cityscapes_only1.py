@@ -108,24 +108,25 @@ def main():
 
     interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
     print("Are u sure use style encoder?")
-    for index, batch in enumerate(testloader):
-        if index % 100 == 0:
-            print('%d processd' % index)
-        image, _, _, name = batch
-        output1 = model(Variable(image, volatile=True).cuda(gpu0))
-        # output1, _ = model(Variable(image, volatile=True).cuda(gpu0))
+    with torch.no_grad():
+        for index, batch in enumerate(testloader):
+            if index % 100 == 0:
+                print('%d processd' % index)
+            image, _, _, name = batch
+            output1 = model(Variable(image, volatile=True).cuda(gpu0))
+            # output1, _ = model(Variable(image, volatile=True).cuda(gpu0))
 
-        output = interp(output1).cpu().data[0].numpy()
+            output = interp(output1).cpu().data[0].numpy()
 
-        output = output.transpose(1,2,0)
-        output = np.asarray(np.argmax(output, axis=2), dtype=np.uint8)
+            output = output.transpose(1,2,0)
+            output = np.asarray(np.argmax(output, axis=2), dtype=np.uint8)
 
-        output_col = colorize_mask(output)
-        output = Image.fromarray(output)
+            output_col = colorize_mask(output)
+            output = Image.fromarray(output)
 
-        name = name[0].split('/')[-1]
-        output.save('%s/%s' % (args.save, name))
-        output_col.save('%s/%s_color.png' % (args.save, name.split('.')[0]))
+            name = name[0].split('/')[-1]
+            output.save('%s/%s' % (args.save, name))
+            output_col.save('%s/%s_color.png' % (args.save, name.split('.')[0]))
 
 
 if __name__ == '__main__':

@@ -42,7 +42,10 @@ def main():
     # CONFIG_PATH = "./configs/default-in-bce-v3.yaml"
     # CONFIG_PATH = "./configs/default.yaml"
     # CONFIG_PATH = "./configs/default.yaml"
-    CONFIG_PATH = "./configs/default-hinge-v5.yaml"
+    # CONFIG_PATH = "./configs/default-hinge-v5.yaml"
+    CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
+    # CONFIG_PATH = "./configs/default-in.yaml"
+
     # CONFIG_PATH = "./configs/default-fc-dense.yaml"
     # CONFIG_PATH = "./configs/attention_v1.yaml"
 
@@ -91,8 +94,11 @@ def main():
     if config["restore"]:
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
 
-
-
+    best_score_record = {
+        "epochs":0,
+        "total_mIOU":0,
+        "recording_string":""
+    }
 
     # Start training
     while True:
@@ -157,8 +163,23 @@ def main():
                         image, _, _, name = batch
                         output = trainer(Variable(image).cuda())
                         output_to_image(output, name)
-                    compute_mIoU()
-                    # mIOU_record = compute_mIoU()
+                    total_miou, recording_string = compute_mIoU()
+
+                    print("========= Best score =========")
+                    print("best epoches =", best_score_record["epochs"])
+                    print(best_score_record["recording_string"])
+                    print("")
+                    print("========= Current score =========")
+                    print(recording_string)
+
+                    # if higher accuracy in evaluate
+                    if(total_miou > best_score_record["total_mIOU"]):
+                        print("this epoch get higher accuracy")
+                        best_score_record["epochs"] = i_iter
+                        best_score_record["total_mIOU"] = total_miou
+                        best_score_record["recording_string"] = recording_string
+
+
                     # trainer.train()
                     # del testloader
                     # torch.cuda.empty_cache()

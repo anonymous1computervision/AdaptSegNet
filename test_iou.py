@@ -128,9 +128,12 @@ def compute_mIoU(gt_dir="./data/Cityscapes/data/gtFine/val", pred_dir="my_test_i
         #     print('{:d} / {:d}: {:0.2f}'.format(ind, len(gt_imgs), 100 * np.mean(per_class_iu(hist))))
 
     mIoUs = per_class_iu(hist)
-
+    record_string = ""
     for ind_class in range(num_classes):
-        print('===>' + name_classes[ind_class] + ':\t' + str(round(mIoUs[ind_class] * 100, 2)))
-    print('===> mIoU: ' + str(round(np.nanmean(mIoUs) * 100, 2)))
+        record_string += '===>' + name_classes[ind_class] + ':\t' + str(round(mIoUs[ind_class] * 100, 2)) + '\n'
+    total_miou = round(np.nanmean(mIoUs) * 100, 2)
+    record_string += '===> mIoU: ' + str(total_miou) + '\n'
+    # print(record_string)
 
-    # return mIoUs
+
+    return total_miou, record_string
