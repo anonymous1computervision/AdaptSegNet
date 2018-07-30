@@ -49,9 +49,9 @@ class AdaptSeg_Trainer(nn.Module):
             self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
             print("use fc densenet model")
         # init D
-        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.model.train()
         self.model.cuda(self.gpu)
@@ -147,7 +147,7 @@ class AdaptSeg_Trainer(nn.Module):
         seg_loss.backward()
 
         # update loss
-        # self.optimizer_G.step()
+        self.optimizer_G.step()
 
         # save image for discriminator use
         self.source_image = pred_source_real.detach()
@@ -165,7 +165,7 @@ class AdaptSeg_Trainer(nn.Module):
                 :param image_path: just for save path to record model predict, use in  snapshot_image_save function
                 :return:
                 """
-        # self.optimizer_G.zero_grad()
+        self.optimizer_G.zero_grad()
 
 
         # Disable D backpropgation, we only train G
@@ -222,14 +222,14 @@ class AdaptSeg_Trainer(nn.Module):
         # compute adv loss function
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
         # d_out_real = self.model_D(F.softmax(self.source_image), label=None)
-        d_out_real, attn = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
-        # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
+        # d_out_real, attn = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
+        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
 
         # d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
         # d_out_real = self.model_D(self.inter_mini(F.softmax(self.source_image)), label=self.inter_mini_i(self.source_input_image))
 
-        # loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
-        # loss_real /= 2
+        loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+        loss_real /= 2
         # loss_real.backward()
 
 
@@ -237,10 +237,10 @@ class AdaptSeg_Trainer(nn.Module):
         #  attention part  #
         ####################
 
-        d_attn = self._resize(attn, size=self.input_size)
-        # in source domain compute attention loss
-        loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
-        self.loss_d_attn_value += loss_attn.data.cpu().numpy()
+        # d_attn = self._resize(attn, size=self.input_size)
+        # # in source domain compute attention loss
+        # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        # self.loss_d_attn_value += loss_attn.data.cpu().numpy()
 
         # loss_attn.backward()
         # loss_real = loss_real + loss_attn
@@ -251,8 +251,8 @@ class AdaptSeg_Trainer(nn.Module):
         d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
 
-        # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
-        # loss_fake /= 2
+        loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+        loss_fake /= 2
         # loss_fake.backward()
         # compute attn loss function
         # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
@@ -261,9 +261,9 @@ class AdaptSeg_Trainer(nn.Module):
         # compute total loss function
         # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
 
-        # loss = loss_real + loss_fake
-        loss = self.loss_hinge_dis(d_out_fake, d_out_real)
-        loss = loss + loss_attn
+        loss = loss_real + loss_fake
+        # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+        # loss = loss + loss_attn
         loss.backward()
 
 
@@ -288,7 +288,7 @@ class AdaptSeg_Trainer(nn.Module):
         # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
         #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
         print(
-            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
+            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
                 self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
                 float(self.loss_d_value), self.loss_d_attn_value))
 

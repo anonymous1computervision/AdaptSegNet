@@ -43,9 +43,9 @@ def main():
     # CONFIG_PATH = "./configs/default.yaml"
     # CONFIG_PATH = "./configs/default.yaml"
     # CONFIG_PATH = "./configs/default-hinge-v5.yaml"
-    CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
+    # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
-
+    CONFIG_PATH = "./configs/default.yaml"
     # CONFIG_PATH = "./configs/default-fc-dense.yaml"
     # CONFIG_PATH = "./configs/attention_v1.yaml"
 
@@ -95,9 +95,9 @@ def main():
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
 
     best_score_record = {
-        "epochs":0,
-        "total_mIOU":0,
-        "recording_string":""
+        "epochs": 0,
+        "total_mIOU": 0,
+        "recording_string": ""
     }
 
     # Start training
