@@ -18,6 +18,7 @@ from PIL import Image
 from model.deeplab_single import Res_Deeplab
 import model.fc_densenet as fc_densenet
 from model.discriminator import FCDiscriminator
+from model.sp_discriminator import SP_FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
 from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
@@ -49,7 +50,8 @@ class AdaptSeg_Trainer(nn.Module):
             self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
             print("use fc densenet model")
         # init D
-        self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
 
