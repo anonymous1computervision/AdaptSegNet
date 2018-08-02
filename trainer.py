@@ -188,7 +188,8 @@ class AdaptSeg_Trainer(nn.Module):
         d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         # compute loss function
         # wants to fool discriminator
-        adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
+        # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
+        adv_loss = self.loss_hinge_gen(d_out_fake)
         loss = self.lambda_adv_target * adv_loss
         loss.backward()
 
@@ -230,8 +231,8 @@ class AdaptSeg_Trainer(nn.Module):
         # d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
         # d_out_real = self.model_D(self.inter_mini(F.softmax(self.source_image)), label=self.inter_mini_i(self.source_input_image))
 
-        loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
-        loss_real /= 2
+        # loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+        # loss_real /= 2
         # loss_real.backward()
 
 
@@ -253,8 +254,8 @@ class AdaptSeg_Trainer(nn.Module):
         d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
 
-        loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
-        loss_fake /= 2
+        # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+        # loss_fake /= 2
         # loss_fake.backward()
         # compute attn loss function
         # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
@@ -263,8 +264,8 @@ class AdaptSeg_Trainer(nn.Module):
         # compute total loss function
         # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
 
-        loss = loss_real + loss_fake
-        # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+        # loss = loss_real + loss_fake
+        loss = self.loss_hinge_dis(d_out_fake, d_out_real)
         # loss = loss + loss_attn
         loss.backward()
 
