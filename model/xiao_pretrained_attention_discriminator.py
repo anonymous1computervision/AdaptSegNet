@@ -8,6 +8,8 @@ from .networks import FirstResBlock_2018_SN
 from .networks import ResBlock_2018_SN
 from .networks import Self_Attn
 from .networks import SpectralNorm
+from .networks import AttentionModule
+
 from util import weights_init
 
 class XiaoPretrainAttentionDiscriminator(nn.Module):
@@ -123,14 +125,21 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         # create attention model
         model_attn = []
 
-        self.attn1 = Self_Attn(num_classes, 'relu')
+        # self.attn1 = Self_Attn(num_classes, 'relu')
         # self.attn2 = Self_Attn(ndf*8, 'relu')
+        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, densenet_out_c, 4, 2, 1))]
+        model_attn += [self.activate]
+        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, densenet_out_c, 3, 1, 1))]
+        model_attn += [self.activate]
+        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, densenet_out_c, 3, 1, 1))]
+        model_attn += [self.activate]
+        # 1x1 conv and reduce channel
+        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, 1, 0, 0))]
+        model_attn += [nn.Relu()]
 
-        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, 3, 1, 1))]
-        model_attn += [nn.LeakyReLU(0.1)]
-        model_attn += [self.attn1]
+        # model_attn += [self.attn1]
         # model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, 4, 2, 1))]
-        model_attn += [nn.ReLU()]
+        # model_attn += [nn.ReLU()]
         # model_attn += [nn.LeakyReLU(0.1)]
         # model_attn += [SpectralNorm(nn.Conv2d(ndf*4, ndf*8, 4, 2, 1))]
         # model_attn += [nn.LeakyReLU(0.1)]
@@ -191,6 +200,7 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
             # print("cond_y shape =", cond_y.shape)
 
         attn_out = self.model_attn(cond_y)
+        attn_out = F.sigmoid(attn_out)
         # print("attn_out shape =", attn_out.shape)
 
         proj_out = self.proj_conv(x)
