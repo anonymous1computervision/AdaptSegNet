@@ -125,15 +125,15 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
 
         # self.attn1 = Self_Attn(num_classes, 'relu')
         # self.attn2 = Self_Attn(ndf*8, 'relu')
-        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, densenet_out_c, 4, 2, 1))]
+        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, densenet_out_c, 3, 1, 1))]
         model_attn += [nn.LeakyReLU(0.2)]
         model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, densenet_out_c, 3, 1, 1))]
         model_attn += [nn.LeakyReLU(0.2)]
         model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, densenet_out_c, 3, 1, 1))]
         model_attn += [nn.LeakyReLU(0.2)]
         # 1x1 conv and reduce channel
-        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, 1, 0, 0))]
-        model_attn += [nn.Relu()]
+        model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, kernel_size=1, padding=0))]
+        # model_attn += [nn.ReLU()]
 
         # model_attn += [self.attn1]
         # model_attn += [SpectralNorm(nn.Conv2d(densenet_out_c, num_classes, 4, 2, 1))]
@@ -197,12 +197,13 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
             cond_y = self.densenet121(label)
             # print("cond_y shape =", cond_y.shape)
 
-        attn_out = self.model_attn(cond_y)
-        attn_out = F.sigmoid(attn_out)
+        attn_origin_out = self.model_attn(cond_y)
+        # print("attn_origin_out shape =", attn_origin_out.shape)
+        attn_out = F.tanh(attn_origin_out)
         # print("attn_out shape =", attn_out.shape)
 
         proj_out = self.proj_conv(x)
-        proj_out = F.sigmoid(proj_out)
+        # proj_out = F.sigmoid(proj_out)
 
         # print("proj_out shape", proj_out.shape)
 
@@ -228,4 +229,4 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         out = out + proj_out
         # out = self.model_classifier(out)
 
-        return out, attn_out
+        return out, attn_origin_out
