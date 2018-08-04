@@ -42,7 +42,7 @@ def main():
     # CONFIG_PATH = "./configs/default-in-bce-v3.yaml"
     # CONFIG_PATH = "./configs/default.yaml"
     # CONFIG_PATH = "./configs/default.yaml"
-    CONFIG_PATH = "./configs/default-hinge-v5.yaml"
+    CONFIG_PATH = "./configs/default-hinge-v6.yaml"
     # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
     # CONFIG_PATH = "./configs/default.yaml"

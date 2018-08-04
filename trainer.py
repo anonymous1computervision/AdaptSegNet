@@ -225,8 +225,8 @@ class AdaptSeg_Trainer(nn.Module):
         # compute adv loss function
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
         # d_out_real = self.model_D(F.softmax(self.source_image), label=None)
-        d_out_real, attn = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
-        # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
+        # d_out_real, attn = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
+        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
 
         # d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
         # d_out_real = self.model_D(self.inter_mini(F.softmax(self.source_image)), label=self.inter_mini_i(self.source_input_image))
@@ -240,10 +240,10 @@ class AdaptSeg_Trainer(nn.Module):
         #  attention part  #
         ####################
 
-        d_attn = self._resize(attn, size=self.input_size)
+        #d_attn = self._resize(attn, size=self.input_size)
         # # in source domain compute attention loss
-        loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
-        self.loss_d_attn_value += loss_attn.data.cpu().numpy()
+        #loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        #self.loss_d_attn_value += loss_attn.data.cpu().numpy()
 
         # loss_attn.backward()
         # loss_real = loss_real + loss_attn
@@ -266,7 +266,7 @@ class AdaptSeg_Trainer(nn.Module):
 
         # loss = loss_real + loss_fake
         loss = self.loss_hinge_dis(d_out_fake, d_out_real)
-        loss = loss + loss_attn
+        #loss = loss + loss_attn
         loss.backward()
 
 
