@@ -185,7 +185,7 @@ class AdaptSeg_Trainer(nn.Module):
         pred_target_fake = interp_target(pred_target_fake)
 
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
-        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
+        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images, from_source=False)
         # compute loss function
         # wants to fool discriminator
         # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
@@ -226,7 +226,7 @@ class AdaptSeg_Trainer(nn.Module):
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
         # d_out_real = self.model_D(F.softmax(self.source_image), label=None)
         # d_out_real, attn = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
-        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
+        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image, from_source=True)
 
         # d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
         # d_out_real = self.model_D(self.inter_mini(F.softmax(self.source_image)), label=self.inter_mini_i(self.source_input_image))
@@ -240,10 +240,10 @@ class AdaptSeg_Trainer(nn.Module):
         #  attention part  #
         ####################
 
-        #d_attn = self._resize(attn, size=self.input_size)
+        # d_attn = self._resize(attn, size=self.input_size)
         # # in source domain compute attention loss
-        #loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
-        #self.loss_d_attn_value += loss_attn.data.cpu().numpy()
+        # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        # self.loss_d_attn_value += loss_attn.data.cpu().numpy()
 
         # loss_attn.backward()
         # loss_real = loss_real + loss_attn
@@ -251,7 +251,7 @@ class AdaptSeg_Trainer(nn.Module):
 
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
-        d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
+        d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image, from_source=False)
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
 
         # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
@@ -266,7 +266,7 @@ class AdaptSeg_Trainer(nn.Module):
 
         # loss = loss_real + loss_fake
         loss = self.loss_hinge_dis(d_out_fake, d_out_real)
-        #loss = loss + loss_attn
+        # loss = loss + loss_attn
         loss.backward()
 
 

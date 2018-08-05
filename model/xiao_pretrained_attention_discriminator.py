@@ -157,7 +157,9 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         self.model_block = nn.Sequential(*self.model_block)
         # self.proj_block = nn.Sequential(*self.proj_block)
         self.proj_conv = nn.Sequential(*self.proj_conv)
-        self.model_attn = nn.Sequential(*model_attn)
+        # self.model_attn = nn.Sequential(*model_attn)
+        self.model_attn_source = nn.Sequential(*model_attn)
+        self.model_attn_target = nn.Sequential(*model_attn)
         # self.model_classifier = nn.Sequential(*self.model_classifier)
 
         # use weight init
@@ -167,7 +169,10 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         # self.fc.apply(weights_init("xavier"))
         # nn.init.xavier_uniform_(self.fc.weight.data, 1.)
         self.proj_conv.apply(weights_init("kaiming"))
-        self.model_attn.apply(weights_init("kaiming"))
+        # self.model_attn.apply(weights_init("kaiming"))
+        self.model_attn_source.apply(weights_init("kaiming"))
+        self.model_attn_target.apply(weights_init("kaiming"))
+
         # self.model_classifier.apply(weights_init("xavier"))
 
         # self.resnet18 = nn.Sequential(*modules)
@@ -178,9 +183,7 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         for p in self.densenet121.parameters():
             p.requires_grad = False
 
-
-
-    def forward(self, x, label=None):
+    def forward(self, x, label=None, from_source=True):
 
         x = self.model_pre(x)
         out = self.model_block(x)
@@ -199,7 +202,12 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
             cond_y = self.densenet121(label)
             # print("cond_y shape =", cond_y.shape)
 
-        attn_origin_out = self.model_attn(cond_y)
+        if from_source:
+            attn_origin_out = self.model_attn_source(cond_y)
+        else:
+            attn_origin_out = self.model_attn_target(cond_y)
+
+        # attn_origin_out = self.model_attn(cond_y)
         # print("attn_origin_out shape =", attn_origin_out.shape)
         attn_out = F.tanh(attn_origin_out)
         # print("attn_out shape =", attn_out.shape)
