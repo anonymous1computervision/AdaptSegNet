@@ -22,6 +22,7 @@ from model.sp_discriminator import SP_FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
 from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
+from model.sp_attn_discriminator import SP_ATTN_FCDiscriminator
 
 from utils.loss import CrossEntropy2d
 
@@ -53,7 +54,8 @@ class AdaptSeg_Trainer(nn.Module):
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
         self.model.train()
         self.model.cuda(self.gpu)
@@ -185,11 +187,11 @@ class AdaptSeg_Trainer(nn.Module):
         pred_target_fake = interp_target(pred_target_fake)
 
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
-        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images, from_source=False)
+        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         # compute loss function
         # wants to fool discriminator
-        # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
-        adv_loss = self.loss_hinge_gen(d_out_fake)
+        adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
+        # adv_loss = self.loss_hinge_gen(d_out_fake)
         loss = self.lambda_adv_target * adv_loss
         loss.backward()
 
@@ -226,23 +228,32 @@ class AdaptSeg_Trainer(nn.Module):
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=None, model_attn=self.model_attn)
         # d_out_real = self.model_D(F.softmax(self.source_image), label=None)
         # d_out_real, attn = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
-        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image, from_source=True)
+        d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
 
         # d_out_real = self.model_D(F.softmax(self.source_image), label=self.inter_mini(self.source_input_image))
         # d_out_real = self.model_D(self.inter_mini(F.softmax(self.source_image)), label=self.inter_mini_i(self.source_input_image))
 
-        # loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
-        # loss_real /= 2
+        loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+        loss_real /= 2
         # loss_real.backward()
 
 
         ####################
         #  attention part  #
         ####################
-
+        # 0 = road
+        # 1 = sidewalk
+        # 2 = building
+        # 8 = vegeteron
+        # 9 = sky
+        # coarse_list = [0, 1, 2, 8, 9]
+        # print("labels shape =", labels.shape)
+        # coarse_labels = self.label_to_coarse_label(labels, coarse_label_list=coarse_list)
+        # print("coarse_label shape =", coarse_labels.shape)
         # d_attn = self._resize(attn, size=self.input_size)
-        # # in source domain compute attention loss
-        # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        # # # in source domain compute attention loss
+        # # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, coarse_labels)
         # self.loss_d_attn_value += loss_attn.data.cpu().numpy()
 
         # loss_attn.backward()
@@ -251,11 +262,11 @@ class AdaptSeg_Trainer(nn.Module):
 
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=None, model_attn=self.model_attn)
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=None)
-        d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image, from_source=False)
+        d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
 
-        # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
-        # loss_fake /= 2
+        loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+        loss_fake /= 2
         # loss_fake.backward()
         # compute attn loss function
         # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
@@ -264,8 +275,8 @@ class AdaptSeg_Trainer(nn.Module):
         # compute total loss function
         # loss = loss_real + loss_fake + self.lambda_attn*loss_attn
 
-        # loss = loss_real + loss_fake
-        loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+        loss = loss_real + loss_fake
+        # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
         # loss = loss + loss_attn
         loss.backward()
 
@@ -294,6 +305,34 @@ class AdaptSeg_Trainer(nn.Module):
             "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
                 self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
                 float(self.loss_d_value), self.loss_d_attn_value))
+
+    # def label_to_coarse_label(self, labels, coarse_label_list=[0, 1, 2, 8, 9], num_classes=19):
+    #     # map value to each category
+    #     #
+    #     # input:
+    #     #   label (n, h, w)
+    #     #
+    #     # output:
+    #     #   coarse_label (n, h, w)
+    #
+    #     # all_label_list = [i for i in range(20)]
+    #     ignore_label = 255
+    #     all_label_list += [ignore_label]
+    #     coarse_label_list += [ignore_label]
+    #     # diff_label_list = list(set(all_label_list) - set(coarse_label_list))
+    #     # n, h, w = labels.size()
+    #     # for label_id in diff_label_list:
+    #     #     print("label_id =", label_id)
+    #     #     labels = (labels == label_id) * 0
+    #     # for label_id in diff_label_list:
+    #     # coarse_labels = torch.zeros_like(labels)
+    #     # for label_id in coarse_label_list:
+    #     #     coarse_labels += labels[(labels == label_id)]
+    #     # labels = labels[labels_mask]
+    #     coarse_labels = labels.map_(lambda x, y : x != y ? 0:y )
+    #     print("max", coarse_labels.max())
+    #     print("labels values", coarse_labels)
+    #     return coarse_labels
 
 
     def _compute_adv_loss_real(self, d_out_real, loss_opt="bce", label=0):
