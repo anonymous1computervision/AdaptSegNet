@@ -47,7 +47,7 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         self.model_pre += [nn.LeakyReLU(0.2)]
 
         # self.proj_attn = Self_Attn(num_classes, 'relu')
-        coarse_num_classes = 5
+        coarse_num_classes = 3
         self.proj_attn = Self_Attn(ndf * 8, 'relu')
 
 
