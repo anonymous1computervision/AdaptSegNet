@@ -1,28 +1,27 @@
-Test summary = first_test
+Test summary = default setting D use ASPP module for classifier [4, 8, 12, 16]
+
 ========= Best score =========
 best epoches = 0
 
 
 ========= Current score =========
-===>road:	6.91
-===>sidewalk:	3.62
-===>building:	3.71
-===>wall:	2.93
-===>fence:	0.02
-===>pole:	0.48
-===>light:	0.15
-===>sign:	0.33
-===>vegetation:	1.94
-===>terrain:	0.16
-===>sky:	4.07
-===>person:	0.66
-===>rider:	0.11
-===>car:	0.42
-===>truck:	0.4
-===>bus:	0.0
-===>train:	0.0
+===>road:	21.07
+===>sidewalk:	0.02
+===>building:	0.69
+===>wall:	1.7
+===>fence:	0.03
+===>pole:	1.2
+===>light:	0.34
+===>sign:	0.2
+===>vegetation:	3.81
+===>terrain:	0.18
+===>sky:	3.67
+===>person:	0.57
+===>rider:	0.0
+===>car:	0.47
+===>truck:	0.76
+===>bus:	0.02
+===>train:	0.07
 ===>motocycle:	0.0
-===>bicycle:	0.0
-===> mIoU: 1.36
-
-                    
+===>bicycle:	0.14
+===> mIoU: 1.84

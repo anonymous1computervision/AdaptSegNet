@@ -165,8 +165,16 @@ def main():
                         output_to_image(output, name)
                     total_miou, recording_string = compute_mIoU()
 
-                    recording_total = f"""Test summary = %s\n========= Best score =========\nbest epoches = %s\n%s\n\n========= Current score =========\n%s
-                    """ % (config["test_summary"], best_score_record["epochs"], best_score_record["recording_string"], recording_string)
+                    recording_total = f"Test summary = %s\n\n"\
+                                    "========= Best score =========\n"\
+                                    "best epoches = %s\n"\
+                                    "%s\n\n"\
+                                    "========= Current score =========\n"\
+                                    "%s"\
+                                     % (config["test_summary"],
+                                        best_score_record["epochs"],
+                                        best_score_record["recording_string"],
+                                        recording_string)
 
                     print(recording_total)
 
