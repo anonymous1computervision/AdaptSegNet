@@ -5,23 +5,24 @@ best epoches = 0
 
 
 ========= Current score =========
-===>road:	21.07
-===>sidewalk:	0.02
-===>building:	0.69
-===>wall:	1.7
-===>fence:	0.03
-===>pole:	1.2
-===>light:	0.34
-===>sign:	0.2
-===>vegetation:	3.81
-===>terrain:	0.18
-===>sky:	3.67
-===>person:	0.57
-===>rider:	0.0
-===>car:	0.47
-===>truck:	0.76
-===>bus:	0.02
-===>train:	0.07
+epoches = 0
+===>road:	3.93
+===>sidewalk:	0.73
+===>building:	11.11
+===>wall:	2.3
+===>fence:	0.06
+===>pole:	1.06
+===>light:	0.6
+===>sign:	0.16
+===>vegetation:	4.04
+===>terrain:	1.11
+===>sky:	1.45
+===>person:	2.05
+===>rider:	0.02
+===>car:	2.06
+===>truck:	1.07
+===>bus:	0.0
+===>train:	1.8
 ===>motocycle:	0.0
-===>bicycle:	0.14
-===> mIoU: 1.84
+===>bicycle:	0.2
+===> mIoU: 1.78

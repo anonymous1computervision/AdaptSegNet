@@ -169,11 +169,13 @@ def main():
                                     "========= Best score =========\n"\
                                     "best epoches = %s\n"\
                                     "%s\n\n"\
-                                    "========= Current score =========\n"\
+                                    "========= Current score =========\n" \
+                                    "epoches = % s\n"\
                                     "%s"\
                                      % (config["test_summary"],
                                         best_score_record["epochs"],
                                         best_score_record["recording_string"],
+                                        i_iter,
                                         recording_string)
 
                     print(recording_total)
