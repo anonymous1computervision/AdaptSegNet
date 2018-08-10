@@ -47,7 +47,7 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         self.model_pre += [nn.LeakyReLU(0.2)]
 
         # self.proj_attn = Self_Attn(num_classes, 'relu')
-        coarse_num_classes = 3
+        coarse_num_classes = 19
         self.proj_attn = Self_Attn(ndf * 8, 'relu')
 
 
@@ -201,9 +201,11 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
             cond_y = self.densenet121(label)
             # print("cond_y shape =", cond_y.shape)
 
-        attn_origin_out = self.model_attn(cond_y)
+        attn_out = self.model_attn(cond_y)
         # print("attn_origin_out shape =", attn_origin_out.shape)
-        attn_out = F.tanh(attn_origin_out)
+        # attn_out = F.tanh(attn_origin_out)
+        attn_out = F.softmax(F.relu(attn_out))
+
         # print("attn_out shape =", attn_out.shape)
 
         proj_out = self.proj_conv(x)
@@ -233,4 +235,4 @@ class XiaoPretrainAttentionDiscriminator(nn.Module):
         out = out + proj_out
         # out = self.model_classifier(out)
 
-        return out, attn_origin_out
+        return out, attn_out

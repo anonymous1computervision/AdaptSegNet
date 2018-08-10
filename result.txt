@@ -1,49 +1,28 @@
-sp + attn 
-
-sky bad
-
+Test summary = first_test
 ========= Best score =========
-best epoches = 13000
-===>road:       89.25
-===>sidewalk:   37.45
-===>building:   68.54
-===>wall:       24.74
-===>fence:      7.63
-===>pole:       21.48
-===>light:      19.16
-===>sign:       11.54
-===>vegetation: 64.77
-===>terrain:    6.95
-===>sky:        53.79
-===>person:     43.67
-===>rider:      16.64
-===>car:        72.72
-===>truck:      10.83
-===>bus:        38.76
-===>train:      10.95
-===>motocycle:  0.0
-===>bicycle:    0.0
-===> mIoU: 31.52
+best epoches = 0
 
 
 ========= Current score =========
-===>road:       72.58
-===>sidewalk:   22.83
-===>building:   63.39
-===>wall:       26.92
-===>fence:      19.18
-===>pole:       22.91
-===>light:      28.25
-===>sign:       13.8
-===>vegetation: 46.53
-===>terrain:    3.65
-===>sky:        28.32
-===>person:     47.01
-===>rider:      26.2
-===>car:        75.13
-===>truck:      15.32
-===>bus:        40.47
-===>train:      1.21
-===>motocycle:  0.0
-===>bicycle:    0.31
-===> mIoU: 29.16
+===>road:	6.91
+===>sidewalk:	3.62
+===>building:	3.71
+===>wall:	2.93
+===>fence:	0.02
+===>pole:	0.48
+===>light:	0.15
+===>sign:	0.33
+===>vegetation:	1.94
+===>terrain:	0.16
+===>sky:	4.07
+===>person:	0.66
+===>rider:	0.11
+===>car:	0.42
+===>truck:	0.4
+===>bus:	0.0
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 1.36
+
+                    

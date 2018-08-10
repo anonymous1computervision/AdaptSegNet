@@ -35,7 +35,7 @@ gen:
   style_dim: 8                # length of style code
   mlp_dim: 256                # number of filters in MLP
   lambda_seg: 1
-  lambda_adv_target: 0.05
+  lambda_adv_target: 0.01
   lambda_adv_attn_target: 0
 
 dis:

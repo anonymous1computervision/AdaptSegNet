@@ -23,6 +23,7 @@ from model.xiao_discriminator import XiaoDiscriminator
 from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
 from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
 from model.sp_attn_discriminator import SP_ATTN_FCDiscriminator
+from model.sp_aspp_discriminator import SP_ASPP_FCDiscriminator
 
 from utils.loss import CrossEntropy2d
 
@@ -55,7 +56,9 @@ class AdaptSeg_Trainer(nn.Module):
         # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = SP_ASPP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+
 
         self.model.train()
         self.model.cuda(self.gpu)
@@ -250,9 +253,10 @@ class AdaptSeg_Trainer(nn.Module):
         # print("labels shape =", labels.shape)
         # coarse_labels = self.label_to_coarse_label(labels, coarse_label_list=coarse_list)
         # print("coarse_label shape =", coarse_labels.shape)
+        # print("attn shape =", attn.shape)
         # d_attn = self._resize(attn, size=self.input_size)
         # # # in source domain compute attention loss
-        # # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
+        # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, labels)
         # loss_attn = self.lambda_attn * self._compute_seg_loss(d_attn, coarse_labels)
         # self.loss_d_attn_value += loss_attn.data.cpu().numpy()
 

@@ -40,9 +40,9 @@ def main():
     # CONFIG_PATH = "./configs/attention_v7_attn.yaml"
     # CONFIG_PATH = "./configs/default-mini.yaml"
     # CONFIG_PATH = "./configs/default-in-bce-v3.yaml"
-    # CONFIG_PATH = "./configs/default.yaml"
+    # CONFIG_PATH = "./configs/default_v2.yaml"
     CONFIG_PATH = "./configs/default.yaml"
-    # CONFIG_PATH = "./configs/default-hinge-v6.yaml"
+    # CONFIG_PATH = "./configs/default-hinge-v7.yaml"
     # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
     # CONFIG_PATH = "./configs/default.yaml"
@@ -165,12 +165,14 @@ def main():
                         output_to_image(output, name)
                     total_miou, recording_string = compute_mIoU()
 
-                    print("========= Best score =========")
-                    print("best epoches =", best_score_record["epochs"])
-                    print(best_score_record["recording_string"])
-                    print("")
-                    print("========= Current score =========")
-                    print(recording_string)
+                    recording_total = f"""Test summary = %s\n========= Best score =========\nbest epoches = %s\n%s\n\n========= Current score =========\n%s
+                    """ % (config["test_summary"], best_score_record["epochs"], best_score_record["recording_string"], recording_string)
+
+                    print(recording_total)
+
+                    with open('./result.txt', 'w') as f:
+                        f.write(recording_total)
+
 
                     # if higher accuracy in evaluate
                     if(total_miou > best_score_record["total_mIOU"]):
