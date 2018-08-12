@@ -1,4 +1,4 @@
-Test summary = default setting D use ASPP module for classifier [4, 8, 12, 16]
+Test summary = add weakly supervised label
 
 ========= Best score =========
 best epoches = 0
@@ -6,23 +6,23 @@ best epoches = 0
 
 ========= Current score =========
 epoches = 0
-===>road:	3.93
-===>sidewalk:	0.73
-===>building:	11.11
-===>wall:	2.3
-===>fence:	0.06
-===>pole:	1.06
-===>light:	0.6
-===>sign:	0.16
-===>vegetation:	4.04
-===>terrain:	1.11
-===>sky:	1.45
-===>person:	2.05
-===>rider:	0.02
-===>car:	2.06
-===>truck:	1.07
-===>bus:	0.0
-===>train:	1.8
+===>road:	9.97
+===>sidewalk:	4.05
+===>building:	5.29
+===>wall:	4.75
+===>fence:	0.07
+===>pole:	1.56
+===>light:	0.15
+===>sign:	1.29
+===>vegetation:	2.07
+===>terrain:	0.16
+===>sky:	2.23
+===>person:	1.16
+===>rider:	0.15
+===>car:	2.13
+===>truck:	0.18
+===>bus:	0.43
+===>train:	0.14
 ===>motocycle:	0.0
-===>bicycle:	0.2
-===> mIoU: 1.78
+===>bicycle:	0.34
+===> mIoU: 1.9

@@ -53,11 +53,11 @@ class AdaptSeg_Trainer(nn.Module):
             print("use fc densenet model")
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = SP_ASPP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = SP_ASPP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
 
         self.model.train()
@@ -82,6 +82,7 @@ class AdaptSeg_Trainer(nn.Module):
         self.loss_d_value = 0
         self.loss_source_value = 0
         self.loss_target_value = 0
+        self.loss_target_weakly_seg_value = 0
         self.loss_d_attn_value = 0
 
         self.i_iter = 0
@@ -90,6 +91,7 @@ class AdaptSeg_Trainer(nn.Module):
 
         # for generator
         self.lambda_seg = hyperparameters['gen']['lambda_seg']
+        self.lambda_weakly_seg = hyperparameters['gen']['lambda_weakly_seg']
         self.lambda_adv_target = hyperparameters['gen']['lambda_adv_target']
         self.decay_power = hyperparameters['decay_power']
 
@@ -163,6 +165,65 @@ class AdaptSeg_Trainer(nn.Module):
         # record log
         self.loss_source_value += seg_loss.data.cpu().numpy()
 
+    def gen_weakly_update(self, images, image_path, num_classes=19):
+        """
+                 Input target domain image and use weakly segmentation compute seg loss.
+
+                :param images:
+                :param image_path: just for save path to record model predict, use in  snapshot_image_save function
+                :return:
+                """
+        self.optimizer_G.zero_grad()
+
+
+        # Disable D backpropgation, we only train G
+        for param in self.model_D.parameters():
+            param.requires_grad = False
+
+        self.target_image_path = image_path
+
+        # get predict output
+        pred_target_fake = self.model(images)
+
+        # resize to target size
+        interp_target = nn.Upsample(size=self.input_size_target, align_corners=False,
+                                    mode='bilinear')
+        pred_target_fake = interp_target(pred_target_fake)
+
+        # ============ get weakly label =============
+
+        weakly_labels = pred_target_fake.permute(0, 2, 3, 1)
+        _, weakly_labels = torch.max(weakly_labels, -1)
+
+        # choose which label be weakly supervised label
+        # 0 = road
+        # 1 = sidewalk
+        # 2 = building
+        # 8 = vegeteron
+        # 10 = sky
+        # 11 = person
+        weakly_map = [0, 1, 2, 8, 10, 11]
+        filter_weakly_map = set(range(num_classes)) - set(weakly_map)
+        # ignore non-weakly label
+        for value in filter_weakly_map:
+            weakly_labels[weakly_labels == value] = 255
+
+        # in source domain compute segmentation loss
+        seg_loss = self._compute_seg_loss(pred_target_fake, weakly_labels)
+        # proper normalization
+        seg_loss = self.lambda_weakly_seg * seg_loss
+
+        seg_loss.backward()
+
+        # update loss
+        self.optimizer_G.step()
+
+        # save image for discriminator use
+        self.target_image = pred_target_fake.detach()
+        self.target_input_image = images.detach()
+
+        # record log
+        self.loss_target_weakly_seg_value += seg_loss.data.cpu().numpy()
 
     def gen_target_update(self, images, image_path):
         """
@@ -248,7 +309,8 @@ class AdaptSeg_Trainer(nn.Module):
         # 1 = sidewalk
         # 2 = building
         # 8 = vegeteron
-        # 9 = sky
+        # 10 = sky
+        # 11 = person
         # coarse_list = [0, 1, 2, 8, 9]
         # print("labels shape =", labels.shape)
         # coarse_labels = self.label_to_coarse_label(labels, coarse_label_list=coarse_list)
@@ -305,10 +367,15 @@ class AdaptSeg_Trainer(nn.Module):
     def show_each_loss(self):
         # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
         #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
+        # print(
+        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
+        #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
+        #         float(self.loss_d_value), self.loss_d_attn_value))
         print(
-            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
+            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_weakly_seg = {4:.5f} loss_D1 = {5:.3f} loss_D1_attn = {6:.3f}".format(
                 self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-                float(self.loss_d_value), self.loss_d_attn_value))
+                float(self.loss_target_weakly_seg_value), float(self.loss_d_value), self.loss_d_attn_value))
+
 
     # def label_to_coarse_label(self, labels, coarse_label_list=[0, 1, 2, 8, 9], num_classes=19):
     #     # map value to each category
@@ -415,6 +482,8 @@ class AdaptSeg_Trainer(nn.Module):
         self.loss_d_value = 0
         self.loss_source_value = 0
         self.loss_target_value = 0
+        self.loss_target_weakly_seg_value = 0
+
         self.loss_d_attn_value = 0
 
 

@@ -41,7 +41,7 @@ def main():
     # CONFIG_PATH = "./configs/default-mini.yaml"
     # CONFIG_PATH = "./configs/default-in-bce-v3.yaml"
     # CONFIG_PATH = "./configs/default_v2.yaml"
-    CONFIG_PATH = "./configs/default.yaml"
+    CONFIG_PATH = "./configs/default_weakly_supervised.yaml"
     # CONFIG_PATH = "./configs/default-hinge-v7.yaml"
     # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
@@ -124,10 +124,14 @@ def main():
             target_images, _, _, target_name = target_batch
             target_images = Variable(target_images).cuda(gpu)
             trainer.gen_target_update(target_images, target_name)
+
+            # train discriminator use prior generator image
+            trainer.dis_update(labels=labels)
+
+            # train G use weakly label
+            trainer.gen_weakly_update(target_images, target_name)
             del target_images
 
-            # # train discriminator use prior generator image
-            trainer.dis_update(labels=labels)
 
             # show log
             trainer.show_each_loss()
