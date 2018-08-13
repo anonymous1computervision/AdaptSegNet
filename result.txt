@@ -1,4 +1,4 @@
-Test summary = DeepLabv3+ default setting
+Test summary = DeepLabv3+ default setting only train src
 
 ========= Best score =========
 best epoches = 0
@@ -6,23 +6,23 @@ best epoches = 0
 
 ========= Current score =========
 epoches = 0
-===>road:	12.85
-===>sidewalk:	2.51
-===>building:	0.0
-===>wall:	0.55
-===>fence:	0.0
-===>pole:	0.69
-===>light:	0.01
-===>sign:	0.56
-===>vegetation:	1.63
-===>terrain:	0.04
-===>sky:	0.07
-===>person:	0.12
-===>rider:	0.05
-===>car:	0.39
-===>truck:	0.46
-===>bus:	0.34
-===>train:	0.02
-===>motocycle:	0.01
-===>bicycle:	0.01
-===> mIoU: 1.07
+===>road:	5.34
+===>sidewalk:	1.76
+===>building:	1.15
+===>wall:	3.45
+===>fence:	0.11
+===>pole:	0.42
+===>light:	0.07
+===>sign:	0.14
+===>vegetation:	3.99
+===>terrain:	0.05
+===>sky:	2.54
+===>person:	0.1
+===>rider:	0.12
+===>car:	1.27
+===>truck:	0.23
+===>bus:	0.0
+===>train:	0.05
+===>motocycle:	0.1
+===>bicycle:	0.18
+===> mIoU: 1.11

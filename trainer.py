@@ -507,7 +507,7 @@ class AdaptSeg_Trainer(nn.Module):
             self._adjust_learning_rate_D(self.optimizer_D, self.i_iter)
 
 
-    def snapshot_image_save(self, dir_name="check_output/"):
+    def snapshot_image_save(self, dir_name="check_output/", src_save=True, target_save=True):
         """
                 check model training status,
                 will output image to config["image_save_dir"]
@@ -517,18 +517,19 @@ class AdaptSeg_Trainer(nn.Module):
         if not os.path.exists(os.path.exists(os.path.join(dir_name, "Image_target_domain_seg"))):
             os.makedirs(os.path.join(dir_name, "Image_target_domain_seg"))
 
-        # save label
-        label_name = os.path.join("data", "GTA5", "labels", self.source_label_path[0])
-        save_name = os.path.join(dir_name, "Image_source_domain_seg", '%s_label.png' % self.i_iter)
-        shutil.copyfile(label_name, save_name)
+        if src_save:
+            # save label
+            label_name = os.path.join("data", "GTA5", "labels", self.source_label_path[0])
+            save_name = os.path.join(dir_name, "Image_source_domain_seg", '%s_label.png' % self.i_iter)
+            shutil.copyfile(label_name, save_name)
+            # save output image
+            paint_predict_image(self.source_image).save('check_output/Image_source_domain_seg/%s.png' % self.i_iter)
 
-        target_name = os.path.join("data", "Cityscapes", "data", "leftImg8bit", "train", self.target_image_path[0])
-        save_name = os.path.join(dir_name, "Image_target_domain_seg", '%s_label.png' % self.i_iter)
-        shutil.copyfile(target_name, save_name)
-
-        # save output image
-        paint_predict_image(self.source_image).save('check_output/Image_source_domain_seg/%s.png' % self.i_iter)
-        paint_predict_image(self.target_image).save('check_output/Image_target_domain_seg/%s.png' % self.i_iter)
+        if target_save:
+            target_name = os.path.join("data", "Cityscapes", "data", "leftImg8bit", "train", self.target_image_path[0])
+            save_name = os.path.join(dir_name, "Image_target_domain_seg", '%s_label.png' % self.i_iter)
+            shutil.copyfile(target_name, save_name)
+            paint_predict_image(self.target_image).save('check_output/Image_target_domain_seg/%s.png' % self.i_iter)
 
     def save_model(self, snapshot_save_dir="./model_save"):
         """

@@ -102,7 +102,7 @@ def main():
         "total_mIOU": 0,
         "recording_string": ""
     }
-
+    train_only_src = True
     # Start training
     while True:
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
@@ -124,13 +124,13 @@ def main():
             del src_images
 
             # train G use target image
-            target_images, _, _, target_name = target_batch
-            target_images = Variable(target_images).cuda(gpu)
-            trainer.gen_target_update(target_images, target_name)
-            del target_images
+            # target_images, _, _, target_name = target_batch
+            # target_images = Variable(target_images).cuda(gpu)
+            # trainer.gen_target_update(target_images, target_name)
+            # del target_images
 
             # train discriminator use prior generator image
-            trainer.dis_update(labels=labels)
+            # trainer.dis_update(labels=labels)
 
             # train G use weakly label
             # trainer.gen_weakly_update(target_images, target_name)
@@ -143,7 +143,7 @@ def main():
             # save image to check
             if i_iter % image_save_iter == 0:
                 print("image_save_dir", image_save_dir)
-                trainer.snapshot_image_save(dir_name=image_save_dir)
+                trainer.snapshot_image_save(dir_name=image_save_dir, src_save=True, target_save=not train_only_src)
 
             # save checkpoint .pth
             if i_iter % snapshot_save_iter == 0 and i_iter > 0:

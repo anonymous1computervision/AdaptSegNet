@@ -1,5 +1,5 @@
 # logger options
-test_summary: DeepLabv3+ default setting
+test_summary: DeepLabv3+ default setting only train src
 log_iter: 1                   # How often do you want to log the training stats
 snapshot_save_iter: 1000     # How often do you want to save trained models
 snapshot_save_dir: ./snapshots/GTA2Cityscapes_multi/
