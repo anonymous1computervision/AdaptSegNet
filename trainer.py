@@ -16,6 +16,8 @@ from PIL import Image
 
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
+from model.deeplav_v3_xception import DeepLabv3_plus
+
 import model.fc_densenet as fc_densenet
 from model.discriminator import FCDiscriminator
 from model.sp_discriminator import SP_FCDiscriminator
@@ -51,6 +53,12 @@ class AdaptSeg_Trainer(nn.Module):
         elif hyperparameters["model"] == 'FC-DenseNet':
             self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
             print("use fc densenet model")
+        elif hyperparameters["model"] == 'DeepLab_v3_plus':
+            self.model = DeepLabv3_plus(nInputChannels=3,
+                                        n_classes=hyperparameters['num_classes'],
+                                        pretrained=True,
+                                        _print=True)
+            print("use DeepLab_v3_plus model")
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
@@ -91,7 +99,7 @@ class AdaptSeg_Trainer(nn.Module):
 
         # for generator
         self.lambda_seg = hyperparameters['gen']['lambda_seg']
-        self.lambda_weakly_seg = hyperparameters['gen']['lambda_weakly_seg']
+        # self.lambda_weakly_seg = hyperparameters['gen']['lambda_weakly_seg']
         self.lambda_adv_target = hyperparameters['gen']['lambda_adv_target']
         self.decay_power = hyperparameters['decay_power']
 
@@ -141,6 +149,7 @@ class AdaptSeg_Trainer(nn.Module):
 
         self.source_label_path = label_path
 
+        # print("images shape =", images.shape)
         # get predict output
         pred_source_real = self.model(images)
 
@@ -367,14 +376,15 @@ class AdaptSeg_Trainer(nn.Module):
     def show_each_loss(self):
         # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
         #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
-        # print(
-        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
-        #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-        #         float(self.loss_d_value), self.loss_d_attn_value))
         print(
-            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_weakly_seg = {4:.5f} loss_D1 = {5:.3f} loss_D1_attn = {6:.3f}".format(
+            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
                 self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-                float(self.loss_target_weakly_seg_value), float(self.loss_d_value), self.loss_d_attn_value))
+                float(self.loss_d_value), self.loss_d_attn_value))
+
+        # print(
+        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_weakly_seg = {4:.5f} loss_D1 = {5:.3f} loss_D1_attn = {6:.3f}".format(
+        #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
+        #         float(self.loss_target_weakly_seg_value), float(self.loss_d_value), self.loss_d_attn_value))
 
 
     # def label_to_coarse_label(self, labels, coarse_label_list=[0, 1, 2, 8, 9], num_classes=19):

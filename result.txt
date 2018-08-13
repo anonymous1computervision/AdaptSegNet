@@ -1,4 +1,4 @@
-Test summary = add weakly supervised label
+Test summary = DeepLabv3+ default setting
 
 ========= Best score =========
 best epoches = 0
@@ -6,23 +6,23 @@ best epoches = 0
 
 ========= Current score =========
 epoches = 0
-===>road:	9.97
-===>sidewalk:	4.05
-===>building:	5.29
-===>wall:	4.75
-===>fence:	0.07
-===>pole:	1.56
-===>light:	0.15
-===>sign:	1.29
-===>vegetation:	2.07
-===>terrain:	0.16
-===>sky:	2.23
-===>person:	1.16
-===>rider:	0.15
-===>car:	2.13
-===>truck:	0.18
-===>bus:	0.43
-===>train:	0.14
-===>motocycle:	0.0
-===>bicycle:	0.34
-===> mIoU: 1.9
+===>road:	12.85
+===>sidewalk:	2.51
+===>building:	0.0
+===>wall:	0.55
+===>fence:	0.0
+===>pole:	0.69
+===>light:	0.01
+===>sign:	0.56
+===>vegetation:	1.63
+===>terrain:	0.04
+===>sky:	0.07
+===>person:	0.12
+===>rider:	0.05
+===>car:	0.39
+===>truck:	0.46
+===>bus:	0.34
+===>train:	0.02
+===>motocycle:	0.01
+===>bicycle:	0.01
+===> mIoU: 1.07

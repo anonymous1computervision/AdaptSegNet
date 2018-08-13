@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .networks import SpectralNorm
@@ -49,31 +50,38 @@ class SP_ASPP_FCDiscriminator(nn.Module):
 
 class _ASPPModule(nn.Module):
     """Atrous Spatial Pyramid Pooling
-    copy from https://github.com/kazuto1011/deeplab-pytorch/blob/3da05542c0d04502a7a23be13a8e4ec539c4670d/libs/models/deeplabv2.py"""
+    copy from https://github.com/gengyanlei/deeplab_v3/blob/master/model.py"""
 
-    def __init__(self, in_channels, out_channels, pyramids):
-        super(_ASPPModule, self).__init__()
-        self.stages = nn.Module()
-        for i, (dilation, padding) in enumerate(zip(pyramids, pyramids)):
-            self.stages.add_module(
-                "c{}".format(i),
-                nn.Conv2d(
-                    in_channels=in_channels,
-                    out_channels=out_channels,
-                    kernel_size=3,
-                    stride=1,
-                    padding=padding,
-                    dilation=dilation,
-                    bias=True,
-                ),
-            )
+    class ASPP(nn.Module):
+        def __init__(self, in_channel=512, depth=256):
+            super().__init__()
+            # global average pooling : init nn.AdaptiveAvgPool2d ;also forward torch.mean(,,keep_dim=True)
+            self.mean = nn.AdaptiveAvgPool2d((1, 1))
+            self.conv = nn.Conv2d(in_channel, depth, 1, 1)
+            # k=1 s=1 no pad
+            self.atrous_block1 = nn.Conv2d(in_channel, depth, 1, 1)
+            self.atrous_block6 = nn.Conv2d(in_channel, depth, 3, 1, padding=6, dilation=6)
+            self.atrous_block12 = nn.Conv2d(in_channel, depth, 3, 1, padding=12, dilation=12)
+            self.atrous_block18 = nn.Conv2d(in_channel, depth, 3, 1, padding=18, dilation=18)
 
-        for m in self.stages.children():
-            nn.init.normal_(m.weight, mean=0, std=0.01)
-            nn.init.constant_(m.bias, 0)
+            self.conv_1x1_output = nn.Conv2d(depth * 5, depth, 1, 1)
+            
 
-    def forward(self, x):
-        h = 0
-        for stage in self.stages.children():
-            h += stage(x)
-        return h
+        def forward(self, x):
+            size = x.shape[2:]
+
+            image_features = self.mean(x)
+            image_features = self.conv(image_features)
+            image_features = F.upsample(image_features, size=size, mode='bilinear', align_corners=True)
+
+            atrous_block1 = self.atrous_block1(x)
+
+            atrous_block6 = self.atrous_block6(x)
+
+            atrous_block12 = self.atrous_block12(x)
+
+            atrous_block18 = self.atrous_block18(x)
+
+            net = self.conv_1x1_output(torch.cat([image_features, atrous_block1, atrous_block6,
+                                                  atrous_block12, atrous_block18], dim=1))
+            return net

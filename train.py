@@ -41,7 +41,7 @@ def main():
     # CONFIG_PATH = "./configs/default-mini.yaml"
     # CONFIG_PATH = "./configs/default-in-bce-v3.yaml"
     # CONFIG_PATH = "./configs/default_v2.yaml"
-    CONFIG_PATH = "./configs/default_weakly_supervised.yaml"
+    CONFIG_PATH = "./configs/default_deeplab_v3_plus.yaml"
     # CONFIG_PATH = "./configs/default-hinge-v7.yaml"
     # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
@@ -87,11 +87,14 @@ def main():
     elif config["model"] == "FC-DenseNet":
         trainer = AdaptSeg_Trainer(config)
         print("use FC-DenseNet")
+    # elif config["model"] == "DeepLab_v3_plus":
+    #     trainer = AdaptSeg_Trainer(config)
+    #     print("use DeepLab_v3_plus")
     else:
         trainer = AdaptSeg_Trainer(config)
     # trainer.cuda(gpu)
 
-    if config["restore"]:
+    if config["restore"] and config["model"] == "DeepLab":
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
 
     best_score_record = {
@@ -124,13 +127,13 @@ def main():
             target_images, _, _, target_name = target_batch
             target_images = Variable(target_images).cuda(gpu)
             trainer.gen_target_update(target_images, target_name)
+            del target_images
 
             # train discriminator use prior generator image
             trainer.dis_update(labels=labels)
 
             # train G use weakly label
-            trainer.gen_weakly_update(target_images, target_name)
-            del target_images
+            # trainer.gen_weakly_update(target_images, target_name)
 
 
             # show log
