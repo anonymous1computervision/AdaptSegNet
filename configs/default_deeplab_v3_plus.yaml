@@ -1,5 +1,5 @@
 # logger options
-test_summary: DeepLabv3+ default setting only train src
+test_summary: DeepLabv3+ default setting - G pretrained 100k
 log_iter: 1                   # How often do you want to log the training stats
 snapshot_save_iter: 1000     # How often do you want to save trained models
 snapshot_save_dir: ./snapshots/GTA2Cityscapes_multi/
@@ -24,8 +24,8 @@ lr_d: 0.0001                    # initial learning rate Adam
 model: DeepLab_v3_plus
 g_model: default
 restore: true
-restore_from: None
-# restore_from: ./snapshots/GTA2Cityscapes_multi/GTA5_50000.pth
+# restore_from: None
+restore_from: ./DeepLab_v3_plus_GTA5_100000.pth
 # restore_from: ./snapshots/single_DA_baseline_disable10x/GTA5_50000.pth
 # restore_from: E:/AdaptionSeg_20180620-single_DA-refactor-try5k/model_save/GTA5_5000.pth
 

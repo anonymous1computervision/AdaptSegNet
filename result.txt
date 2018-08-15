@@ -1,28 +1,48 @@
-Test summary = DeepLabv3+ default setting only train src
+Test summary = DeepLabv3+ default setting - G pretrained 100k
 
 ========= Best score =========
-best epoches = 0
+best epoches = 1000
+===>road:	84.92
+===>sidewalk:	22.14
+===>building:	49.34
+===>wall:	6.94
+===>fence:	9.68
+===>pole:	10.44
+===>light:	0.0
+===>sign:	0.0
+===>vegetation:	63.54
+===>terrain:	7.26
+===>sky:	50.26
+===>person:	4.86
+===>rider:	0.0
+===>car:	54.17
+===>truck:	4.61
+===>bus:	0.0
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 19.38
 
 
 ========= Current score =========
-epoches = 0
-===>road:	5.34
-===>sidewalk:	1.76
-===>building:	1.15
-===>wall:	3.45
-===>fence:	0.11
-===>pole:	0.42
-===>light:	0.07
-===>sign:	0.14
-===>vegetation:	3.99
-===>terrain:	0.05
-===>sky:	2.54
-===>person:	0.1
-===>rider:	0.12
-===>car:	1.27
-===>truck:	0.23
+epoches = 8000
+===>road:	83.59
+===>sidewalk:	13.36
+===>building:	48.07
+===>wall:	7.35
+===>fence:	7.33
+===>pole:	11.65
+===>light:	0.02
+===>sign:	0.0
+===>vegetation:	60.0
+===>terrain:	7.35
+===>sky:	51.87
+===>person:	4.52
+===>rider:	0.0
+===>car:	49.96
+===>truck:	11.56
 ===>bus:	0.0
-===>train:	0.05
-===>motocycle:	0.1
-===>bicycle:	0.18
-===> mIoU: 1.11
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 18.77

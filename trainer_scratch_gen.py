@@ -29,9 +29,9 @@ from model.sp_aspp_discriminator import SP_ASPP_FCDiscriminator
 
 from utils.loss import CrossEntropy2d
 
-class AdaptSeg_Trainer(nn.Module):
+class DeepLab_Scratch_Trainer(nn.Module):
     def __init__(self, hyperparameters):
-        super(AdaptSeg_Trainer, self).__init__()
+        super(DeepLab_Scratch_Trainer, self).__init__()
         self.hyperparameters = hyperparameters
         # input size setting
         self.input_size = (hyperparameters["input_size_h"], hyperparameters["input_size_w"])
@@ -58,10 +58,10 @@ class AdaptSeg_Trainer(nn.Module):
                                         n_classes=hyperparameters['num_classes'],
                                         pretrained=True,
                                         _print=True)
-            print("use DeepLab_v3_plus model")
+            print("use DeepLab_v3_plus scratch model")
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
@@ -70,8 +70,8 @@ class AdaptSeg_Trainer(nn.Module):
 
         self.model.train()
         self.model.cuda(self.gpu)
-        self.model_D.train()
-        self.model_D.cuda(self.gpu)
+        # self.model_D.train()
+        # self.model_D.cuda(self.gpu)
 
         # for dynamic adjust lr setting
         self.decay_power = hyperparameters['decay_power']
@@ -119,10 +119,10 @@ class AdaptSeg_Trainer(nn.Module):
         self.optimizer_G.zero_grad()
         self._adjust_learning_rate_G(self.optimizer_G, 0)
 
-        self.optimizer_D = optim.Adam([p for p in self.model_D.parameters() if p.requires_grad],
-                                      lr=self.lr_d, betas=(self.beta1, self.beta2))
-        self.optimizer_D.zero_grad()
-        self._adjust_learning_rate_D(self.optimizer_D, 0)
+        # self.optimizer_D = optim.Adam([p for p in self.model_D.parameters() if p.requires_grad],
+                                      # lr=self.lr_d, betas=(self.beta1, self.beta2))
+        # self.optimizer_D.zero_grad()
+        # self._adjust_learning_rate_D(self.optimizer_D, 0)
 
     def forward(self, images):
         # self.eval()
@@ -144,8 +144,8 @@ class AdaptSeg_Trainer(nn.Module):
         self.optimizer_G.zero_grad()
 
         # Disable D backpropgation, we only train G
-        for param in self.model_D.parameters():
-            param.requires_grad = False
+        # for param in self.model_D.parameters():
+        #     param.requires_grad = False
 
         self.source_label_path = label_path
 
@@ -538,10 +538,10 @@ class AdaptSeg_Trainer(nn.Module):
                 """
         print('taking pth in shapshot dir ...')
         torch.save(self.model.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '.pth'))
-        torch.save(self.model_D.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D1.pth'))
+        # torch.save(self.model_D.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D1.pth'))
 
     def restore(self, model_name=None, num_classes=19, restore_from=None):
-        if model_name == 'DeepLab' or model_name == 'DeepLab_v3_plus':
+        if model_name == 'DeepLab':
             # self.model = Res_Deeplab(num_classes=num_classes)
             print("check restore from", restore_from)
             if restore_from[:4] == 'http':
@@ -562,14 +562,9 @@ class AdaptSeg_Trainer(nn.Module):
                 print(str(self.model.state_dict())[:100])
             else:
                 print("use own pre-trained")
-                print("before model load")
-                print("self.model.state_dict()")
-                print(str(self.model.state_dict())[:100])
                 saved_state_dict = torch.load(restore_from)
                 self.model.load_state_dict(saved_state_dict)
-                print("after model load")
-                print("self.model.state_dict()")
-                print(str(self.model.state_dict())[:100])
+
             self.init_opt()
     def restore_D(self, restore_from="./GTA5_45000_D1.pth"):
 

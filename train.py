@@ -27,6 +27,7 @@ from trainer import AdaptSeg_Trainer
 from attn_trainer import AdaptSeg_Attn_Trainer
 from mini_trainer import Mini_AdaptSeg_Trainer
 from in_trainer import AdaptSeg_IN_Trainer
+from trainer_scratch_gen import DeepLab_Scratch_Trainer
 from dense_trainer import DenseSeg_Trainer
 from util import get_all_data_loaders, get_config
 from test_iou import output_to_image, compute_mIoU, get_test_mini_set
@@ -87,28 +88,39 @@ def main():
     elif config["model"] == "FC-DenseNet":
         trainer = AdaptSeg_Trainer(config)
         print("use FC-DenseNet")
-    # elif config["model"] == "DeepLab_v3_plus":
-    #     trainer = AdaptSeg_Trainer(config)
-    #     print("use DeepLab_v3_plus")
+    elif config["model"] == "DeepLab_v3_plus":
+        trainer = AdaptSeg_Trainer(config)
+        # trainer = DeepLab_Scratch_Trainer(config)
+
+        print("use DeepLab_v3_plus")
     else:
         trainer = AdaptSeg_Trainer(config)
     # trainer.cuda(gpu)
-
+    print()
     if config["restore"] and config["model"] == "DeepLab":
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
+    print("config[restore] =", config["restore"])
+    print("config[model]  =", config["model"] )
+    if config["restore"] and config["model"] == "DeepLab_v3_plus":
+        print(" in restore deeplab v3")
+        trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
+
+    # todo:next time need to remove
+    # trainer.restore_D()
 
     best_score_record = {
         "epochs": 0,
         "total_mIOU": 0,
         "recording_string": ""
     }
-    train_only_src = True
+    # train_only_src = True
     # Start training
     while True:
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
             # if memory issue can clear cache
             torch.cuda.empty_cache()
             trainer.init_each_epoch(i_iter)
+            # todo:scratch train so temporally out comment
             trainer.update_learning_rate()
 
             # ====================== #
@@ -124,13 +136,13 @@ def main():
             del src_images
 
             # train G use target image
-            # target_images, _, _, target_name = target_batch
-            # target_images = Variable(target_images).cuda(gpu)
-            # trainer.gen_target_update(target_images, target_name)
-            # del target_images
+            target_images, _, _, target_name = target_batch
+            target_images = Variable(target_images).cuda(gpu)
+            trainer.gen_target_update(target_images, target_name)
+            del target_images
 
             # train discriminator use prior generator image
-            # trainer.dis_update(labels=labels)
+            trainer.dis_update(labels=labels)
 
             # train G use weakly label
             # trainer.gen_weakly_update(target_images, target_name)
@@ -143,9 +155,10 @@ def main():
             # save image to check
             if i_iter % image_save_iter == 0:
                 print("image_save_dir", image_save_dir)
-                trainer.snapshot_image_save(dir_name=image_save_dir, src_save=True, target_save=not train_only_src)
+                trainer.snapshot_image_save(dir_name=image_save_dir)
 
             # save checkpoint .pth
+            # if i_iter % snapshot_save_iter == 0:
             if i_iter % snapshot_save_iter == 0 and i_iter > 0:
             # if i_iter % snapshot_save_iter == 0:
                 # print("save model")
