@@ -17,12 +17,26 @@ class SP_ASPP_FCDiscriminator(nn.Module):
 		# self.classifier = nn.Conv2d(ndf*16, 1, kernel_size=4, stride=2, padding=1)
 
 		# self.classifier = SpectralNorm(nn.Conv2d(ndf*8, 1, kernel_size=4, stride=2, padding=1))
-		pyramids = [4, 8, 12, 16]
+		# pyramids = [4, 8, 12, 16]
 		# self.aspp = _ASPPModule(ndf*8, ndf*8, pyramids)
 
 		# self.classifier = SpectralNorm(nn.Conv2d(ndf*8, 1, kernel_size=1, stride=1, padding=0))
-		self.classifier = _ASPPModule(ndf*8, 1, pyramids)
+		# ASPP
+		rates = [1, 6, 12]
+		self.aspp1 = ASPP_module(ndf*8, 256, rate=rates[0])
+		self.aspp2 = ASPP_module(ndf*8, 256, rate=rates[1])
+		self.aspp3 = ASPP_module(ndf*8, 256, rate=rates[2])
+		# self.aspp4 = ASPP_module(ndf*8, 256, rate=rates[3])
+		# self.global_avg_pool = nn.Sequential(nn.AdaptiveAvgPool2d((1, 1)),
+		#                                      nn.Conv2d(2048, 256, 1, stride=1, bias=False),
+		#                                      # todo: because batch size = 1 so disable
+		#                                      # nn.BatchNorm2d(256),
+		#                                      nn.ReLU())
+		
+		self.conv_depth = SpectralNorm(nn.Conv2d(256*3, 256, kernel_size=1, stride=1, padding=0))
 
+		self.classifier = SpectralNorm(nn.Conv2d(256, 1, kernel_size=4, stride=2, padding=1))
+		
 
 		self.leaky_relu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 		# self.activation = nn.PReLU()
@@ -42,46 +56,55 @@ class SP_ASPP_FCDiscriminator(nn.Module):
 		x = self.conv4(x)
 		# print("conv4 x shape =", x.shape)
 		x = self.activation(x)
+		x1 = self.aspp1(x)
+		x2 = self.aspp2(x)
+		x3 = self.aspp3(x)
+		# x4 = self.aspp4(x)
+		
+		# x5 = self.global_avg_pool(x)
+		# x5 = F.upsample(x5, size=x3.size()[2:], mode='bilinear', align_corners=True)
+		
+		# x = torch.cat((x1, x2, x3, x5), dim=1)
+		x = torch.cat((x1, x2, x3), dim=1)
+
+		x = self.activation(x)
+		# print("in here x shape", x.shape)
+		x = self.conv_depth(x)
+		x = self.activation(x)
 		x = self.classifier(x)
 		#x = self.up_sample(x)
 		#x = self.sigmoid(x)
 
 		return x, None
 
-class _ASPPModule(nn.Module):
-    """Atrous Spatial Pyramid Pooling
-    copy from https://github.com/gengyanlei/deeplab_v3/blob/master/model.py"""
+class ASPP_module(nn.Module):
+    def __init__(self, inplanes, planes, rate):
+        super(ASPP_module, self).__init__()
+        if rate == 1:
+            kernel_size = 1
+            padding = 0
+        else:
+            kernel_size = 3
+            padding = rate
+        self.atrous_convolution = nn.Conv2d(inplanes, planes, kernel_size=kernel_size,
+                                            stride=1, padding=padding, dilation=rate, bias=False)
+        self.bn = nn.BatchNorm2d(planes)
+        self.relu = nn.ReLU()
 
-    class ASPP(nn.Module):
-        def __init__(self, in_channel=512, depth=256):
-            super().__init__()
-            # global average pooling : init nn.AdaptiveAvgPool2d ;also forward torch.mean(,,keep_dim=True)
-            self.mean = nn.AdaptiveAvgPool2d((1, 1))
-            self.conv = nn.Conv2d(in_channel, depth, 1, 1)
-            # k=1 s=1 no pad
-            self.atrous_block1 = nn.Conv2d(in_channel, depth, 1, 1)
-            self.atrous_block6 = nn.Conv2d(in_channel, depth, 3, 1, padding=6, dilation=6)
-            self.atrous_block12 = nn.Conv2d(in_channel, depth, 3, 1, padding=12, dilation=12)
-            self.atrous_block18 = nn.Conv2d(in_channel, depth, 3, 1, padding=18, dilation=18)
+        self.__init_weight()
 
-            self.conv_1x1_output = nn.Conv2d(depth * 5, depth, 1, 1)
-            
+    def forward(self, x):
+        x = self.atrous_convolution(x)
+        x = self.bn(x)
 
-        def forward(self, x):
-            size = x.shape[2:]
+        return self.relu(x)
 
-            image_features = self.mean(x)
-            image_features = self.conv(image_features)
-            image_features = F.upsample(image_features, size=size, mode='bilinear', align_corners=True)
-
-            atrous_block1 = self.atrous_block1(x)
-
-            atrous_block6 = self.atrous_block6(x)
-
-            atrous_block12 = self.atrous_block12(x)
-
-            atrous_block18 = self.atrous_block18(x)
-
-            net = self.conv_1x1_output(torch.cat([image_features, atrous_block1, atrous_block6,
-                                                  atrous_block12, atrous_block18], dim=1))
-            return net
+    def __init_weight(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                # n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                # m.weight.data.normal_(0, math.sqrt(2. / n))
+                torch.nn.init.kaiming_normal_(m.weight)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()

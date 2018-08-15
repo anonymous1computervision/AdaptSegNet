@@ -42,11 +42,11 @@ def main():
     # CONFIG_PATH = "./configs/default-mini.yaml"
     # CONFIG_PATH = "./configs/default-in-bce-v3.yaml"
     # CONFIG_PATH = "./configs/default_v2.yaml"
-    CONFIG_PATH = "./configs/default_deeplab_v3_plus.yaml"
+    # CONFIG_PATH = "./configs/default_deeplab_v3_plus.yaml"
     # CONFIG_PATH = "./configs/default-hinge-v7.yaml"
     # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
-    # CONFIG_PATH = "./configs/default.yaml"
+    CONFIG_PATH = "./configs/default.yaml"
     # CONFIG_PATH = "./configs/default-fc-dense.yaml"
     # CONFIG_PATH = "./configs/attention_v1.yaml"
 
@@ -96,14 +96,19 @@ def main():
     else:
         trainer = AdaptSeg_Trainer(config)
     # trainer.cuda(gpu)
-    print()
-    if config["restore"] and config["model"] == "DeepLab":
-        trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
     print("config[restore] =", config["restore"])
     print("config[model]  =", config["model"] )
+    if config["restore"] and config["model"] == "DeepLab":
+        trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
     if config["restore"] and config["model"] == "DeepLab_v3_plus":
         print(" in restore deeplab v3")
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
+
+    # restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_14000_trainer_all.pth"
+    # print(str(trainer.state_dict())[:100])
+    # saved_state_dict = torch.load(restore_from)
+    # trainer.load_state_dict(saved_state_dict)
+    # print("after model load")
 
     # todo:next time need to remove
     # trainer.restore_D()
