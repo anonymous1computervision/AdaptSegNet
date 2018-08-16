@@ -22,10 +22,12 @@ class SP_ASPP_FCDiscriminator(nn.Module):
 
 		# self.classifier = SpectralNorm(nn.Conv2d(ndf*8, 1, kernel_size=1, stride=1, padding=0))
 		# ASPP
-		rates = [1, 6, 12]
+		rates = [1, 6, 12, 18]
 		self.aspp1 = ASPP_module(ndf*8, 256, rate=rates[0])
 		self.aspp2 = ASPP_module(ndf*8, 256, rate=rates[1])
 		self.aspp3 = ASPP_module(ndf*8, 256, rate=rates[2])
+		self.aspp3 = ASPP_module(ndf*8, 256, rate=rates[2])
+
 		# self.aspp4 = ASPP_module(ndf*8, 256, rate=rates[3])
 		# self.global_avg_pool = nn.Sequential(nn.AdaptiveAvgPool2d((1, 1)),
 		#                                      nn.Conv2d(2048, 256, 1, stride=1, bias=False),
@@ -33,7 +35,7 @@ class SP_ASPP_FCDiscriminator(nn.Module):
 		#                                      # nn.BatchNorm2d(256),
 		#                                      nn.ReLU())
 		
-		self.conv_depth = SpectralNorm(nn.Conv2d(256*3, 256, kernel_size=1, stride=1, padding=0))
+		self.conv_depth = SpectralNorm(nn.Conv2d(256*4, 256, kernel_size=1, stride=1, padding=0))
 
 		self.classifier = SpectralNorm(nn.Conv2d(256, 1, kernel_size=4, stride=2, padding=1))
 		
@@ -59,13 +61,13 @@ class SP_ASPP_FCDiscriminator(nn.Module):
 		x1 = self.aspp1(x)
 		x2 = self.aspp2(x)
 		x3 = self.aspp3(x)
-		# x4 = self.aspp4(x)
+		x4 = self.aspp4(x)
 		
 		# x5 = self.global_avg_pool(x)
 		# x5 = F.upsample(x5, size=x3.size()[2:], mode='bilinear', align_corners=True)
 		
 		# x = torch.cat((x1, x2, x3, x5), dim=1)
-		x = torch.cat((x1, x2, x3), dim=1)
+		x = torch.cat((x1, x2, x3, x4), dim=1)
 
 		x = self.activation(x)
 		# print("in here x shape", x.shape)

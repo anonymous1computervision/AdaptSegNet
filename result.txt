@@ -1,48 +1,28 @@
-Test summary = DeepLabv3+ default setting - G pretrained 100k
+Test summary = default setting D use ASPP module for classifier [4, 8, 12, 16]
 
 ========= Best score =========
-best epoches = 1000
-===>road:	84.92
-===>sidewalk:	22.14
-===>building:	49.34
-===>wall:	6.94
-===>fence:	9.68
-===>pole:	10.44
-===>light:	0.0
-===>sign:	0.0
-===>vegetation:	63.54
-===>terrain:	7.26
-===>sky:	50.26
-===>person:	4.86
-===>rider:	0.0
-===>car:	54.17
-===>truck:	4.61
-===>bus:	0.0
-===>train:	0.0
-===>motocycle:	0.0
-===>bicycle:	0.0
-===> mIoU: 19.38
+best epoches = 0
 
 
 ========= Current score =========
-epoches = 8000
-===>road:	83.59
-===>sidewalk:	13.36
-===>building:	48.07
-===>wall:	7.35
-===>fence:	7.33
-===>pole:	11.65
-===>light:	0.02
-===>sign:	0.0
-===>vegetation:	60.0
-===>terrain:	7.35
-===>sky:	51.87
-===>person:	4.52
+epoches = 0
+===>road:	14.65
+===>sidewalk:	0.78
+===>building:	2.3
+===>wall:	1.92
+===>fence:	0.0
+===>pole:	1.33
+===>light:	0.12
+===>sign:	0.58
+===>vegetation:	5.21
+===>terrain:	0.05
+===>sky:	1.45
+===>person:	0.75
 ===>rider:	0.0
-===>car:	49.96
-===>truck:	11.56
-===>bus:	0.0
-===>train:	0.0
-===>motocycle:	0.0
+===>car:	2.23
+===>truck:	0.29
+===>bus:	0.08
+===>train:	0.04
+===>motocycle:	0.03
 ===>bicycle:	0.0
-===> mIoU: 18.77
+===> mIoU: 1.67
