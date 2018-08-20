@@ -143,16 +143,16 @@ def main():
             # train G use target image
             target_images, _, _, target_name = target_batch
             target_images = Variable(target_images).cuda(gpu)
-            trainer.gen_target_and_foreground_update(target_images, target_name)
+            #trainer.gen_target_and_foreground_update(target_images, target_name)
 
-            # trainer.gen_target_update(target_images, target_name)
+            trainer.gen_target_update(target_images, target_name)
             # trainer.gen_target_foreground_update(target_images, target_name)
 
             del target_images
 
             # train discriminator use prior generator image
             trainer.dis_update(labels=labels)
-            trainer.dis_foreground_update(labels=labels)
+            # trainer.dis_foreground_update(labels=labels)
 
 
             # train G use weakly label

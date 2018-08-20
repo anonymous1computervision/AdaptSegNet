@@ -1,48 +1,28 @@
-Test summary = baseline multi train
+Test summary = default setting 2D - one use foreground and one use global
 
 ========= Best score =========
-best epoches = 31500
-===>road:	90.03
-===>sidewalk:	37.2
-===>building:	72.54
-===>wall:	25.38
-===>fence:	14.89
-===>pole:	23.15
-===>light:	24.04
-===>sign:	18.49
-===>vegetation:	76.03
-===>terrain:	7.66
-===>sky:	75.89
-===>person:	48.4
-===>rider:	40.0
-===>car:	82.1
-===>truck:	56.13
-===>bus:	1.01
-===>train:	39.53
-===>motocycle:	0.0
-===>bicycle:	9.15
-===> mIoU: 39.03
+best epoches = 0
 
 
 ========= Current score =========
-epoches = 50800
-===>road:	87.88
-===>sidewalk:	25.16
-===>building:	73.26
-===>wall:	18.09
-===>fence:	16.46
-===>pole:	24.97
-===>light:	26.56
-===>sign:	16.27
-===>vegetation:	75.59
-===>terrain:	5.5
-===>sky:	75.25
-===>person:	48.83
-===>rider:	40.95
-===>car:	78.43
-===>truck:	59.62
+epoches = 0
+===>road:	13.92
+===>sidewalk:	2.55
+===>building:	4.42
+===>wall:	0.73
+===>fence:	0.26
+===>pole:	1.24
+===>light:	0.16
+===>sign:	0.27
+===>vegetation:	1.26
+===>terrain:	0.14
+===>sky:	3.19
+===>person:	0.35
+===>rider:	0.12
+===>car:	5.94
+===>truck:	0.39
 ===>bus:	0.0
-===>train:	11.76
+===>train:	0.35
 ===>motocycle:	0.0
-===>bicycle:	1.94
-===> mIoU: 36.13
+===>bicycle:	0.25
+===> mIoU: 1.87

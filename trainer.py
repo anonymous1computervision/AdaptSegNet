@@ -74,7 +74,7 @@ class AdaptSeg_Trainer(nn.Module):
         # 16 - > train: 2.48
         # 17 - > motocycle: 0.0
         # 18 - > bicycle: 4.52
-        self.model_D_foreground = SP_FCDiscriminator(num_classes=8)
+        # self.model_D_foreground = SP_FCDiscriminator(num_classes=8)
 
         # self.model_D = XiaoAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoPretrainAttentionDiscriminator(num_classes=hyperparameters['num_classes'])
@@ -86,8 +86,8 @@ class AdaptSeg_Trainer(nn.Module):
         self.model.cuda(self.gpu)
         self.model_D.train()
         self.model_D.cuda(self.gpu)
-        self.model_D_foreground.train()
-        self.model_D_foreground.cuda(self.gpu)
+        # self.model_D_foreground.train()
+        # self.model_D_foreground.cuda(self.gpu)
 
         # for dynamic adjust lr setting
         self.decay_power = hyperparameters['decay_power']
@@ -142,10 +142,10 @@ class AdaptSeg_Trainer(nn.Module):
         self.optimizer_D.zero_grad()
         self._adjust_learning_rate_D(self.optimizer_D, 0)
 
-        self.optimizer_D_foreground = optim.Adam([p for p in self.model_D_foreground.parameters() if p.requires_grad],
-                                      lr=self.lr_d, betas=(self.beta1, self.beta2))
-        self.optimizer_D_foreground.zero_grad()
-        self._adjust_learning_rate_D(self.optimizer_D_foreground, 0)
+        # self.optimizer_D_foreground = optim.Adam([p for p in self.model_D_foreground.parameters() if p.requires_grad],
+        #                               lr=self.lr_d, betas=(self.beta1, self.beta2))
+        # self.optimizer_D_foreground.zero_grad()
+        # self._adjust_learning_rate_D(self.optimizer_D_foreground, 0)
 
     def forward(self, images):
         # self.eval()
@@ -169,8 +169,8 @@ class AdaptSeg_Trainer(nn.Module):
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
-        for param in self.model_D_foreground.parameters():
-            param.requires_grad = False
+        # for param in self.model_D_foreground.parameters():
+            # param.requires_grad = False
 
         self.source_label_path = label_path
 
@@ -213,8 +213,8 @@ class AdaptSeg_Trainer(nn.Module):
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
-        for param in self.model_D_foreground.parameters():
-            param.requires_grad = False
+        # for param in self.model_D_foreground.parameters():
+        #     param.requires_grad = False
 
         self.target_image_path = image_path
 
@@ -275,8 +275,8 @@ class AdaptSeg_Trainer(nn.Module):
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
-        for param in self.model_D_foreground.parameters():
-            param.requires_grad = False
+        # for param in self.model_D_foreground.parameters():
+        #     param.requires_grad = False
 
         self.target_image_path = image_path
 
@@ -321,8 +321,8 @@ class AdaptSeg_Trainer(nn.Module):
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
-        for param in self.model_D_foreground.parameters():
-            param.requires_grad = False
+        # for param in self.model_D_foreground.parameters():
+        #     param.requires_grad = False
 
         self.target_image_path = image_path
 
@@ -418,13 +418,13 @@ class AdaptSeg_Trainer(nn.Module):
         self.optimizer_G.zero_grad()
         # self.optimizer_Attn.zero_grad()
         self.optimizer_D.zero_grad()
-        self.optimizer_D_foreground.zero_grad()
+        # self.optimizer_D_foreground.zero_grad()
 
         # Enable D backpropgation, train D
         for param in self.model_D.parameters():
             param.requires_grad = True
-        for param in self.model_D_foreground.parameters():
-            param.requires_grad = True
+        # for param in self.model_D_foreground.parameters():
+            # param.requires_grad = True
 
 
         # for param in self.model_attn.parameters():
@@ -530,16 +530,16 @@ class AdaptSeg_Trainer(nn.Module):
         return loss
 
     def show_each_loss(self):
-        # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.3f} loss_D1 = {4:.3f}".format(
-        #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
+        print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f}".format(
+            self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
         # print(
-        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
+            # "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
+            #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
+            #     float(self.loss_d_value), self.loss_d_attn_value))
+        # print(
+        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_adv_foreground = {4:.5f}  loss_D1 = {5:.3f} loss_D1_foreground = {6:.3f}".format(
         #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-        #         float(self.loss_d_value), self.loss_d_attn_value))
-        print(
-            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_adv_foreground = {4:.5f}  loss_D1 = {5:.3f} loss_D1_foreground = {6:.3f}".format(
-                self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_foreground_value),
-                float(self.loss_target_value), float(self.loss_d_value), self.loss_d_foreground_value))
+        #         float(self.loss_target_foreground_value), float(self.loss_d_value), self.loss_d_foreground_value))
 
         # print(
         #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_weakly_seg = {4:.5f} loss_D1 = {5:.3f} loss_D1_attn = {6:.3f}".format(
