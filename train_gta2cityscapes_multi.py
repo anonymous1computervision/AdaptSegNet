@@ -7,7 +7,7 @@ import pickle
 from torch.autograd import Variable
 import torch.optim as optim
 import scipy.misc
-from tensorboard_logger import configure, log_value
+# from tensorboard_logger import configure, log_value
 import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
 import sys
@@ -25,6 +25,8 @@ from model.xiao_discriminator import XiaoDiscriminator
 from utils.loss import CrossEntropy2d
 from dataset.gta5_dataset import GTA5DataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
+from test_iou import output_to_image, compute_mIoU, get_test_mini_set
+
 import pdb
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
 
@@ -53,8 +55,8 @@ SAVE_PRED_EVERY = 5000
 SNAPSHOT_DIR = './snapshots/'
 WEIGHT_DECAY = 0.0005
 
-# LEARNING_RATE_D = 1e-4
-LEARNING_RATE_D = 1e-3
+LEARNING_RATE_D = 1e-4
+# LEARNING_RATE_D = 1e-3
 LAMBDA_SEG = 0.1
 LAMBDA_ADV_TARGET1 = 0.0002
 LAMBDA_ADV_TARGET2 = 0.001
@@ -158,24 +160,6 @@ def colorize_mask(mask):
 
     return new_mask
 
-def output_to_image(output):
-    # input
-    # ------------------
-    #   G's output feature map :(c, w, h, num_classes)
-    #
-    #
-    # output
-    # ------------------
-    #   output_color : PIL Image paint segmentaion color (1024, 2048)
-    #
-    #
-    interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
-    output = interp(output).permute(0,2,3, 1)
-    _, output = torch.max(output, -1)
-    output = output.cpu().data[0].numpy().astype(np.uint8)
-    output_color = colorize_mask(output)
-
-    return output_color
 
 # ===============for model==============
 def loss_calc(pred, label, gpu):
@@ -301,9 +285,13 @@ def main():
     # labels for adversarial training
     source_label = 0
     target_label = 1
-
+    best_score_record = {
+        "epochs": 0,
+        "total_mIOU": 0,
+        "recording_string": ""
+    }
     for i_iter in range(args.num_steps):
-        pdb.set_trace()
+        # pdb.set_trace()
 
         loss_seg_value1 = 0
         loss_adv_target_value1 = 0
@@ -336,10 +324,12 @@ def main():
 
             _, batch = trainloader_iter.__next__()
             images, labels, _, names = batch
+            source_label_path = names
             images = Variable(images).cuda(args.gpu)
             pred1, pred2 = model(images)
             pred1 = interp(pred1)
             pred2 = interp(pred2)
+            source_image = pred2
 
             loss_seg1 = loss_calc(pred1, labels, args.gpu)
             loss_seg2 = loss_calc(pred2, labels, args.gpu)
@@ -353,13 +343,19 @@ def main():
 
             _, batch = targetloader_iter.__next__()
             images, _, _, target_name = batch
+            target_image_path = target_name
+
             images = Variable(images).cuda(args.gpu)
             pred_target1, pred_target2 = model(images)
+            # print("pred_target1 out1 shape =", pred_target1.shape)
+
             pred_target1 = interp_target(pred_target1)
             pred_target2 = interp_target(pred_target2)
+            target_image = pred_target2
+
             D_out1 = model_D1(F.softmax(pred_target1))
             D_out2 = model_D2(F.softmax(pred_target2))
-
+            # print("D out1 shape =", D_out1.shape)
             loss_adv_target1 = bce_loss(D_out1,
                                        Variable(torch.FloatTensor(D_out1.data.size()).fill_(source_label)).cuda(
                                            args.gpu))
@@ -424,18 +420,68 @@ def main():
             loss_D_value2 += loss_D2.data.cpu().numpy()
             #
             if i_iter % 50 == 0 and sub_i == args.iter_size - 1:
+                """
+                                check model training status,
+                                will output image to config["image_save_dir"]
+                                """
+                dir_name = "check_output/"
+                if not os.path.exists(os.path.exists(os.path.join(dir_name, "Image_source_domain_seg"))):
+                    os.makedirs(os.path.join(dir_name, "Image_source_domain_seg"))
+                if not os.path.exists(os.path.exists(os.path.join(dir_name, "Image_target_domain_seg"))):
+                    os.makedirs(os.path.join(dir_name, "Image_target_domain_seg"))
+
                 # save label
-                label_name = os.path.join("data", "GTA5", "labels", names[0])
-                save_name = 'check_output/Image_source_domain_seg/%s_label.png' % (i_iter)
+                label_name = os.path.join("data", "GTA5", "labels", source_label_path[0])
+                save_name = os.path.join(dir_name, "Image_source_domain_seg", '%s_label.png' % i_iter)
                 shutil.copyfile(label_name, save_name)
-
-                target_name = os.path.join("data", "Cityscapes", "data", "leftImg8bit", "train", target_name[0])
-                save_name = 'check_output/Image_target_domain_seg/%s_label.png' % (i_iter)
-                shutil.copyfile(target_name, save_name)
-
                 # save output image
-                output_to_image(pred1).save('check_output/Image_source_domain_seg/%s.png' % (i_iter))
-                output_to_image(pred_target1).save('check_output/Image_target_domain_seg/%s.png' % (i_iter))
+                paint_predict_image(source_image).save(
+                    'check_output/Image_source_domain_seg/%s.png' % i_iter)
+
+                target_name = os.path.join("data", "Cityscapes", "data", "leftImg8bit", "train",
+                                           target_image_path[0])
+                save_name = os.path.join(dir_name, "Image_target_domain_seg", '%s_label.png' % i_iter)
+                shutil.copyfile(target_name, save_name)
+                paint_predict_image(target_image).save(
+                    'check_output/Image_target_domain_seg/%s.png' % i_iter)
+
+            if i_iter % 100 == 0:
+                # torch.cuda.empty_cache()
+                testloader = get_test_mini_set()
+                # trainer.eval()
+                with torch.no_grad():
+                    for index, batch in enumerate(testloader):
+                        # if memory issue can clear cache
+                        image, _, _, name = batch
+                        _, output = model(Variable(image).cuda())
+                        output_to_image(output, name)
+                    total_miou, recording_string = compute_mIoU()
+
+                    recording_total = f"Test summary = %s\n\n"\
+                                    "========= Best score =========\n"\
+                                    "best epoches = %s\n"\
+                                    "%s\n\n"\
+                                    "========= Current score =========\n" \
+                                    "epoches = % s\n"\
+                                    "%s"\
+                                     %("baseline multi train",
+                                        best_score_record["epochs"],
+                                        best_score_record["recording_string"],
+                                        i_iter,
+                                        recording_string)
+
+                    print(recording_total)
+
+                    with open('./result.txt', 'w') as f:
+                        f.write(recording_total)
+
+
+                    # if higher accuracy in evaluate
+                    if(total_miou > best_score_record["total_mIOU"]):
+                        print("this epoch get higher accuracy")
+                        best_score_record["epochs"] = i_iter
+                        best_score_record["total_mIOU"] = total_miou
+                        best_score_record["recording_string"] = recording_string
 
         optimizer.step()
         optimizer_D1.step()
@@ -458,6 +504,44 @@ def main():
             torch.save(model.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '.pth'))
             torch.save(model_D1.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D1.pth'))
             torch.save(model_D2.state_dict(), osp.join(args.snapshot_dir, 'GTA5_' + str(i_iter) + '_D2.pth'))
+
+
+def paint_predict_image(predict_image):
+    """input model's output image it will paint color """
+    # ===============for colorize mask==============
+    palette = [128, 64, 128, 244, 35, 232, 70, 70, 70, 102, 102, 156, 190, 153, 153, 153, 153, 153, 250, 170, 30,
+               220, 220, 0, 107, 142, 35, 152, 251, 152, 70, 130, 180, 220, 20, 60, 255, 0, 0, 0, 0, 142, 0, 0, 70,
+               0, 60, 100, 0, 80, 100, 0, 0, 230, 119, 11, 32]
+    zero_pad = 256 * 3 - len(palette)
+    for i in range(zero_pad):
+        palette.append(0)
+
+    def colorize_mask(mask):
+        # mask: numpy array of the mask
+        new_mask = Image.fromarray(mask.astype(np.uint8)).convert('P')
+        new_mask.putpalette(palette)
+
+        return new_mask
+
+    def output_to_image(output):
+        # input
+        # ------------------
+        #   G's output feature map :(c, w, h, num_classes)
+        #
+        #
+        # output
+        # ------------------
+        #   output_color : PIL Image paint segmentaion color (1024, 2048)
+        #
+        #
+        interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
+        output = interp(output).permute(0, 2, 3, 1)
+        _, output = torch.max(output, -1)
+        output = output.cpu().data[0].numpy().astype(np.uint8)
+        output_color = colorize_mask(output)
+
+        return output_color
+    return output_to_image(predict_image)
 
 
 if __name__ == '__main__':
