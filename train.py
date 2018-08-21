@@ -167,6 +167,7 @@ def main():
             if i_iter % image_save_iter == 0:
                 print("image_save_dir", image_save_dir)
                 trainer.snapshot_image_save(dir_name=image_save_dir)
+                trainer.snapshot_edge_save(dir_name=image_save_dir, labels=labels)
 
             # save checkpoint .pth
             if i_iter % snapshot_save_iter == 0:
