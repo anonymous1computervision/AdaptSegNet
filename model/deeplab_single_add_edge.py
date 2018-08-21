@@ -199,6 +199,7 @@ class ResNet(nn.Module):
         b.append(self.layer2)
         b.append(self.layer3)
         b.append(self.layer4)
+        b.append(self.layer5)
 
         for i in range(len(b)):
             for j in b[i].modules():

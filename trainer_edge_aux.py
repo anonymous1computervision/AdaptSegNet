@@ -200,8 +200,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         seg_loss = self._compute_seg_loss(pred_source_real, labels)
 
         # in source domain compute edge loss
-        criterion = nn.BCELoss()
-        edge_loss = criterion(F.softmax(pred_source_edge),
+        bce_loss = nn.BCEWithLogitsLoss()
+        # Todo : here use softmax maybe wrong
+        edge_loss = bce_loss(pred_source_edge,
                               self.label_get_edges(labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
 
         # proper normalization
@@ -213,7 +214,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # save image for discriminator use
         self.source_image = pred_source_real.detach()
-        self.pred_real_edge = F.softmax(pred_source_edge).detach()
+        self.pred_real_edge = nn.Sigmoid()(pred_source_edge).detach()
+        # self.pred_real_edge = pred_source_edge.detach()
+
         self.source_input_image = images.detach()
 
         # record log
@@ -248,7 +251,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
 
         # cobime predict and use predict output get edge
-        net_input = torch.cat((F.softmax(pred_target_fake), F.softmax(pred_target_edge)), dim=1)
+        net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
         # print("net input shape =", net_input.shape)
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         d_out_fake, _ = self.model_D(net_input, label=images)
@@ -265,7 +268,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # save image for discriminator use
         self.target_image = pred_target_fake.detach()
-        self.pred_fake_edge = F.softmax(pred_target_edge).detach()
+        # self.pred_fake_edge = F.sigmoid(pred_target_edge).detach()
+        self.pred_fake_edge = nn.Sigmoid()(pred_target_edge).detach()
+        # self.pred_fake_edge = pred_target_edge.detach()
         self.target_input_image = images.detach()
 
         # record log
@@ -517,11 +522,14 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         if src_save:
             # self.tensor_to_PIL(self.pred_get_edges(self.source_image)).save('check_output/Image_source_domain_seg/%s_edge.png' % self.i_iter)
             self.tensor_to_PIL(self.pred_real_edge).save('check_output/Image_source_domain_seg/%s_edge.png' % self.i_iter)
+            # print("pred_real_edge max =", torch.max(self.pred_real_edge).cpu().numpy())
+            # print("pred_real_edge mean =", torch.mean(self.pred_real_edge).cpu().numpy())
 
         if target_save:
             # self.tensor_to_PIL(self.pred_get_edges(self.target_image)).save('check_output/Image_target_domain_seg/%s_edge.png' % self.i_iter)
             self.tensor_to_PIL(self.pred_fake_edge).save('check_output/Image_target_domain_seg/%s_edge.png' % self.i_iter)
-
+            # print("pred_fake_edge max =", torch.max(self.pred_fake_edge).cpu().numpy())
+            # print("pred_fake_edge mean =", torch.mean(self.pred_fake_edge).cpu().numpy())
 
 
     def save_model(self, snapshot_save_dir="./model_save"):
