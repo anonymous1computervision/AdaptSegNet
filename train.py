@@ -27,6 +27,7 @@ from trainer import AdaptSeg_Trainer
 from attn_trainer import AdaptSeg_Attn_Trainer
 from mini_trainer import Mini_AdaptSeg_Trainer
 from in_trainer import AdaptSeg_IN_Trainer
+from trainer_edge_aux import AdaptSeg_Edge_Aux_Trainer
 from trainer_scratch_gen import DeepLab_Scratch_Trainer
 from dense_trainer import DenseSeg_Trainer
 from util import get_all_data_loaders, get_config
@@ -46,7 +47,7 @@ def main():
     # CONFIG_PATH = "./configs/default-hinge-v7.yaml"
     # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
-    CONFIG_PATH = "./configs/default.yaml"
+    CONFIG_PATH = "./configs/default_edge.yaml"
     # CONFIG_PATH = "./configs/default-fc-dense.yaml"
     # CONFIG_PATH = "./configs/attention_v1.yaml"
 
@@ -91,18 +92,25 @@ def main():
     elif config["model"] == "DeepLab_v3_plus":
         trainer = AdaptSeg_Trainer(config)
         # trainer = DeepLab_Scratch_Trainer(config)
-
         print("use DeepLab_v3_plus")
+    elif config["model"] == "DeepLabEdge":
+        trainer = AdaptSeg_Edge_Aux_Trainer(config)
+        # trainer = DeepLab_Scratch_Trainer(config)
+        print("use DeepLabEdge")
     else:
         trainer = AdaptSeg_Trainer(config)
+
+    # todo: remove this line without dev version
+    assert config["model"] == 'DeepLabEdge', True
+
     # trainer.cuda(gpu)
     print("config[restore] =", config["restore"])
-    print("config[model]  =", config["model"] )
-    if config["restore"] and config["model"] == "DeepLab":
+    print("config[model]  =", config["model"])
+    if config["restore"]:
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
-    if config["restore"] and config["model"] == "DeepLab_v3_plus":
-        print(" in restore deeplab v3")
-        trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
+    # if config["restore"] and config["model"] == "DeepLab_v3_plus":
+    #     print(" in restore deeplab v3")
+    #     trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
 
     # restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_14000_trainer_all.pth"
     # print(str(trainer.state_dict())[:100])
@@ -194,6 +202,10 @@ def main():
                         # if memory issue can clear cache
                         image, _, _, name = batch
                         output = trainer(Variable(image).cuda())
+                        # maybe 2 output (out, auxiluary)
+                        # but i modify trainer forward
+                        # if isinstance(output, tuple):
+                        #     output = output[0]
                         output_to_image(output, name)
                     total_miou, recording_string = compute_mIoU()
 
