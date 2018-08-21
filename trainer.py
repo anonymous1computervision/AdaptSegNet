@@ -169,8 +169,6 @@ class AdaptSeg_Trainer(nn.Module):
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
-        # for param in self.model_D_foreground.parameters():
-            # param.requires_grad = False
 
         self.source_label_path = label_path
 
@@ -199,68 +197,6 @@ class AdaptSeg_Trainer(nn.Module):
         # record log
         self.loss_source_value += seg_loss.data.cpu().numpy()
 
-    def gen_weakly_update(self, images, image_path, num_classes=19):
-        """
-                 Input target domain image and use weakly segmentation compute seg loss.
-
-                :param images:
-                :param image_path: just for save path to record model predict, use in  snapshot_image_save function
-                :return:
-                """
-        self.optimizer_G.zero_grad()
-
-
-        # Disable D backpropgation, we only train G
-        for param in self.model_D.parameters():
-            param.requires_grad = False
-        # for param in self.model_D_foreground.parameters():
-        #     param.requires_grad = False
-
-        self.target_image_path = image_path
-
-        # get predict output
-        pred_target_fake = self.model(images)
-
-        # resize to target size
-        interp_target = nn.Upsample(size=self.input_size_target, align_corners=False,
-                                    mode='bilinear')
-        pred_target_fake = interp_target(pred_target_fake)
-
-        # ============ get weakly label =============
-
-        weakly_labels = pred_target_fake.permute(0, 2, 3, 1)
-        _, weakly_labels = torch.max(weakly_labels, -1)
-
-        # choose which label be weakly supervised label
-        # 0 = road
-        # 1 = sidewalk
-        # 2 = building
-        # 8 = vegeteron
-        # 10 = sky
-        # 11 = person
-        weakly_map = [0, 1, 2, 8, 10, 11]
-        filter_weakly_map = set(range(num_classes)) - set(weakly_map)
-        # ignore non-weakly label
-        for value in filter_weakly_map:
-            weakly_labels[weakly_labels == value] = 255
-
-        # in source domain compute segmentation loss
-        seg_loss = self._compute_seg_loss(pred_target_fake, weakly_labels)
-        # proper normalization
-        seg_loss = self.lambda_weakly_seg * seg_loss
-
-        seg_loss.backward()
-
-        # update loss
-        self.optimizer_G.step()
-
-        # save image for discriminator use
-        self.target_image = pred_target_fake.detach()
-        self.target_input_image = images.detach()
-
-        # record log
-        self.loss_target_weakly_seg_value += seg_loss.data.cpu().numpy()
-
     def gen_target_update(self, images, image_path):
         """
                  Input target domain image and compute adversarial loss.
@@ -275,8 +211,6 @@ class AdaptSeg_Trainer(nn.Module):
         # Disable D backpropgation, we only train G
         for param in self.model_D.parameters():
             param.requires_grad = False
-        # for param in self.model_D_foreground.parameters():
-        #     param.requires_grad = False
 
         self.target_image_path = image_path
 
@@ -307,108 +241,6 @@ class AdaptSeg_Trainer(nn.Module):
         # record log
         self.loss_target_value += loss.data.cpu().numpy()
 
-    def gen_target_and_foreground_update(self, images, image_path):
-        """
-                 Input target domain image and compute adversarial loss.
-
-                :param images:
-                :param image_path: just for save path to record model predict, use in  snapshot_image_save function
-                :return:
-                """
-        self.optimizer_G.zero_grad()
-
-
-        # Disable D backpropgation, we only train G
-        for param in self.model_D.parameters():
-            param.requires_grad = False
-        # for param in self.model_D_foreground.parameters():
-        #     param.requires_grad = False
-
-        self.target_image_path = image_path
-
-        # get predict output
-        pred_target_fake = self.model(images)
-
-        # resize to target size
-        interp_target = nn.Upsample(size=self.input_size_target, align_corners=False,
-                                    mode='bilinear')
-        pred_target_fake = interp_target(pred_target_fake)
-
-        # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
-        d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
-        # compute loss function
-        # wants to fool discriminator
-        adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
-        # adv_loss = self.loss_hinge_gen(d_out_fake)
-        loss = self.lambda_adv_target * adv_loss
-        # loss.backward()
-
-        ##########################
-        # foreground part update
-        ##########################
-
-        d_out_fake, _ = self.model_D_foreground(F.softmax(pred_target_fake[:, 11:, :, :]), label=None)
-        # compute loss function
-        # wants to fool discriminator
-        adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
-        # adv_loss = self.loss_hinge_gen(d_out_fake)
-        foreground_loss = self.lambda_adv_target * adv_loss
-        total_loss = loss + foreground_loss
-        total_loss.backward()
-
-        # update loss
-        self.optimizer_G.step()
-
-        # save image for discriminator use
-        self.target_image = pred_target_fake.detach()
-        self.target_input_image = images.detach()
-
-        # record log
-        self.loss_target_value += loss.data.cpu().numpy()
-        self.loss_target_foreground_value += foreground_loss.data.cpu().numpy()
-
-
-    def gen_target_foreground_update(self, images, image_path):
-        """
-                 Input target domain image and compute adversarial loss.
-
-                :param images:
-                :param image_path: just for save path to record model predict, use in  snapshot_image_save function
-                :return:
-                """
-        self.optimizer_G.zero_grad()
-
-
-        # Disable D backpropgation, we only train G
-        for param in self.model_D.parameters():
-            param.requires_grad = False
-        for param in self.model_D_foreground.parameters():
-            param.requires_grad = False
-
-        self.target_image_path = image_path
-
-        # get predict output
-        pred_target_fake = self.model(images)
-
-        # resize to target size
-        interp_target = nn.Upsample(size=self.input_size_target, align_corners=False,
-                                    mode='bilinear')
-        pred_target_fake = interp_target(pred_target_fake)
-        # print("pred_target_fake pred_target_fake[:, 11:, :, :] shape = ", pred_target_fake[:, 11:, :, :].shape)
-        # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
-        d_out_fake, _ = self.model_D_foreground(F.softmax(pred_target_fake[:, 11:, :, :]), label=None)
-        # compute loss function
-        # wants to fool discriminator
-        adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
-        # adv_loss = self.loss_hinge_gen(d_out_fake)
-        loss = self.lambda_adv_target * adv_loss
-        loss.backward()
-
-        # update loss
-        self.optimizer_G.step()
-
-        # record log
-        self.loss_target_foreground_value += loss.data.cpu().numpy()
 
     def dis_update(self, labels=None):
         """
@@ -416,22 +248,13 @@ class AdaptSeg_Trainer(nn.Module):
                 so you  don' t need to give any parameter
                 """
         self.optimizer_G.zero_grad()
-        # self.optimizer_Attn.zero_grad()
         self.optimizer_D.zero_grad()
-        # self.optimizer_D_foreground.zero_grad()
 
         # Enable D backpropgation, train D
         for param in self.model_D.parameters():
             param.requires_grad = True
-        # for param in self.model_D_foreground.parameters():
-            # param.requires_grad = True
 
-
-        # for param in self.model_attn.parameters():
-        #     # param.requires_grad = True
-        #     param.requires_grad = False
         # we don't train target's G weight, we only train source'G
-
         self.target_image = self.target_image.detach()
         # compute adv loss function
 
@@ -448,12 +271,10 @@ class AdaptSeg_Trainer(nn.Module):
         loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
         loss_fake /= 2
 
-
         loss = loss_real + loss_fake
         # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
         # loss = loss + loss_attn
         loss.backward()
-
 
         # update loss
         self.optimizer_D.step()
@@ -703,7 +524,7 @@ class AdaptSeg_Trainer(nn.Module):
         print('taking pth in shapshot dir ...')
         torch.save(self.model.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '.pth'))
         torch.save(self.model_D.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D1.pth'))
-        torch.save(self.model_D_foreground.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D_foreground.pth'))
+        # torch.save(self.model_D_foreground.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D_foreground.pth'))
 
     def restore(self, model_name=None, num_classes=19, restore_from=None):
         if model_name == 'DeepLab' or model_name == 'DeepLab_v3_plus':

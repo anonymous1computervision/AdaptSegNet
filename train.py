@@ -169,8 +169,8 @@ def main():
                 trainer.snapshot_image_save(dir_name=image_save_dir)
 
             # save checkpoint .pth
-            # if i_iter % snapshot_save_iter == 0:
-            if i_iter % snapshot_save_iter == 0 and i_iter > 0:
+            if i_iter % snapshot_save_iter == 0:
+            # if i_iter % snapshot_save_iter == 0 and i_iter > 0:
             # if i_iter % snapshot_save_iter == 0:
                 # print("save model")
                 trainer.save_model(snapshot_save_dir=snapshot_save_dir)
