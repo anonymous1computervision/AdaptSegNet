@@ -140,6 +140,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         self.source_image = None
         self.target_image = None
+        self.saliency_mask = None
         self.pred_real_edge = None
         self.pred_fake_edge = None
         self.inter_mini = nn.Upsample(size=self.input_size_target, align_corners=False,
@@ -200,16 +201,18 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         seg_loss = self._compute_seg_loss(pred_source_real, labels)
 
         # in source domain compute edge loss
-        bce_loss = nn.BCEWithLogitsLoss()
-        # Todo : here use softmax maybe wrong
+        edge_loss = self._compute_edge_loss(pred_source_edge, labels)
+
+        # bce_loss = nn.BCEWithLogitsLoss()
+        # # Todo : here use softmax maybe wrong
         # edge_loss = bce_loss(pred_source_edge,
-        #                       self.label_get_edges(labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
-        attn_loss = bce_loss(pred_source_edge,
-                             self.get_foreground_attention(
-                                 labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
+        #                       self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
+        # attn_loss = bce_loss(pred_source_edge,
+        #                      self.get_foreground_attention(
+        #                          labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
         # proper normalization
-        seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*attn_loss
-        # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
+        # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*attn_loss
+        seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
         seg_loss.backward()
 
         # update loss
@@ -224,8 +227,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # record log
         self.loss_source_value += seg_loss.data.cpu().numpy()
-        # self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
-        self.loss_edge_value += self.lambda_adv_edge*attn_loss.data.cpu().numpy()
+        self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
+        # self.loss_edge_value += self.lambda_adv_edge*attn_loss.data.cpu().numpy()
 
     def gen_target_update(self, images, image_path):
         """
@@ -472,6 +475,28 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         return criterion(pred, label)
 
+    # todo: this part will modify
+    def _compute_edge_loss(self, seg, labels):
+        # in source domain compute edge loss
+        # Todo : here use softmax maybe wrong
+        edge = self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda())
+        foreground_mask = self.get_foreground_attention(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda())
+        # ignore foreground part
+        foreground_mask[foreground_mask == 1] = 255
+        # but we need edge info no matter it is bg or fg
+        foreground_mask[edge == 1] = 1
+
+        bce_loss = nn.BCEWithLogitsLoss()
+
+        positions = foreground_mask.contiguous().view(-1) < 255.0
+        loss = bce_loss(seg.contiguous().view(-1)[positions],
+                        foreground_mask.contiguous().view(-1)[positions])
+
+        foreground_mask[foreground_mask == 255] = 0.5
+        self.saliency_mask = foreground_mask
+
+        return loss
+
     def _resize(self, img, size=None):
         # resize to source size
         interp = nn.Upsample(size=size, align_corners=False, mode='bilinear')
@@ -554,23 +579,24 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # save GT edge
         # if no use is not None will be ambiguous
         if labels is not None:
-            labels = labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2])
-            # self.tensor_to_PIL(self.label_get_edges(labels.cuda())).save('check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
-            self.tensor_to_PIL(self.get_foreground_attention(labels.cuda())).save('check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
+            labels = labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2])
+            self.tensor_to_PIL(self.label_get_edges(labels.cuda())).save('check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
+            # self.tensor_to_PIL(self.get_foreground_attention(labels.cuda())).save('check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
 
         # save output image
         if src_save:
-            # self.tensor_to_PIL(self.pred_get_edges(self.source_image)).save('check_output/Image_source_domain_seg/%s_edge.png' % self.i_iter)
+            # record edge attn
+            self.tensor_to_PIL(self.saliency_mask).save('check_output/Image_source_domain_seg/%s_compute_attn.png' % self.i_iter)
+
             self.tensor_to_PIL(self.pred_real_edge).save('check_output/Image_source_domain_seg/%s_edge.png' % self.i_iter)
-            self.tensor_to_PIL(self.pred_real_edge*1.5).save('check_output/Image_source_domain_seg/%s_edge_15X.png' % self.i_iter)
+            self.tensor_to_PIL((self.pred_real_edge-0.25)*2).save('check_output/Image_source_domain_seg/%s_edge_light.png' % self.i_iter)
 
             # print("pred_real_edge max =", torch.max(self.pred_real_edge).cpu().numpy())
             # print("pred_real_edge mean =", torch.mean(self.pred_real_edge).cpu().numpy())
 
         if target_save:
-            # self.tensor_to_PIL(self.pred_get_edges(self.target_image)).save('check_output/Image_target_domain_seg/%s_edge.png' % self.i_iter)
             self.tensor_to_PIL(self.pred_fake_edge).save('check_output/Image_target_domain_seg/%s_edge.png' % self.i_iter)
-            self.tensor_to_PIL(self.pred_fake_edge*1.5).save('check_output/Image_target_domain_seg/%s_edge_15X.png' % self.i_iter)
+            self.tensor_to_PIL((self.pred_fake_edge-0.25)*2).save('check_output/Image_target_domain_seg/%s_edge_light.png' % self.i_iter)
             # print("pred_fake_edge max =", torch.max(self.pred_fake_edge).cpu().numpy())
             # print("pred_fake_edge mean =", torch.mean(self.pred_fake_edge).cpu().numpy())
 
