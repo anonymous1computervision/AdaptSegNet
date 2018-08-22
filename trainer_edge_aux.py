@@ -202,11 +202,14 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # in source domain compute edge loss
         bce_loss = nn.BCEWithLogitsLoss()
         # Todo : here use softmax maybe wrong
-        edge_loss = bce_loss(pred_source_edge,
-                              self.label_get_edges(labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
-
+        # edge_loss = bce_loss(pred_source_edge,
+        #                       self.label_get_edges(labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
+        attn_loss = bce_loss(pred_source_edge,
+                             self.get_foreground_attention(
+                                 labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
         # proper normalization
-        seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
+        seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*attn_loss
+        # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
         seg_loss.backward()
 
         # update loss
@@ -221,7 +224,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # record log
         self.loss_source_value += seg_loss.data.cpu().numpy()
-        self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
+        # self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
+        self.loss_edge_value += self.lambda_adv_edge*attn_loss.data.cpu().numpy()
 
     def gen_target_update(self, images, image_path):
         """
@@ -371,6 +375,41 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         pred_edge = self.label_get_edges(torch.tensor(pred_label).cuda()).detach()
         return pred_edge
 
+    def get_foreground_attention(self, label):
+        foreground_attn = torch.cuda.ByteTensor(label.size()).zero_()
+        # choose which label be weakly supervised label
+        # 0 > road: 87.89
+        # 1 > sidewalk: 31.54
+        # 2 > building: 77.69
+        # 3 > wall: 23.56
+        # 4 > fence: 20.1
+        # 5 > pole: 25.49
+        # 6 > light: 27.14
+        # 7 > sign: 26.57
+        # 8 > vegetation: 70.86
+        # 9 > terrain: 24.19
+        # 10 > sky: 71.61
+        # 11 > person: 55.79
+        # 12 > rider: 21.21
+        # 13 > car: 82.2
+        # 14 > truck: 31.67
+        # 15 > bus: 44.69
+        # 16 > train: 0.9
+        # 17 > motocycle: 22.13
+        # 18 > bicycle: 25.14
+
+        # ignore background label include 255-ignore label
+        # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 255]
+        foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+
+        # choose which label be weakly supervised label
+
+        for value in foreground_map:
+            # print(value)
+            foreground_attn[label == value] = 1
+
+        return foreground_attn.float()
+
     def label_get_edges(self, t):
         edge = torch.cuda.ByteTensor(t.size()).zero_()
         # t = t.view(1, 1, t.shape[0], t.shape[1])
@@ -516,18 +555,22 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # if no use is not None will be ambiguous
         if labels is not None:
             labels = labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2])
-            self.tensor_to_PIL(self.label_get_edges(labels.cuda())).save('check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
+            # self.tensor_to_PIL(self.label_get_edges(labels.cuda())).save('check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
+            self.tensor_to_PIL(self.get_foreground_attention(labels.cuda())).save('check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
 
         # save output image
         if src_save:
             # self.tensor_to_PIL(self.pred_get_edges(self.source_image)).save('check_output/Image_source_domain_seg/%s_edge.png' % self.i_iter)
             self.tensor_to_PIL(self.pred_real_edge).save('check_output/Image_source_domain_seg/%s_edge.png' % self.i_iter)
+            self.tensor_to_PIL(self.pred_real_edge*1.5).save('check_output/Image_source_domain_seg/%s_edge_15X.png' % self.i_iter)
+
             # print("pred_real_edge max =", torch.max(self.pred_real_edge).cpu().numpy())
             # print("pred_real_edge mean =", torch.mean(self.pred_real_edge).cpu().numpy())
 
         if target_save:
             # self.tensor_to_PIL(self.pred_get_edges(self.target_image)).save('check_output/Image_target_domain_seg/%s_edge.png' % self.i_iter)
             self.tensor_to_PIL(self.pred_fake_edge).save('check_output/Image_target_domain_seg/%s_edge.png' % self.i_iter)
+            self.tensor_to_PIL(self.pred_fake_edge*1.5).save('check_output/Image_target_domain_seg/%s_edge_15X.png' % self.i_iter)
             # print("pred_fake_edge max =", torch.max(self.pred_fake_edge).cpu().numpy())
             # print("pred_fake_edge mean =", torch.mean(self.pred_fake_edge).cpu().numpy())
 

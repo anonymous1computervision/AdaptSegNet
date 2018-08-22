@@ -10,7 +10,9 @@ import torchvision.models as models
 import torch.nn.functional as F
 from torch.utils import data, model_zoo
 # from model.deeplab_multi import Res_Deeplab
-from model.deeplab_single import Res_Deeplab
+# from model.deeplab_single import Res_Deeplab
+from model.deeplab_single_add_edge import Res_Deeplab
+
 # from model.deeplab_single_attention import Res_Deeplab
 from dataset.cityscapes_dataset import cityscapesDataSet
 from collections import OrderedDict
@@ -113,8 +115,8 @@ def main():
             if index % 100 == 0:
                 print('%d processd' % index)
             image, _, _, name = batch
-            output1 = model(Variable(image, volatile=True).cuda(gpu0))
-            # output1, _ = model(Variable(image, volatile=True).cuda(gpu0))
+            # output1 = model(Variable(image, volatile=True).cuda(gpu0))
+            output1, _ = model(Variable(image, volatile=True).cuda(gpu0))
 
             output = interp(output1).cpu().data[0].numpy()
 
