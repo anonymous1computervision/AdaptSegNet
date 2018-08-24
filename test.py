@@ -1,57 +1,142 @@
-# """
-# Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
-# Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
-# """
-#
-# from __future__ import print_function
-# import argparse
-# import torch
-# import process_stylization
-# from photo_wct import PhotoWCT
-# parser = argparse.ArgumentParser(description='Photorealistic Image Stylization')
-# parser.add_argument('--model', default='./PhotoWCTModels/photo_wct.pth')
-# parser.add_argument('--content_image_path', default='./images/content1.png')
-# parser.add_argument('--content_seg_path', default=[])
-# parser.add_argument('--style_image_path', default='./images/style1.png')
-# parser.add_argument('--style_seg_path', default=[])
-# parser.add_argument('--output_image_path', default='./results/example1.png')
-# parser.add_argument('--save_intermediate', action='store_true', default=False)
-# parser.add_argument('--fast', action='store_true', default=False)
-# parser.add_argument('--no_post', action='store_true', default=False)
-# parser.add_argument('--cuda', type=int, default=1, help='Enable CUDA.')
-# args = parser.parse_args()
-# model = './PhotoWCTModels/photo_wct.pth'
-# content_image_path = './images/content1.png'
-# content_seg_path = []
-# style_image_path = './images/style1.png'
-# style_seg_path = []
-# output_image_path = './results/example1.png'
-# save_intermediate = False
-# no_post = False
-# cuda = 1
-#
-# # Load model
-# p_wct = PhotoWCT()
-# p_wct.load_state_dict(torch.load(args.model))
-#
-# if args.fast:
-#     from photo_gif import GIFSmoothing
-#     p_pro = GIFSmoothing(r=35, eps=0.001)
-# else:
-#     from photo_smooth import Propagator
-#     p_pro = Propagator()
-# if args.cuda:
-#     p_wct.cuda(0)
-#
-# process_stylization.stylization(
-#     stylization_module=p_wct,
-#     smoothing_module=p_pro,
-#     content_image_path=args.content_image_path,
-#     style_image_path=args.style_image_path,
-#     content_seg_path=args.content_seg_path,
-#     style_seg_path=args.style_seg_path,
-#     output_image_path=args.output_image_path,
-#     cuda=args.cuda,
-#     save_intermediate=args.save_intermediate,
-#     no_post=args.no_post
-# )
+import argparse
+import scipy
+from scipy import ndimage
+import numpy as np
+import sys
+
+import torch
+from torch.autograd import Variable
+import torchvision.models as models
+import torch.nn.functional as F
+from torch.utils import data, model_zoo
+import torchvision.transforms as transforms
+
+# from model.deeplab_multi import Res_Deeplab
+# from model.deeplab_single import Res_Deeplab
+from model.deeplab_single_add_edge import Res_Deeplab
+# from model.deeplab_single_attention import Res_Deeplab
+from dataset.cityscapes_dataset import cityscapesDataSet
+from collections import OrderedDict
+import os
+from itertools import chain
+from PIL import Image
+
+import matplotlib.pyplot as plt
+import torch.nn as nn
+IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
+
+DATA_DIRECTORY = './data/Cityscapes/data'
+DATA_LIST_PATH = './my_test_img/val.txt'
+SAVE_PATH = './result/cityscapes'
+
+IGNORE_LABEL = 255
+NUM_CLASSES = 19
+NUM_STEPS = 500 # Number of images in the validation set.
+RESTORE_FROM = 'http://vllab.ucmerced.edu/ytsai/CVPR18/GTA2Cityscapes_multi-ed35151c.pth'
+SET = 'val'
+
+palette = [128, 64, 128, 244, 35, 232, 70, 70, 70, 102, 102, 156, 190, 153, 153, 153, 153, 153, 250, 170, 30,
+           220, 220, 0, 107, 142, 35, 152, 251, 152, 70, 130, 180, 220, 20, 60, 255, 0, 0, 0, 0, 142, 0, 0, 70,
+           0, 60, 100, 0, 80, 100, 0, 0, 230, 119, 11, 32]
+zero_pad = 256 * 3 - len(palette)
+for i in range(zero_pad):
+    palette.append(0)
+
+
+def colorize_mask(mask):
+    # mask: numpy array of the mask
+    new_mask = Image.fromarray(mask.astype(np.uint8)).convert('P')
+    new_mask.putpalette(palette)
+
+    return new_mask
+
+def get_arguments():
+    """Parse all the arguments provided from the CLI.
+
+    Returns:
+      A list of parsed arguments.
+    """
+    parser = argparse.ArgumentParser(description="DeepLab-ResNet Network")
+    parser.add_argument("--data-dir", type=str, default=DATA_DIRECTORY,
+                        help="Path to the directory containing the Cityscapes dataset.")
+    parser.add_argument("--data-list", type=str, default=DATA_LIST_PATH,
+                        help="Path to the file listing the images in the dataset.")
+    parser.add_argument("--ignore-label", type=int, default=IGNORE_LABEL,
+                        help="The index of the label to ignore during the training.")
+    parser.add_argument("--num-classes", type=int, default=NUM_CLASSES,
+                        help="Number of classes to predict (including background).")
+    parser.add_argument("--restore-from", type=str, default=RESTORE_FROM,
+                        help="Where restore model parameters from.")
+    parser.add_argument("--gpu", type=int, default=0,
+                        help="choose gpu device.")
+    parser.add_argument("--set", type=str, default=SET,
+                        help="choose evaluation set.")
+    parser.add_argument("--save", type=str, default=SAVE_PATH,
+                        help="Path to save result.")
+    return parser.parse_args()
+
+
+def main():
+    """Create the model and start the evaluation process."""
+
+    args = get_arguments()
+
+    gpu0 = args.gpu
+
+    if not os.path.exists(args.save):
+        os.makedirs(args.save)
+
+    model = Res_Deeplab(num_classes=args.num_classes)
+
+    if args.restore_from[:4] == 'http' :
+        saved_state_dict = model_zoo.load_url(args.restore_from)
+    else:
+        print("(args.restore_from =", args.restore_from)
+        saved_state_dict = torch.load(args.restore_from)
+    model.load_state_dict(saved_state_dict)
+
+    model.eval()
+    model.cuda(gpu0)
+
+    data_dir = './my_test_img'
+    data_list_path = './my_test_img/val_source.txt'
+    source_loader = data.DataLoader(cityscapesDataSet(data_dir, data_list_path, crop_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
+                                    batch_size=1, shuffle=False, pin_memory=True)
+    data_dir = './my_test_img'
+    data_list_path = './my_test_img/val_target.txt'
+    target_loader = data.DataLoader(cityscapesDataSet(data_dir, data_list_path, crop_size=(1024, 512), mean=IMG_MEAN, scale=False, mirror=False, set=args.set),
+                                    batch_size=1, shuffle=False, pin_memory=True)
+
+    interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
+    print("Are u sure use style encoder?")
+    with torch.no_grad():
+        for index, batch in enumerate(chain(source_loader, target_loader)):
+            if index % 100 == 0:
+                print('%d processd' % index)
+            image, _, _, name = batch
+            # output1 = model(Variable(image, volatile=True).cuda(gpu0))
+            output1, edge = model(Variable(image, volatile=True).cuda(gpu0))
+
+            output = interp(output1).cpu().data[0].numpy()
+
+            output = output.transpose(1,2,0)
+            output = np.asarray(np.argmax(output, axis=2), dtype=np.uint8)
+
+            output_col = colorize_mask(output)
+            output = Image.fromarray(output)
+
+            name = name[0].split('/')[-1]
+            output.save('%s/%s' % (args.save, name))
+            output_col.save('%s/%s_color.png' % (args.save, name.split('.')[0]))
+
+            # save GT edge
+            # save output image
+            # record edge attn
+            tensor_to_PIL(edge).save('%s/%s_edge' % (args.save, name))
+
+def tensor_to_PIL(tensor):
+    pilTrans = transforms.ToPILImage()
+    image = pilTrans(tensor.cpu().squeeze(0))
+    return image
+if __name__ == '__main__':
+    main()

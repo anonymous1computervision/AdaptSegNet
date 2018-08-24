@@ -70,8 +70,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             print("use DeepLab_v3_plus model")
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # +1 means add edge info
-        self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
+        # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
 
         # =====================
         # D focus in foreground
@@ -258,7 +259,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
 
         # cobime predict and use predict output get edge
-        net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
+        # net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
+        net_input = F.softmax(pred_target_fake)
         # print("net input shape =", net_input.shape)
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         d_out_fake, _ = self.model_D(net_input, label=images)
@@ -301,8 +303,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(self.source_image), self.pred_get_edges(self.source_image)), dim=1)
-        net_input = torch.cat((F.softmax(self.source_image), self.pred_real_edge), dim=1)
-
+        # net_input = torch.cat((F.softmax(self.source_image), self.pred_real_edge), dim=1)
+        net_input = F.softmax(self.source_image)
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
         d_out_real, _ = self.model_D(net_input, label=None)
 
@@ -311,8 +313,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # loss_real.backward()
 
         # cobime predict and use predict output get edge
-        net_input = torch.cat((F.softmax(self.target_image), self.pred_fake_edge), dim=1)
-
+        # net_input = torch.cat((F.softmax(self.target_image), self.pred_fake_edge), dim=1)
+        net_input = F.softmax(self.target_image)
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
         d_out_fake, _ = self.model_D(net_input, label=None)
 
@@ -553,10 +555,16 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             os.makedirs(os.path.join(dir_name, "Image_target_domain_seg"))
 
         if src_save:
+            # save image
+            label_name = os.path.join("data", "GTA5", "images", self.source_label_path[0])
+            save_name = os.path.join(dir_name, "Image_source_domain_seg", '%s_input.png' % self.i_iter)
+            shutil.copyfile(label_name, save_name)
+
             # save label
             label_name = os.path.join("data", "GTA5", "labels", self.source_label_path[0])
             save_name = os.path.join(dir_name, "Image_source_domain_seg", '%s_label.png' % self.i_iter)
             shutil.copyfile(label_name, save_name)
+
             # save output image
             paint_predict_image(self.source_image).save('check_output/Image_source_domain_seg/%s.png' % self.i_iter)
 
@@ -589,14 +597,14 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             self.tensor_to_PIL(self.saliency_mask).save('check_output/Image_source_domain_seg/%s_compute_attn.png' % self.i_iter)
 
             self.tensor_to_PIL(self.pred_real_edge).save('check_output/Image_source_domain_seg/%s_edge.png' % self.i_iter)
-            self.tensor_to_PIL((self.pred_real_edge-0.25)*2).save('check_output/Image_source_domain_seg/%s_edge_light.png' % self.i_iter)
+            # self.tensor_to_PIL((self.pred_real_edge-0.25)*2).save('check_output/Image_source_domain_seg/%s_edge_light.png' % self.i_iter)
 
             # print("pred_real_edge max =", torch.max(self.pred_real_edge).cpu().numpy())
             # print("pred_real_edge mean =", torch.mean(self.pred_real_edge).cpu().numpy())
 
         if target_save:
             self.tensor_to_PIL(self.pred_fake_edge).save('check_output/Image_target_domain_seg/%s_edge.png' % self.i_iter)
-            self.tensor_to_PIL((self.pred_fake_edge-0.25)*2).save('check_output/Image_target_domain_seg/%s_edge_light.png' % self.i_iter)
+            # self.tensor_to_PIL((self.pred_fake_edge-0.25)*2).save('check_output/Image_target_domain_seg/%s_edge_light.png' % self.i_iter)
             # print("pred_fake_edge max =", torch.max(self.pred_fake_edge).cpu().numpy())
             # print("pred_fake_edge mean =", torch.mean(self.pred_fake_edge).cpu().numpy())
 

@@ -1,0 +1,8 @@
+val_source/bochum_000000_004748_leftImg8bit.png
+val_source/bremen_000067_000019_leftImg8bit.png
+val_source/bremen_000073_000019_leftImg8bit.png
+val_source/bremen_000086_000019_leftImg8bit.png
+val_source/bremen_000089_000019_leftImg8bit.png
+val_source/stuttgart_000017_000019_leftImg8bit.png
+val_source/stuttgart_000106_000019_leftImg8bit.png
+val_source/ulm_000076_000019_leftImg8bit.png

@@ -1,4 +1,4 @@
-Test summary = default setting use FastPhoto, G output seg and edge, D input pred+edge
+Test summary = default setting use FastPhoto, G output seg and edge, D input pred+edge and edge seg use saliency foreground part
 
 ========= Best score =========
 best epoches = 0
@@ -6,23 +6,23 @@ best epoches = 0
 
 ========= Current score =========
 epoches = 0
-===>road:	5.21
-===>sidewalk:	1.84
-===>building:	2.32
-===>wall:	4.68
-===>fence:	0.21
-===>pole:	1.22
-===>light:	0.43
-===>sign:	0.2
-===>vegetation:	5.15
-===>terrain:	0.04
-===>sky:	3.06
-===>person:	0.23
-===>rider:	0.01
-===>car:	0.77
-===>truck:	0.08
-===>bus:	0.14
-===>train:	0.05
-===>motocycle:	0.02
-===>bicycle:	0.11
-===> mIoU: 1.36
+===>road:	7.62
+===>sidewalk:	0.97
+===>building:	1.08
+===>wall:	2.11
+===>fence:	0.16
+===>pole:	1.26
+===>light:	0.01
+===>sign:	0.54
+===>vegetation:	4.34
+===>terrain:	0.2
+===>sky:	2.22
+===>person:	0.01
+===>rider:	0.02
+===>car:	0.91
+===>truck:	0.46
+===>bus:	0.03
+===>train:	0.26
+===>motocycle:	0.01
+===>bicycle:	0.0
+===> mIoU: 1.17
