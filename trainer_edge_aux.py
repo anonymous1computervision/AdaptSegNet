@@ -412,6 +412,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         for value in foreground_map:
             # print(value)
             foreground_attn[label == value] = 1
+        self.saliency_mask = foreground_attn.float()
 
         return foreground_attn.float()
 
@@ -549,9 +550,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
                 check model training status,
                 will output image to config["image_save_dir"]
                 """
-        if not os.path.exists(os.path.exists(os.path.join(dir_name, "Image_source_domain_seg"))):
+        if not os.path.exists(os.path.join(dir_name, "Image_source_domain_seg")):
             os.makedirs(os.path.join(dir_name, "Image_source_domain_seg"))
-        if not os.path.exists(os.path.exists(os.path.join(dir_name, "Image_target_domain_seg"))):
+        if not os.path.exists(os.path.join(dir_name, "Image_target_domain_seg")):
             os.makedirs(os.path.join(dir_name, "Image_target_domain_seg"))
 
         if src_save:
@@ -579,9 +580,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
                 check model training status,
                 will output image to config["image_save_dir"]
                 """
-        if not os.path.exists(os.path.exists(os.path.join(dir_name, "Image_source_domain_seg"))):
+        if not os.path.exists(os.path.join(dir_name, "Image_source_domain_seg")):
             os.makedirs(os.path.join(dir_name, "Image_source_domain_seg"))
-        if not os.path.exists(os.path.exists(os.path.join(dir_name, "Image_target_domain_seg"))):
+        if not os.path.exists(os.path.join(dir_name, "Image_target_domain_seg")):
             os.makedirs(os.path.join(dir_name, "Image_target_domain_seg"))
 
         # save GT edge
