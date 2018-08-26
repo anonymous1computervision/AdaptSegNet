@@ -1,5 +1,6 @@
 import torch.nn as nn
 import numpy as np
+from .networks import Self_Attn
 affine_par = True
 
 
@@ -130,14 +131,15 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
         # layer 5 for edge
-        # self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], 1)
-        self.layer5 = nn.Sequential(
-                        nn.Conv2d(1024, 512, kernel_size=3, padding=1, dilation=1),
-                        nn.ReLU(inplace=True),
-                        nn.Conv2d(512, 512, kernel_size=3, padding=1, dilation=1),
-                        nn.ReLU(inplace=True),
-                        nn.Conv2d(512, 1, kernel_size=1, padding=0, dilation=1))
-
+        self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], 1)
+        # self.layer5 = nn.Sequential(
+        #                 nn.Conv2d(1024, 512, kernel_size=3, padding=1, dilation=1),
+        #                 nn.ReLU(inplace=True),
+        #                 nn.Conv2d(512, 512, kernel_size=3, padding=1, dilation=1),
+        #                 nn.ReLU(inplace=True),
+        #                 nn.Conv2d(512, 1, kernel_size=1, padding=0, dilation=1))
+        # self.attn1 = Self_Attn(1024, 'relu')
+        self.attn2 = Self_Attn(2048, 'relu')
         self.layer6 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
 
 
@@ -185,6 +187,7 @@ class ResNet(nn.Module):
         auxiliary = self.layer5(x)
 
         x = self.layer4(x)
+        x = self.attn2(x)
         out = self.layer6(x)
         # attention_mask, _ =self.attn1(x)
         # attention_mask = self.deconv(attention_mask)
