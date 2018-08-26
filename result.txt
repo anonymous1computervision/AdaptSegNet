@@ -1,48 +1,28 @@
 Test summary = default setting use FastPhoto, G output seg and edge, D input pred seg
 
 ========= Best score =========
-best epoches = 43800
-===>road:	92.55
-===>sidewalk:	33.09
-===>building:	76.67
-===>wall:	24.68
-===>fence:	8.65
-===>pole:	25.02
-===>light:	27.47
-===>sign:	19.72
-===>vegetation:	78.52
-===>terrain:	8.84
-===>sky:	73.29
-===>person:	46.52
-===>rider:	33.56
-===>car:	82.3
-===>truck:	47.31
-===>bus:	13.8
-===>train:	0.34
-===>motocycle:	0.0
-===>bicycle:	3.59
-===> mIoU: 36.63
+best epoches = 0
 
 
 ========= Current score =========
-epoches = 47300
-===>road:	92.29
-===>sidewalk:	30.57
-===>building:	76.53
-===>wall:	22.99
-===>fence:	6.66
-===>pole:	25.59
-===>light:	25.97
-===>sign:	17.95
-===>vegetation:	78.52
-===>terrain:	8.75
-===>sky:	74.58
-===>person:	45.85
-===>rider:	37.44
-===>car:	80.9
-===>truck:	41.26
-===>bus:	0.25
-===>train:	0.45
-===>motocycle:	0.0
-===>bicycle:	3.37
-===> mIoU: 35.26
+epoches = 0
+===>road:	3.12
+===>sidewalk:	2.53
+===>building:	3.93
+===>wall:	2.49
+===>fence:	0.24
+===>pole:	0.86
+===>light:	0.17
+===>sign:	0.8
+===>vegetation:	2.45
+===>terrain:	0.0
+===>sky:	0.99
+===>person:	0.5
+===>rider:	0.11
+===>car:	2.51
+===>truck:	0.21
+===>bus:	0.08
+===>train:	0.07
+===>motocycle:	0.01
+===>bicycle:	0.15
+===> mIoU: 1.12

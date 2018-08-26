@@ -70,9 +70,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             print("use DeepLab_v3_plus model")
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # +1 means add edge info
         # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
+        self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
+
 
         # =====================
         # D focus in foreground
@@ -259,8 +261,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
 
         # cobime predict and use predict output get edge
-        # net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
-        net_input = F.softmax(pred_target_fake)
+        net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
+        # net_input = F.softmax(pred_target_fake)
         # print("net input shape =", net_input.shape)
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         d_out_fake, _ = self.model_D(net_input, label=images)
@@ -303,8 +305,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(self.source_image), self.pred_get_edges(self.source_image)), dim=1)
-        # net_input = torch.cat((F.softmax(self.source_image), self.pred_real_edge), dim=1)
-        net_input = F.softmax(self.source_image)
+        net_input = torch.cat((F.softmax(self.source_image), self.pred_real_edge), dim=1)
+        # net_input = F.softmax(self.source_image)
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
         d_out_real, _ = self.model_D(net_input, label=None)
 
@@ -313,8 +315,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # loss_real.backward()
 
         # cobime predict and use predict output get edge
-        # net_input = torch.cat((F.softmax(self.target_image), self.pred_fake_edge), dim=1)
-        net_input = F.softmax(self.target_image)
+        net_input = torch.cat((F.softmax(self.target_image), self.pred_fake_edge), dim=1)
+        # net_input = F.softmax(self.target_image)
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
         d_out_fake, _ = self.model_D(net_input, label=None)
 
