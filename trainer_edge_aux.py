@@ -271,7 +271,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # wants to fool discriminator
         adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
         # adv_loss = self.loss_hinge_gen(d_out_fake)
-        loss = self.lambda_adv_target * adv_loss
+
+        # in target domain compute edge loss - weakly constraint
+        edge_loss = self._compute_edge_loss(pred_target_edge, self.channel_to_label(F.softmax(pred_target_fake)))
+
+        loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * edge_loss
         loss.backward()
 
         # update loss
@@ -286,6 +290,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # record log
         self.loss_target_value += loss.data.cpu().numpy()
+
 
     def dis_update(self, labels=None):
         """
@@ -381,6 +386,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         pred_edge = self.label_get_edges(torch.tensor(pred_label).cuda()).detach()
         return pred_edge
+
+    def channel_to_label(self, pred):
+        pred = pred.permute(0, 2, 3, 1)
+        _, output = torch.max(pred, -1)
+        return output
 
     def get_foreground_attention(self, label):
         foreground_attn = torch.cuda.ByteTensor(label.size()).zero_()

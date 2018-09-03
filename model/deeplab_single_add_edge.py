@@ -140,8 +140,8 @@ class ResNet(nn.Module):
         #                 nn.ReLU(inplace=True),
         #                 nn.Conv2d(512, 1, kernel_size=1, padding=0, dilation=1))
         # self.attn2 = Self_Attn(2048, 'relu')
-        # self.layer6 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
-        self.layer6 = self._make_pred_layer(Classifier_Module, 2049, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
+        self.layer6 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
+        # self.layer6 = self._make_pred_layer(Classifier_Module, 2049, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
 
 
         for m in self.modules():
@@ -190,7 +190,7 @@ class ResNet(nn.Module):
         x = self.layer4(x)
         # print("x shape", x.shape)
         # todo:try constraint
-        x = torch.cat((x, auxiliary), dim=1)
+        # x = torch.cat((x, auxiliary), dim=1)
 
         # x = self.attn2(x)
         out = self.layer6(x)
