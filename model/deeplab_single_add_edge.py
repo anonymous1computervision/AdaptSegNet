@@ -139,7 +139,7 @@ class ResNet(nn.Module):
         #                 nn.Conv2d(512, 512, kernel_size=3, padding=1, dilation=1),
         #                 nn.ReLU(inplace=True),
         #                 nn.Conv2d(512, 1, kernel_size=1, padding=0, dilation=1))
-        # self.attn2 = Self_Attn(2048, 'relu')
+        # self.attn2 = Self_Attn(19, 'relu')
         self.layer6 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
         # self.layer6 = self._make_pred_layer(Classifier_Module, 2049, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
 
@@ -194,6 +194,8 @@ class ResNet(nn.Module):
 
         # x = self.attn2(x)
         out = self.layer6(x)
+        # out = self.attn2(out)
+
         # attention_mask, _ =self.attn1(x)
         # attention_mask = self.deconv(attention_mask)
         # auxiliary = attention_mask * auxiliary
