@@ -211,18 +211,18 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         seg_loss = self._compute_seg_loss(pred_source_real, labels)
 
         # in source domain compute edge loss
-        edge_loss = self._compute_edge_loss(pred_source_edge, labels)
+        # edge_loss = self._compute_edge_loss(pred_source_edge, labels)
 
-        # bce_loss = nn.BCEWithLogitsLoss()
+        bce_loss = nn.BCEWithLogitsLoss()
         # # Todo : here use softmax maybe wrong
         # edge_loss = bce_loss(pred_source_edge,
         #                       self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
-        # attn_loss = bce_loss(pred_source_edge,
-        #                      self.get_foreground_attention(
-        #                          labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
+        attn_loss = bce_loss(pred_source_edge,
+                             self.get_foreground_attention(
+                                 labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
         # proper normalization
-        # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*attn_loss
-        seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
+        seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*attn_loss
+        # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
         seg_loss.backward()
 
         # update loss
@@ -239,8 +239,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # record log
         self.loss_source_value += seg_loss.data.cpu().numpy()
-        self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
-        # self.loss_edge_value += self.lambda_adv_edge*attn_loss.data.cpu().numpy()
+        # self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
+        self.loss_edge_value += self.lambda_adv_edge*attn_loss.data.cpu().numpy()
 
 
 

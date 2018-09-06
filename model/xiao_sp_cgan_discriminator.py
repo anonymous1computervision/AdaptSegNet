@@ -15,6 +15,7 @@ class XiaoCganDiscriminator(nn.Module):
     def __init__(self, num_classes, ndf=64):
         super(XiaoCganDiscriminator, self).__init__()
 
+        self.gamma = nn.Parameter(torch.zeros(1))
 
 
         # ==================== #
@@ -83,11 +84,12 @@ class XiaoCganDiscriminator(nn.Module):
         #   proj conv          #
         # ==================== #
         self.proj_conv = []
-        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 4, kernel_size=3, stride=1, padding=1))]
+        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 4, kernel_size=3, stride=1, padding=1))]
         # use self attention too
-        self.proj_attn = Self_Attn(ndf * 4, 'relu')
-        self.proj_conv += [self.proj_attn]
+        # self.proj_attn = Self_Attn(ndf * 4, 'relu')
+        # self.proj_conv += [self.proj_attn]
         self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, 1, kernel_size=1, stride=1, padding=0))]
+        self.proj_conv += [nn.LeakyReLU(0.2)]
 
 
         # ==================== #
@@ -116,8 +118,8 @@ class XiaoCganDiscriminator(nn.Module):
         # ==================== #
         self.fc = nn.Linear(ndf * 8, 1)
         # todo:this initial will check
-        # nn.init.xavier_uniform_(self.fc.weight.data, 1.)
-        nn.init.xavier_uniform_(self.fc.weight.data)
+        nn.init.xavier_uniform_(self.fc.weight.data, 1.)
+        # nn.init.xavier_uniform_(self.fc.weight.data)
 
         self.model_block += [self.fc]
 
@@ -184,8 +186,9 @@ class XiaoCganDiscriminator(nn.Module):
         # print("proj_x shape =", proj_x.shape)
         # print("c_out shape", c_out.shape)
         # print("output shape", output.shape)
-        output += torch.sum(proj_x*label)
-
+        # output += torch.sum(proj_x*label)
+        # todo: check gamma can robust model?
+        output += self.gamma*torch.sum(proj_x*label)
         # output = self.model_block(x)
         # output += proj_x
         # output += torch.sum(proj_x*label)
