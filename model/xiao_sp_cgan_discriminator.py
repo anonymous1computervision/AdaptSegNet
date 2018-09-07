@@ -196,7 +196,7 @@ class XiaoCganDiscriminator(nn.Module):
         # normalize = 8 / 256
         # output += torch.sum(proj_x * y) * normalize
 
-        return output, None
+        return output, proj_x
 
 
     def adain(self, style_code):

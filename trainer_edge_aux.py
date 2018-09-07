@@ -150,6 +150,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.saliency_mask = None
         self.pred_real_edge = None
         self.pred_fake_edge = None
+        self.pred_real_d_proj = None
+        self.pred_fake_d_proj = None
         self.inter_mini = nn.Upsample(size=self.input_size_target, align_corners=False,
                                     mode='bilinear')
     def init_opt(self):
@@ -282,11 +284,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # print("net input shape =", net_input.shape)
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         d_out_fake, _ = self.model_D(net_input, label=self.pred_target_edge_mini)
-
         # compute loss function
         # wants to fool discriminator
-        adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
-        # adv_loss = self.loss_hinge_gen(d_out_fake)
+        # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
+        adv_loss = self.loss_hinge_gen(d_out_fake)
 
         # in target domain compute edge loss - weakly constraint
         # edge_loss = self._compute_edge_loss(pred_target_edge, self.channel_to_label(F.softmax(pred_target_fake)))
@@ -332,25 +333,24 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         net_input = F.softmax(self.source_image)
 
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
-        d_out_real, _ = self.model_D(net_input, label=self.pred_source_edge_mini)
-
-        loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
-        loss_real /= 2
+        d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini)
+        # loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+        # loss_real /= 2
         # loss_real.backward()
 
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(self.target_image), self.pred_fake_edge), dim=1)
         net_input = F.softmax(self.target_image)
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
-        d_out_fake, _ = self.model_D(net_input, label=self.pred_target_edge_mini)
+        d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini)
 
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
 
-        loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
-        loss_fake /= 2
+        # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+        # loss_fake /= 2
 
-        loss = loss_real + loss_fake
-        # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+        # loss = loss_real + loss_fake
+        loss = self.loss_hinge_dis(d_out_fake, d_out_real)
         # loss = loss + loss_attn
         loss.backward()
 
@@ -629,6 +629,12 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             self.tensor_to_PIL(self.saliency_mask).save('check_output/Image_source_domain_seg/%s_compute_attn.png' % self.i_iter)
 
             self.tensor_to_PIL(self.pred_real_edge).save('check_output/Image_source_domain_seg/%s_edge.png' % self.i_iter)
+            interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
+
+
+            self.pred_real_d_proj = interp(self.pred_real_d_proj)
+            self.tensor_to_PIL(self.pred_real_d_proj).save('check_output/Image_source_domain_seg/%s_proj.png' % self.i_iter)
+
             # self.tensor_to_PIL((self.pred_real_edge-0.25)*2).save('check_output/Image_source_domain_seg/%s_edge_light.png' % self.i_iter)
 
             # print("pred_real_edge max =", torch.max(self.pred_real_edge).cpu().numpy())
@@ -639,6 +645,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             # self.tensor_to_PIL((self.pred_fake_edge-0.25)*2).save('check_output/Image_target_domain_seg/%s_edge_light.png' % self.i_iter)
             # print("pred_fake_edge max =", torch.max(self.pred_fake_edge).cpu().numpy())
             # print("pred_fake_edge mean =", torch.mean(self.pred_fake_edge).cpu().numpy())
+            interp_target = nn.Upsample(size=self.input_size_target, align_corners=False,
+                                        mode='bilinear')
+            self.pred_fake_d_proj = interp_target(self.pred_fake_d_proj)
+            self.tensor_to_PIL(self.pred_fake_d_proj).save('check_output/Image_target_domain_seg/%s_proj.png' % self.i_iter)
+
 
 
     def save_model(self, snapshot_save_dir="./model_save"):
