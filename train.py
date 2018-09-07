@@ -193,7 +193,7 @@ def main():
 
             # test image to check and get mIOU
             # if i_iter % 100 == 0 and i_iter > 0:
-            if i_iter % 1000 == 0:
+            if i_iter % 100 == 0:
                 # torch.cuda.empty_cache()
                 testloader = get_test_mini_set()
                 # trainer.eval()
@@ -225,7 +225,7 @@ def main():
                     recording_total += currenet_result
                     print(recording_total)
 
-                    if i_iter % 100 == 0:
+                    if i_iter % 1000 == 0:
                         record_each_epoch += f"\n========= epoch score  = % s =========\n" \
                                           "%s\n" \
                                           % (i_iter,
