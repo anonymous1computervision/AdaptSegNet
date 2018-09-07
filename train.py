@@ -120,7 +120,7 @@ def main():
 
     # todo:next time need to remove
     # trainer.restore_D()
-
+    record_each_epoch = ""
     best_score_record = {
         "epochs": 0,
         "total_mIOU": 0,
@@ -209,20 +209,41 @@ def main():
                         output_to_image(output, name)
                     total_miou, recording_string = compute_mIoU()
 
-                    recording_total = f"Test summary = %s\n\n"\
-                                    "========= Best score =========\n"\
-                                    "best epoches = %s\n"\
-                                    "%s\n\n"\
-                                    "========= Current score =========\n" \
-                                    "epoches = % s\n"\
-                                    "%s"\
-                                     % (config["test_summary"],
+                    recording_total = f"Test summary = %s\n\n" \
+                                      "========= Best score =========\n" \
+                                      "best epoches = %s\n" \
+                                      "%s\n\n" %(
+                                        config["test_summary"],
                                         best_score_record["epochs"],
-                                        best_score_record["recording_string"],
-                                        i_iter,
-                                        recording_string)
+                                        best_score_record["recording_string"])
 
+                    currenet_result = f"\n========= Current score =========\n" \
+                                      "epoches = % s\n" \
+                                      "%s" \
+                                      % (i_iter,
+                                         recording_string)
+                    recording_total += currenet_result
                     print(recording_total)
+
+                    if i_iter % 100 == 0:
+                        record_each_epoch += f"\n========= epoch score  = % s =========\n" \
+                                          "%s\n" \
+                                          % (i_iter,
+                                             recording_string)
+                    recording_total += record_each_epoch
+                            # recording_total = f"Test summary = %s\n\n"\
+                            #         "========= Best score =========\n"\
+                            #         "best epoches = %s\n"\
+                            #         "%s\n\n"\
+                            #         "========= Current score =========\n" \
+                            #         "epoches = % s\n"\
+                            #         "%s"\
+                            #          % (config["test_summary"],
+                            #             best_score_record["epochs"],
+                            #             best_score_record["recording_string"],
+                            #             i_iter,
+                            #             recording_string)
+
 
                     with open('./result.txt', 'w') as f:
                         f.write(recording_total)
