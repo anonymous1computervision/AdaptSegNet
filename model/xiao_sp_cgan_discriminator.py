@@ -84,12 +84,14 @@ class XiaoCganDiscriminator(nn.Module):
         #   proj conv          #
         # ==================== #
         self.proj_conv = []
-        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 4, kernel_size=3, stride=1, padding=1))]
-        # use self attention too
-        # self.proj_attn = Self_Attn(ndf * 4, 'relu')
-        # self.proj_conv += [self.proj_attn]
-        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, 1, kernel_size=1, stride=1, padding=0))]
+        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 4, kernel_size=3, stride=1, padding=1))]
         self.proj_conv += [nn.LeakyReLU(0.2)]
+        # use self attention too
+        self.proj_attn = Self_Attn(ndf * 4, 'relu')
+        self.proj_conv += [self.proj_attn]
+        self.proj_conv += [nn.LeakyReLU(0.2)]
+        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, 1, kernel_size=1, stride=1, padding=0))]
+        # self.proj_conv += [nn.LeakyReLU(0.2)]
 
 
         # ==================== #
