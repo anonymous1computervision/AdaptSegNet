@@ -15,7 +15,7 @@ class XiaoCganDiscriminator(nn.Module):
     def __init__(self, num_classes, ndf=64):
         super(XiaoCganDiscriminator, self).__init__()
 
-        # self.gamma = nn.Parameter(torch.zeros(1))
+        self.gamma = nn.Parameter(torch.zeros(1))
 
 
         # ==================== #
@@ -191,8 +191,8 @@ class XiaoCganDiscriminator(nn.Module):
         # output += torch.sum(proj_x*label)
         # todo: check gamma can robust model?
         # output = (1-self.gamma)*output + self.gamma*torch.sum(proj_x*label)
-        # output += self.gamma*torch.sum(proj_x*label)
-        output += torch.sum(proj_x*label)
+        output += self.gamma*torch.sum(proj_x*label)
+        # output += torch.sum(proj_x*label)
 
         # output = self.model_block(x)
         # output += proj_x
