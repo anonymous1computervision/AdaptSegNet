@@ -7,46 +7,46 @@ best epoches = 0
 
 ========= Current score =========
 epoches = 0
-===>road:	9.41
-===>sidewalk:	1.22
-===>building:	9.37
-===>wall:	2.89
-===>fence:	0.33
-===>pole:	0.82
-===>light:	0.43
-===>sign:	0.47
-===>vegetation:	3.78
-===>terrain:	0.66
-===>sky:	1.39
-===>person:	0.51
-===>rider:	0.08
-===>car:	0.68
-===>truck:	0.1
-===>bus:	0.32
-===>train:	0.62
+===>road:	10.03
+===>sidewalk:	1.05
+===>building:	4.91
+===>wall:	1.51
+===>fence:	0.02
+===>pole:	0.88
+===>light:	0.34
+===>sign:	0.58
+===>vegetation:	4.31
+===>terrain:	0.04
+===>sky:	2.86
+===>person:	0.73
+===>rider:	0.11
+===>car:	0.67
+===>truck:	0.06
+===>bus:	0.31
+===>train:	0.0
 ===>motocycle:	0.0
-===>bicycle:	0.22
-===> mIoU: 1.75
+===>bicycle:	0.24
+===> mIoU: 1.51
 
 ========= epoch score  = 0 =========
-===>road:	9.41
-===>sidewalk:	1.22
-===>building:	9.37
-===>wall:	2.89
-===>fence:	0.33
-===>pole:	0.82
-===>light:	0.43
-===>sign:	0.47
-===>vegetation:	3.78
-===>terrain:	0.66
-===>sky:	1.39
-===>person:	0.51
-===>rider:	0.08
-===>car:	0.68
-===>truck:	0.1
-===>bus:	0.32
-===>train:	0.62
+===>road:	10.03
+===>sidewalk:	1.05
+===>building:	4.91
+===>wall:	1.51
+===>fence:	0.02
+===>pole:	0.88
+===>light:	0.34
+===>sign:	0.58
+===>vegetation:	4.31
+===>terrain:	0.04
+===>sky:	2.86
+===>person:	0.73
+===>rider:	0.11
+===>car:	0.67
+===>truck:	0.06
+===>bus:	0.31
+===>train:	0.0
 ===>motocycle:	0.0
-===>bicycle:	0.22
-===> mIoU: 1.75
+===>bicycle:	0.24
+===> mIoU: 1.51
 
