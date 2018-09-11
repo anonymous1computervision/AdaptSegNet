@@ -209,18 +209,33 @@ def main():
                         output_to_image(output, name)
                     total_miou, recording_string = compute_mIoU()
 
+                    # recording_total = f"Test summary = %s\n\n" \
+                    #                   "========= Best score =========\n" \
+                    #                   "best epoches = %s\n" \
+                    #                   "%s\n\n" %(
+                    #                     config["test_summary"],
+                    #                     best_score_record["epochs"],
+                    #                     best_score_record["recording_string"])
                     recording_total = f"Test summary = %s\n\n" \
                                       "========= Best score =========\n" \
                                       "best epoches = %s\n" \
+                                      "gamma = %.5f\n"\
                                       "%s\n\n" %(
                                         config["test_summary"],
                                         best_score_record["epochs"],
+                                        trainer.discriminator_gamma,
                                         best_score_record["recording_string"])
-
+                    # currenet_result = f"\n========= Current score =========\n" \
+                    #                   "epoches = % s\n" \
+                    #                   "%s" \
+                    #                   % (i_iter,
+                    #                      recording_string)
                     currenet_result = f"\n========= Current score =========\n" \
                                       "epoches = % s\n" \
+                                      "gamma = %.5f\n" \
                                       "%s" \
                                       % (i_iter,
+                                         trainer.discriminator_gamma,
                                          recording_string)
                     recording_total += currenet_result
                     print(recording_total)

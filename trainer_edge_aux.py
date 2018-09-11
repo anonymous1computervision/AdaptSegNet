@@ -283,7 +283,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         net_input = F.softmax(pred_target_fake)
         # print("net input shape =", net_input.shape)
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
-        d_out_fake, _ = self.model_D(net_input, label=self.pred_target_edge_mini)
+        # d_out_fake, _ = self.model_D(net_input, label=self.pred_target_edge_mini)
+        d_out_fake, _ = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)
         # compute loss function
         # wants to fool discriminator
         # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
@@ -333,7 +334,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         net_input = F.softmax(self.source_image)
 
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
-        d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini)
+        # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini)
+        d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini-0.5)
+
         # loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
         # loss_real /= 2
         # loss_real.backward()
@@ -342,8 +345,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # net_input = torch.cat((F.softmax(self.target_image), self.pred_fake_edge), dim=1)
         net_input = F.softmax(self.target_image)
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
-        d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini)
-
+        # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini)
+        d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
 
         # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
@@ -374,8 +377,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
     def show_each_loss(self):
         # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f}".format(
         #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
-        print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_edge_loss= {3:.7f} loss_G_adv1 = {4:.5f} loss_D1 = {5:.3f}".format(
-            self.i_iter, self.num_steps, self.loss_source_value, self.loss_edge_value, float(self.loss_target_value), float(self.loss_d_value)))
+        # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_edge_loss= {3:.7f} loss_G_adv1 = {4:.5f} loss_D1 = {5:.3f}".format(
+        #     self.i_iter, self.num_steps, self.loss_source_value, self.loss_edge_value, float(self.loss_target_value), float(self.loss_d_value)))
+        print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_edge_loss= {3:.7f} loss_G_adv1 = {4:.5f} loss_D1 = {5:.3f} D_gamma = {6:.5f}".format(
+            self.i_iter, self.num_steps, self.loss_source_value, self.loss_edge_value, float(self.loss_target_value),
+            float(self.loss_d_value), float(self.model_D.gamma)))
 
         # print(
             # "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
@@ -575,6 +581,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             self.optimizer_D.zero_grad()
             self._adjust_learning_rate_D(self.optimizer_D, self.i_iter)
 
+    @property
+    def discriminator_gamma(self):
+        return float(self.model_D.gamma)
 
     def snapshot_image_save(self, dir_name="check_output/", src_save=True, target_save=True):
         """
