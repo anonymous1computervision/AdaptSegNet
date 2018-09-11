@@ -96,7 +96,7 @@ class XiaoCganDiscriminator(nn.Module):
         # self.proj_conv += [nn.LeakyReLU(0.2)]
         self.proj_attn = Self_Attn(ndf * 4, 'relu')
         self.proj_conv += [self.proj_attn]
-        self.proj_conv += [nn.Conv2d(ndf * 4, 1, kernel_size=1, stride=1, padding=0)]
+        self.proj_conv += [nn.Conv2d(ndf * 4, 3, kernel_size=1, stride=1, padding=1)]
         # self.proj_conv += [nn.LeakyReLU(0.2)]
         # todo:check tanh
         # self.proj_conv += [nn.Tanh()]

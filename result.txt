@@ -1,74 +1,143 @@
 Test summary = default setting use FastPhoto, G output seg and edge, D input pred seg
 
 ========= Best score =========
-best epoches = 400
-gamma = 0.00059
-===>road:	67.57
-===>sidewalk:	11.34
-===>building:	62.97
-===>wall:	10.26
-===>fence:	0.21
-===>pole:	3.85
-===>light:	0.0
-===>sign:	0.0
-===>vegetation:	59.45
-===>terrain:	0.83
-===>sky:	43.29
-===>person:	11.19
-===>rider:	0.0
-===>car:	60.35
-===>truck:	10.89
-===>bus:	11.74
-===>train:	0.0
+best epoches = 3500
+gamma = -0.00185
+===>road:	87.52
+===>sidewalk:	35.7
+===>building:	70.5
+===>wall:	21.71
+===>fence:	3.27
+===>pole:	16.82
+===>light:	12.98
+===>sign:	0.09
+===>vegetation:	69.11
+===>terrain:	6.08
+===>sky:	58.7
+===>person:	35.23
+===>rider:	0.77
+===>car:	72.52
+===>truck:	9.85
+===>bus:	12.99
+===>train:	0.02
 ===>motocycle:	0.0
 ===>bicycle:	0.0
-===> mIoU: 18.63
+===> mIoU: 27.05
 
 
 
 ========= Current score =========
-epoches = 500
-gamma = 0.00059
-===>road:	58.72
-===>sidewalk:	12.08
-===>building:	61.43
-===>wall:	9.05
-===>fence:	0.24
-===>pole:	4.26
-===>light:	0.0
-===>sign:	0.01
-===>vegetation:	53.53
-===>terrain:	0.83
-===>sky:	46.13
-===>person:	9.15
-===>rider:	0.0
-===>car:	62.17
-===>truck:	9.93
-===>bus:	13.81
+epoches = 3700
+gamma = -0.00185
+===>road:	69.2
+===>sidewalk:	19.02
+===>building:	68.16
+===>wall:	21.05
+===>fence:	2.44
+===>pole:	15.22
+===>light:	12.26
+===>sign:	0.04
+===>vegetation:	68.89
+===>terrain:	5.93
+===>sky:	60.59
+===>person:	34.68
+===>rider:	0.5
+===>car:	70.47
+===>truck:	7.91
+===>bus:	29.49
 ===>train:	0.0
 ===>motocycle:	0.0
 ===>bicycle:	0.0
-===> mIoU: 17.96
+===> mIoU: 25.57
 
 ========= epoch score  = 0 =========
-===>road:	4.91
-===>sidewalk:	1.67
-===>building:	1.32
-===>wall:	1.42
-===>fence:	0.52
-===>pole:	0.8
-===>light:	0.04
-===>sign:	0.47
-===>vegetation:	11.5
-===>terrain:	0.1
-===>sky:	2.83
-===>person:	0.52
-===>rider:	0.06
-===>car:	1.59
-===>truck:	0.5
-===>bus:	1.19
+===>road:	7.25
+===>sidewalk:	4.24
+===>building:	4.47
+===>wall:	2.18
+===>fence:	0.39
+===>pole:	0.82
+===>light:	0.07
+===>sign:	0.4
+===>vegetation:	4.13
+===>terrain:	0.45
+===>sky:	2.02
+===>person:	1.64
+===>rider:	1.54
+===>car:	1.8
+===>truck:	0.32
+===>bus:	0.01
+===>train:	0.08
+===>motocycle:	0.06
+===>bicycle:	0.56
+===> mIoU: 1.71
+
+
+========= epoch score  = 1000 =========
+===>road:	82.58
+===>sidewalk:	23.61
+===>building:	67.88
+===>wall:	12.19
+===>fence:	0.08
+===>pole:	12.39
+===>light:	0.02
+===>sign:	0.0
+===>vegetation:	65.86
+===>terrain:	3.62
+===>sky:	54.3
+===>person:	23.83
+===>rider:	0.0
+===>car:	66.38
+===>truck:	5.65
+===>bus:	17.84
 ===>train:	0.0
-===>motocycle:	0.01
-===>bicycle:	0.18
-===> mIoU: 1.56
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 22.96
+
+
+========= epoch score  = 2000 =========
+===>road:	76.33
+===>sidewalk:	22.96
+===>building:	71.32
+===>wall:	14.81
+===>fence:	0.88
+===>pole:	13.7
+===>light:	0.77
+===>sign:	0.0
+===>vegetation:	69.32
+===>terrain:	4.97
+===>sky:	59.55
+===>person:	28.96
+===>rider:	0.0
+===>car:	66.58
+===>truck:	8.54
+===>bus:	30.34
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 24.69
+
+
+========= epoch score  = 3000 =========
+===>road:	74.87
+===>sidewalk:	21.18
+===>building:	69.72
+===>wall:	21.46
+===>fence:	2.26
+===>pole:	15.06
+===>light:	9.52
+===>sign:	0.01
+===>vegetation:	69.34
+===>terrain:	6.54
+===>sky:	60.16
+===>person:	33.23
+===>rider:	0.02
+===>car:	67.09
+===>truck:	11.34
+===>bus:	27.59
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 25.76
 

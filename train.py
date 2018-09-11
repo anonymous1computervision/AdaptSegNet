@@ -242,8 +242,10 @@ def main():
 
                     if i_iter % 1000 == 0:
                         record_each_epoch += f"\n========= epoch score  = % s =========\n" \
-                                          "%s\n" \
+                                         "gamma = %.5f\n" \
+                                         "%s\n" \
                                           % (i_iter,
+                                             trainer.discriminator_gamma,
                                              recording_string)
                     recording_total += record_each_epoch
                             # recording_total = f"Test summary = %s\n\n"\
