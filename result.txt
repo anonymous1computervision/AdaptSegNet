@@ -1,54 +1,74 @@
 Test summary = default setting use FastPhoto, G output seg and edge, D input pred seg
 
 ========= Best score =========
-best epoches = 0
-gamma = -0.00010
+best epoches = 400
+gamma = 0.00059
+===>road:	67.57
+===>sidewalk:	11.34
+===>building:	62.97
+===>wall:	10.26
+===>fence:	0.21
+===>pole:	3.85
+===>light:	0.0
+===>sign:	0.0
+===>vegetation:	59.45
+===>terrain:	0.83
+===>sky:	43.29
+===>person:	11.19
+===>rider:	0.0
+===>car:	60.35
+===>truck:	10.89
+===>bus:	11.74
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 18.63
 
 
 
 ========= Current score =========
-epoches = 0
-gamma = -0.00010
-===>road:	14.25
-===>sidewalk:	1.94
-===>building:	1.53
-===>wall:	0.92
-===>fence:	0.22
-===>pole:	1.36
-===>light:	0.4
-===>sign:	0.69
-===>vegetation:	2.06
-===>terrain:	0.03
-===>sky:	2.11
-===>person:	0.22
+epoches = 500
+gamma = 0.00059
+===>road:	58.72
+===>sidewalk:	12.08
+===>building:	61.43
+===>wall:	9.05
+===>fence:	0.24
+===>pole:	4.26
+===>light:	0.0
+===>sign:	0.01
+===>vegetation:	53.53
+===>terrain:	0.83
+===>sky:	46.13
+===>person:	9.15
 ===>rider:	0.0
-===>car:	3.29
-===>truck:	0.13
-===>bus:	0.22
-===>train:	1.02
+===>car:	62.17
+===>truck:	9.93
+===>bus:	13.81
+===>train:	0.0
 ===>motocycle:	0.0
-===>bicycle:	1.15
-===> mIoU: 1.66
+===>bicycle:	0.0
+===> mIoU: 17.96
 
 ========= epoch score  = 0 =========
-===>road:	14.25
-===>sidewalk:	1.94
-===>building:	1.53
-===>wall:	0.92
-===>fence:	0.22
-===>pole:	1.36
-===>light:	0.4
-===>sign:	0.69
-===>vegetation:	2.06
-===>terrain:	0.03
-===>sky:	2.11
-===>person:	0.22
-===>rider:	0.0
-===>car:	3.29
-===>truck:	0.13
-===>bus:	0.22
-===>train:	1.02
-===>motocycle:	0.0
-===>bicycle:	1.15
-===> mIoU: 1.66
+===>road:	4.91
+===>sidewalk:	1.67
+===>building:	1.32
+===>wall:	1.42
+===>fence:	0.52
+===>pole:	0.8
+===>light:	0.04
+===>sign:	0.47
+===>vegetation:	11.5
+===>terrain:	0.1
+===>sky:	2.83
+===>person:	0.52
+===>rider:	0.06
+===>car:	1.59
+===>truck:	0.5
+===>bus:	1.19
+===>train:	0.0
+===>motocycle:	0.01
+===>bicycle:	0.18
+===> mIoU: 1.56
 
