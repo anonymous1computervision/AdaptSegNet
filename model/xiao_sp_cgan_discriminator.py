@@ -91,14 +91,16 @@ class XiaoCganDiscriminator(nn.Module):
         # self.proj_conv += [ResBlock_2018_SN(ndf * 4, ndf * 4, downsample=False, use_BN=False)]
         # self.proj_conv += [nn.ReLU()]
         # use self attention too
-        # self.proj_attn = Self_Attn(ndf * 4, 'relu')
-        # self.proj_conv += [self.proj_attn]
+        self.proj_attn_pre = Self_Attn(ndf * 4, 'relu')
+        self.proj_conv += [self.proj_attn_pre]
+        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 8, kernel_size=3, stride=1, padding=1))]
+        self.proj_conv += [nn.LeakyReLU(0.2)]
+        self.proj_attn = Self_Attn(ndf * 8, 'relu')
+        self.proj_conv += [self.proj_attn]
+        self.proj_conv += [nn.Conv2d(ndf * 8, 1, kernel_size=3, stride=1, padding=1)]
         # self.proj_conv += [nn.LeakyReLU(0.2)]
-        # self.proj_attn = Self_Attn(ndf * 4, 'relu')
-        # self.proj_conv += [self.proj_attn]
-        self.proj_conv += [nn.Conv2d(ndf * 4, 1, kernel_size=3, stride=1, padding=1)]
-        self.proj_conv += [nn.ReLU()]
-        # self.proj_conv += [nn.LeakyReLU(0.2)]
+        # self.proj_conv += [nn.ReLU()]
+        # self.proj_conv += [nn.ReLU(inplace=True)]
         # todo:check tanh
         # self.proj_conv += [nn.Tanh()]
 
@@ -122,7 +124,9 @@ class XiaoCganDiscriminator(nn.Module):
         # self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=True, use_BN=False)]
         # channel = 1024
         # self.model_block += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=False, use_BN=False)]
-        self.model_block += [nn.ReLU(inplace=True)]
+        # self.model_block += [nn.ReLU(inplace=True)]
+        self.model_block += [nn.ReLU()]
+
         self.model_block += [nn.AdaptiveAvgPool2d(ndf * 8)]
         # ==================== #
         #          fc          #
@@ -190,6 +194,10 @@ class XiaoCganDiscriminator(nn.Module):
 
         proj_x = self.proj_conv(x)
         # print("proj_x shape = ", proj_x.shape)
+        # print("proj_x = ", proj_x)
+        # proj_relu = nn.ReLU()(proj_x)
+        # print("proj_relu shape = ", proj_relu.shape)
+        # print("proj_relu = ", proj_relu)
 
         output = self.model_block(x)
         # print("model_block shape = ", output.shape)

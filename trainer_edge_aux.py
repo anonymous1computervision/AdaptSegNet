@@ -658,6 +658,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             # self.tensor_to_PIL((self.pred_fake_edge-0.25)*2).save('check_output/Image_target_domain_seg/%s_edge_light.png' % self.i_iter)
             # print("pred_fake_edge max =", torch.max(self.pred_fake_edge).cpu().numpy())
             # print("pred_fake_edge mean =", torch.mean(self.pred_fake_edge).cpu().numpy())
+            print("self.pred_fake_d_proj) max = ", torch.max(self.pred_fake_d_proj))
             interp_target = nn.Upsample(size=self.input_size_target, align_corners=False, mode='bilinear')
             # self.pred_fake_d_proj = interp_target(nn.Sigmoid()(self.pred_fake_d_proj))
             self.pred_fake_d_proj = interp_target((self.pred_fake_d_proj))
