@@ -204,7 +204,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # resize to source size
         interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
         pred_source_real = interp(pred_source_real)
-        interp_source_mini = nn.Upsample(size=(int(self.input_size[0]/8), int(self.input_size[1]/8)), align_corners=False,
+        # interp_source_mini = nn.Upsample(size=(int(self.input_size[0]/8), int(self.input_size[1]/8)), align_corners=False,
+        #                             mode='bilinear')
+        interp_source_mini = nn.Upsample(size=(int(self.input_size[0]/4), int(self.input_size[1]/4)), align_corners=False,
                                     mode='bilinear')
         self.pred_source_edge_mini = interp_source_mini(pred_source_edge).detach()
         pred_source_edge = interp(pred_source_edge)
@@ -272,7 +274,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         pred_target_fake = interp_target(pred_target_fake)
 
         # todo: cgan version
-        interp_target_mini = nn.Upsample(size=(int(self.input_size_target[0]/8), int(self.input_size_target[1]/8)), align_corners=False,
+        # interp_target_mini = nn.Upsample(size=(int(self.input_size_target[0]/8), int(self.input_size_target[1]/8)), align_corners=False,
+        #                             mode='bilinear')
+        interp_target_mini = nn.Upsample(size=(int(self.input_size_target[0]/4), int(self.input_size_target[1]/4)), align_corners=False,
                                     mode='bilinear')
         self.pred_target_edge_mini = interp_target_mini(pred_target_edge).detach()
         pred_target_edge = interp_target(pred_target_edge)

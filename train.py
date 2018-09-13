@@ -240,7 +240,7 @@ def main():
                     recording_total += currenet_result
                     print(recording_total)
 
-                    if i_iter % 1000 == 0:
+                    if i_iter % 1000 == 0 or i_iter <= 1000:
                         record_each_epoch += f"\n========= epoch score  = % s =========\n" \
                                          "gamma = %.5f\n" \
                                          "%s\n" \
