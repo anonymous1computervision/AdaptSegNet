@@ -10,10 +10,10 @@ from .networks import SpectralNorm
 from .networks import AdaptiveInstanceNorm2d
 # import pdb
 
-class XiaoCganDiscriminator(nn.Module):
+class XiaoCganResAttnDiscriminator(nn.Module):
 
     def __init__(self, num_classes, ndf=64):
-        super(XiaoCganDiscriminator, self).__init__()
+        super(XiaoCganResAttnDiscriminator, self).__init__()
 
         # todo:print gamma
         self.gamma = nn.Parameter(torch.zeros(1))
@@ -27,8 +27,9 @@ class XiaoCganDiscriminator(nn.Module):
         self.model_pre.append(SpectralNorm(nn.Conv2d(num_classes, ndf, 4, 2, 1)))
         self.model_pre += [nn.LeakyReLU(0.2)]
         # # # channe = 128
-        self.model_pre.append(SpectralNorm(nn.Conv2d(ndf, ndf * 2, 4, 2, 1)))
+        self.model_pre.append(SpectralNorm(nn.Conv2d(ndf, ndf*2, 4, 2, 1)))
         self.model_pre += [nn.LeakyReLU(0.2)]
+        self.model_pre_out = ndf*2
         # # # channe = 256
         # self.model_pre.append(SpectralNorm(nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1)))
         # self.model_pre += [nn.LeakyReLU(0.2)]
@@ -104,13 +105,19 @@ class XiaoCganDiscriminator(nn.Module):
         # self.proj_conv += [nn.LeakyReLU(0.2)]
         # self.proj_attn = Self_Attn(ndf * 2, 'relu')
         # self.proj_conv += [self.proj_attn]
-        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf*4, 1, kernel_size=1, stride=1, padding=0))]
-        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf, 1, kernel_size=4, stride=2, padding=1))]
+        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf*4, 1, kernel_size=1, stride=1, padding=0))]
+        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf, 1, kernel_size=4, stride=2, padding=1))]
 
-        # todo:check tanh
+
         # self.proj_conv += [nn.Tanh()]
-
-
+        self.proj_attn = []
+        # self.proj_attn_part = Self_Attn(+1, 'relu')
+        self.proj_attn += [self.proj_attn_part]
+        self.proj_attn += [nn.LeakyReLU(0.2)]
+        self.proj_attn += [SpectralNorm(nn.Conv2d(ndf*4+1, ndf*8, 4, 2, 1))]
+        self.proj_attn += [nn.LeakyReLU(0.2)]
+        # self.proj_to_res = []
+        # self.proj_to_res
         # ==================== #
         #   model_block        #
         # ==================== #
@@ -128,30 +135,30 @@ class XiaoCganDiscriminator(nn.Module):
         # self.model_block.append(SpectralNorm(nn.Conv2d(ndf, ndf * 2, 4, 2, 1)))
         # self.model_block += [nn.LeakyReLU(0.2)]
         # # channe = 256
-        self.model_block.append(SpectralNorm(nn.Conv2d(ndf*2, ndf*4, 4, 2, 1)))
+        self.model_block.append(SpectralNorm(nn.Conv2d(self.model_pre_out, ndf*4, 4, 2, 1)))
         self.model_block += [nn.LeakyReLU(0.2)]
         # channel = 512
         self.model_block += [SpectralNorm(nn.Conv2d(ndf*4, ndf*8, 4, 2, 1))]
         self.model_block += [nn.LeakyReLU(0.2)]
         # 0914 add
-        self.model_block += [SpectralNorm(nn.Conv2d(ndf*8, ndf*16, 4, 2, 1))]
+        # self.model_block += [SpectralNorm(nn.Conv2d(ndf*8, ndf*16, 4, 2, 1))]
         # self.model_block += [nn.LeakyReLU(0.2)]
         # self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=True, use_BN=False)]
         # channel = 1024
         # self.model_block += [ResBlock_2018_SN(ndf * 8, num_classes, downsample=False, use_BN=False)]
         # self.model_block += [nn.ReLU(inplace=True)]
-        self.model_block += [nn.ReLU()]
+        # self.model_block += [nn.ReLU()]
 
         # self.model_block += [nn.AdaptiveAvgPool2d(ndf * 8)]
-        self.model_block += [nn.AdaptiveAvgPool2d(1)]
+        # self.model_block += [nn.AdaptiveAvgPool2d(1)]
         # self.model_block += [nn.AdaptiveAvgPool2d(ndf * 16)]
-        self.model_block_out_size = ndf*16
+        # self.model_block_out_size = ndf*16
 
         # ==================== #
         #          fc          #
         # ==================== #
         # self.fc = nn.Linear(ndf * 8, 1)
-        self.fc = SpectralNorm(nn.Linear(self.model_block_out_size, 1))
+        # self.fc = nn.Linear(self.model_block_out_size, 1)
         # todo:this initial will check
         # nn.init.xavier_uniform_(self.fc.weight.data, 1.)
         # nn.init.xavier_uniform_(self.fc.weight.data)
@@ -180,12 +187,15 @@ class XiaoCganDiscriminator(nn.Module):
         # ==================== #
         #     model_classifier #
         # ==================== #
+        self.model_classifier = [nn.Conv2d(ndf*8, 1, kernel_size=1, stride=1, padding=0)]
         # self.model_classifier = [ResBlock_2018_SN(num_classes, 1, downsample=False, use_BN=False)]
         # create model
         self.model_pre = nn.Sequential(*self.model_pre)
         self.model_block = nn.Sequential(*self.model_block)
         self.proj_conv = nn.Sequential(*self.proj_conv)
-        # self.model_classifier = nn.Sequential(*self.model_classifier)
+        self.proj_attn = nn.Sequential(*self.proj_attn)
+
+        self.model_classifier = nn.Sequential(*self.model_classifier)
 
     def forward(self, x, label=None):
         # if label is None:
@@ -219,24 +229,24 @@ class XiaoCganDiscriminator(nn.Module):
         # print("proj_relu shape = ", proj_relu.shape)
         # print("proj_relu = ", proj_relu)
 
-        x = self.model_block(x)
-
+        proj_input = torch.cat((proj_x, label), dim=1)
+        output = self.model_block(x) + self.proj_attn(proj_input)
         # print("model_block shape = ", x.shape)
-        x = x.view(-1, self.model_block_out_size)
+        # x = x.view(-1, self.model_block_out_size)
         # print("model_block  reshape = ", x.shape)
 
-        output = self.fc(x)
+        # output = self.fc(x)
         # print("fc shape = ", output.shape)
-
+        output = self.model_classifier(output)
         # print("proj_x shape =", proj_x.shape)
         # print("c_out shape", c_out.shape)
         # print("output shape", output.shape)
         # output += torch.sum(proj_x*label)
         # todo: check gamma can robust model?
         # output = (1-self.gamma)*output + self.gamma*torch.sum(proj_x*label)
-        output += self.gamma*torch.sum(proj_x*label)
+        # output += self.gamma*torch.sum(proj_x*label)
         # output += torch.sum(proj_x*label)
-
+        # output += self.gamma*torch.sum(proj_x*label)
         # output = self.model_block(x)
         # output += proj_x
         # output += torch.sum(proj_x*label)
@@ -245,28 +255,3 @@ class XiaoCganDiscriminator(nn.Module):
         # output += torch.sum(proj_x * y) * normalize
 
         return output, proj_x
-
-
-    def adain(self, style_code):
-        adain_params = self.mlp(style_code)
-
-        # assign the adain_params to the AdaIN layers in model
-        for m in self.c_block.modules():
-            if m.__class__.__name__ == "AdaptiveInstanceNorm2d":
-                mean = adain_params[:, :m.num_features]
-                std = adain_params[:, m.num_features:2*m.num_features]
-                m.bias = mean.contiguous().view(-1)
-                m.weight = std.contiguous().view(-1)
-                if adain_params.size(1) > 2*m.num_features:
-                    adain_params = adain_params[:, 2*m.num_features:]
-
-    def get_num_adain_params(self, model):
-        # return the number of AdaIN parameters needed by the model
-        num_adain_params = 0
-        for m in model.modules():
-            # print(m.__class__.__name__)
-            if m.__class__.__name__ == "AdaptiveInstanceNorm2d":
-                print("In discriminator I found a layer use AdaptiveInstanceNorm2d")
-                num_adain_params += 2*m.num_features
-        print("num_adain_params =", num_adain_params)
-        return num_adain_params

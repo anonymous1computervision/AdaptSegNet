@@ -147,6 +147,7 @@ def main():
             src_images = Variable(src_images).cuda(gpu)
             trainer.gen_source_update(src_images, labels, names)
             del src_images
+            torch.cuda.empty_cache()
 
             # train G use target image
             target_images, _, _, target_name = target_batch
@@ -157,6 +158,7 @@ def main():
             # trainer.gen_target_foreground_update(target_images, target_name)
 
             del target_images
+            torch.cuda.empty_cache()
 
             # train discriminator use prior generator image
             trainer.dis_update(labels=labels)

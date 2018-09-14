@@ -25,6 +25,7 @@ import model.fc_densenet as fc_densenet
 from model.discriminator import FCDiscriminator
 from model.sp_discriminator import SP_FCDiscriminator
 from model.xiao_sp_cgan_discriminator import XiaoCganDiscriminator
+from model.xiao_sp_cgan_res_discriminator import XiaoCganResAttnDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
 from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
 from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
@@ -73,6 +74,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         self.model_D = XiaoCganDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = XiaoCganResAttnDiscriminator(num_classes=hyperparameters['num_classes'])
+
 
 
         # +1 means add edge info
