@@ -260,6 +260,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
                 :param image_path: just for save path to record model predict, use in  snapshot_image_save function
                 :return:
                 """
+        
         self.optimizer_G.zero_grad()
 
 
@@ -770,4 +771,3 @@ def paint_predict_image(predict_image):
 
         return output_color
     return output_to_image(predict_image)
-
