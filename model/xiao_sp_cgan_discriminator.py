@@ -27,8 +27,8 @@ class XiaoCganDiscriminator(nn.Module):
         self.model_pre.append(SpectralNorm(nn.Conv2d(num_classes, ndf, 4, 2, 1)))
         self.model_pre += [nn.LeakyReLU(0.2)]
         # # # channe = 128
-        # self.model_pre.append(SpectralNorm(nn.Conv2d(ndf, ndf * 2, 4, 2, 1)))
-        # self.model_pre += [nn.LeakyReLU(0.2)]
+        self.model_pre.append(SpectralNorm(nn.Conv2d(ndf, ndf * 2, 4, 2, 1)))
+        self.model_pre += [nn.LeakyReLU(0.2)]
         # # # channe = 256
         # self.model_pre.append(SpectralNorm(nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1)))
         # self.model_pre += [nn.LeakyReLU(0.2)]
@@ -98,7 +98,14 @@ class XiaoCganDiscriminator(nn.Module):
         # self.proj_conv += [nn.LeakyReLU(0.2)]
         # self.proj_conv += [nn.ReLU()]
         # self.proj_conv += [nn.ReLU(inplace=True)]
-        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf, 1, kernel_size=4, stride=2, padding=1))]
+        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf*2, ndf*4, kernel_size=4, stride=2, padding=1))]
+        self.proj_conv += [nn.LeakyReLU(0.2)]
+        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf*4, ndf * 4, kernel_size=4, stride=2, padding=1))]
+        # self.proj_conv += [nn.LeakyReLU(0.2)]
+        # self.proj_attn = Self_Attn(ndf * 2, 'relu')
+        # self.proj_conv += [self.proj_attn]
+        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf*4, 1, kernel_size=1, stride=1, padding=0))]
+        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf, 1, kernel_size=4, stride=2, padding=1))]
 
         # todo:check tanh
         # self.proj_conv += [nn.Tanh()]
@@ -118,13 +125,16 @@ class XiaoCganDiscriminator(nn.Module):
 
         self.model_block = []
         # # channe = 128
-        self.model_block.append(SpectralNorm(nn.Conv2d(ndf, ndf * 2, 4, 2, 1)))
-        self.model_block += [nn.LeakyReLU(0.2)]
+        # self.model_block.append(SpectralNorm(nn.Conv2d(ndf, ndf * 2, 4, 2, 1)))
+        # self.model_block += [nn.LeakyReLU(0.2)]
         # # channe = 256
-        self.model_block.append(SpectralNorm(nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1)))
+        self.model_block.append(SpectralNorm(nn.Conv2d(ndf * 2, ndf*4, 4, 2, 1)))
         self.model_block += [nn.LeakyReLU(0.2)]
         # channel = 512
         self.model_block += [SpectralNorm(nn.Conv2d(ndf*4, ndf*8, 4, 2, 1))]
+        self.model_block += [nn.LeakyReLU(0.2)]
+        # 0914 add
+        self.model_block += [SpectralNorm(nn.Conv2d(ndf*8, ndf*16, 4, 2, 1))]
         # self.model_block += [nn.LeakyReLU(0.2)]
         # self.model_block += [ResBlock_2018_SN(ndf * 4, ndf * 8, downsample=True, use_BN=False)]
         # channel = 1024
@@ -132,16 +142,21 @@ class XiaoCganDiscriminator(nn.Module):
         # self.model_block += [nn.ReLU(inplace=True)]
         self.model_block += [nn.ReLU()]
 
-        self.model_block += [nn.AdaptiveAvgPool2d(ndf * 8)]
+        # self.model_block += [nn.AdaptiveAvgPool2d(ndf * 8)]
+        self.model_block += [nn.AdaptiveAvgPool2d(1)]
+        # self.model_block += [nn.AdaptiveAvgPool2d(ndf * 16)]
+        self.model_block_out_size = ndf*16
+
         # ==================== #
         #          fc          #
         # ==================== #
-        self.fc = nn.Linear(ndf * 8, 1)
+        # self.fc = nn.Linear(ndf * 8, 1)
+        self.fc = nn.Linear(self.model_block_out_size, 1)
         # todo:this initial will check
         nn.init.xavier_uniform_(self.fc.weight.data, 1.)
         # nn.init.xavier_uniform_(self.fc.weight.data)
 
-        self.model_block += [self.fc]
+        # self.model_block += [self.fc]
 
 
         # self.c_block_2 = []
@@ -204,8 +219,14 @@ class XiaoCganDiscriminator(nn.Module):
         # print("proj_relu shape = ", proj_relu.shape)
         # print("proj_relu = ", proj_relu)
 
-        output = self.model_block(x)
-        # print("model_block shape = ", output.shape)
+        x = self.model_block(x)
+
+        # print("model_block shape = ", x.shape)
+        x = x.view(-1, self.model_block_out_size)
+        # print("model_block  reshape = ", x.shape)
+
+        output = self.fc(x)
+        # print("fc shape = ", output.shape)
 
         # print("proj_x shape =", proj_x.shape)
         # print("c_out shape", c_out.shape)
