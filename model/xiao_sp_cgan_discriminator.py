@@ -143,7 +143,7 @@ class XiaoCganDiscriminator(nn.Module):
         self.model_block += [nn.ReLU()]
 
         # self.model_block += [nn.AdaptiveAvgPool2d(ndf * 8)]
-        self.model_block += [nn.AdaptiveAvgPool2d(1)]
+        # self.model_block += [nn.AdaptiveAvgPool2d(1)]
         # self.model_block += [nn.AdaptiveAvgPool2d(ndf * 16)]
         self.model_block_out_size = ndf*16
 
@@ -220,6 +220,8 @@ class XiaoCganDiscriminator(nn.Module):
         # print("proj_relu = ", proj_relu)
 
         x = self.model_block(x)
+        # global sum pooling
+        x = torch.sum(x, dim=(2, 3))
 
         # print("model_block shape = ", x.shape)
         x = x.view(-1, self.model_block_out_size)

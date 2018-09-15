@@ -426,6 +426,26 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         _, output = torch.max(pred, -1)
         return output
 
+    def get_foreground_attention_groups(self, label):
+        foreground_groups = []
+        # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 255]
+        foreground_groups_dict = {
+            "riders": [12, 17, 18],
+            "cars": [13, 14, 15, 16],
+            "sidewalk": [1],
+            "person": [11],
+            "light": [6],
+            "sign": [7]
+        }
+        for group_name, group_list in foreground_groups_dict.items():
+            foreground_attn = torch.cuda.ByteTensor(label.size()).zero_()
+            for item in group_list:
+                # print(value)
+                foreground_attn[label == item] = 1
+            foreground_groups += [foreground_attn]
+
+        return torch.cat(foreground_groups, dim=1)
+
     def get_foreground_attention(self, label):
         foreground_attn = torch.cuda.ByteTensor(label.size()).zero_()
         # choose which label be weakly supervised label
@@ -451,8 +471,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # ignore background label include 255-ignore label
         # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 255]
-        # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
-        foreground_map = [1, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        # foreground_map = [1, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        # foreground_map = [6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
 
         # choose which label be weakly supervised label
 
