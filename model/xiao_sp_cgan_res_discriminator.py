@@ -160,7 +160,6 @@ class XiaoCganResAttnDiscriminator(nn.Module):
         # self.fc = nn.Linear(ndf * 8, 1)
         # self.fc = nn.Linear(self.model_block_out_size, 1)
         # todo:this initial will check
-        # nn.init.xavier_uniform_(self.fc.weight.data, 1.)
         # nn.init.xavier_uniform_(self.fc.weight.data)
 
         # self.model_block += [self.fc]

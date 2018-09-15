@@ -236,8 +236,8 @@ class XiaoCganDiscriminator(nn.Module):
         # output += torch.sum(proj_x*label)
         # todo: check gamma can robust model?
         # output = (1-self.gamma)*output + self.gamma*torch.sum(proj_x*label)
-        output += self.gamma*torch.sum(proj_x*label)
-        # output += torch.sum(proj_x*label)
+        # output += self.gamma*torch.sum(proj_x*label)
+        output += torch.sum(proj_x*label)
 
         # output = self.model_block(x)
         # output += proj_x
