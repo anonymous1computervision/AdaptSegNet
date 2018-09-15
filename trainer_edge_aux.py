@@ -260,7 +260,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
                 :param image_path: just for save path to record model predict, use in  snapshot_image_save function
                 :return:
                 """
-        
+
         self.optimizer_G.zero_grad()
 
 
@@ -292,8 +292,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         net_input = F.softmax(pred_target_fake)
         # print("net input shape =", net_input.shape)
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
-        d_out_fake, _ = self.model_D(net_input, label=self.pred_target_edge_mini)
-        # d_out_fake, _ = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)
+        # d_out_fake, _ = self.model_D(net_input, label=self.pred_target_edge_mini)
+        d_out_fake, _ = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)
         # compute loss function
         # wants to fool discriminator
         # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
@@ -343,8 +343,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         net_input = F.softmax(self.source_image)
 
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
-        d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini)
-        # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini-0.5)
+        # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini)
+        d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini-0.5)
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=(self.pred_source_edge_mini - 0.5)*2)
         # loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
         # loss_real /= 2
@@ -354,8 +354,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # net_input = torch.cat((F.softmax(self.target_image), self.pred_fake_edge), dim=1)
         net_input = F.softmax(self.target_image)
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
-        d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini)
-        # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)
+        # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini)
+        d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
 
         # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
