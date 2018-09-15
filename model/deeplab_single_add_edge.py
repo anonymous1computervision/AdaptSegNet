@@ -1,7 +1,10 @@
 import torch
 import torch.nn as nn
 import numpy as np
+
 from .networks import Self_Attn
+from .networks import SpectralNorm
+
 affine_par = True
 
 
@@ -133,6 +136,13 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
         # layer 5 for edge
         self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], 1)
+        # self.layer5 = []
+        # self.model_block += [SpectralNorm(nn.Conv2d(1024, 256, kernel_size=1, stride=1, padding=0)]
+        # self.layer5 += [Self_Attn(1024, 'relu')]
+        # self.layer5 += [nn.Conv2d(1024, 1, kernel_size=1, stride=1, padding=0)]
+        # self.layer5 = nn.Sequential(*self.layer5)
+
+
         # self.layer5 = nn.Sequential(
         #                 nn.Conv2d(1024, 512, kernel_size=3, padding=1, dilation=1),
         #                 nn.ReLU(inplace=True),

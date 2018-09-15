@@ -5,19 +5,16 @@ import torch.nn.functional as F
 from .networks import FirstResBlock_2018_SN
 from .networks import ResBlock_2018_SN
 from .networks import Self_Attn
-from model.networks import StyleEncoder, MLP
-from .networks import SpectralNorm
-from .networks import AdaptiveInstanceNorm2d
-# import pdb
 
-class XiaoCganDiscriminator(nn.Module):
+from .networks import SpectralNorm
+
+class XiaoSPAttentionDiscriminator(nn.Module):
 
     def __init__(self, num_classes, ndf=64):
-        super(XiaoCganDiscriminator, self).__init__()
+        super(XiaoSPAttentionDiscriminator, self).__init__()
 
         # todo:print gamma
         self.gamma = nn.Parameter(torch.zeros(1))
-
 
         # ==================== #
         #    model pre         #
@@ -38,26 +35,11 @@ class XiaoCganDiscriminator(nn.Module):
         #   proj conv          #
         # ==================== #
         self.proj_conv = []
-        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 4, kernel_size=3, stride=1, padding=1))]
-        # self.proj_conv += [nn.LeakyReLU(0.2)]
-        # use self attention too
-        # self.proj_attn_pre = Self_Attn(ndf * 4, 'relu')
-        # self.proj_conv += [self.proj_attn_pre]
-        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 8, kernel_size=3, stride=1, padding=1))]
-        # self.proj_conv += [nn.LeakyReLU(0.2)]
-        # self.proj_attn = Self_Attn(ndf * 8, 'relu')
-        # self.proj_conv += [self.proj_attn]
-        # self.proj_conv += [nn.Conv2d(ndf * 8, 1, kernel_size=3, stride=1, padding=1)]
-        # self.proj_conv += [nn.LeakyReLU(0.2)]
-        # self.proj_conv += [nn.ReLU()]
-        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf*2, ndf*4, kernel_size=4, stride=2, padding=1))]
-        # self.proj_conv += [nn.LeakyReLU(0.2)]
-        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf*4, ndf * 4, kernel_size=4, stride=2, padding=1))]
-        # self.proj_conv += [nn.LeakyReLU(0.2)]
-        # self.proj_attn = Self_Attn(ndf * 2, 'relu')
-        # self.proj_conv += [self.proj_attn]
-        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf*4, 1, kernel_size=1, stride=1, padding=0))]
-        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, 1, kernel_size=3, stride=1, padding=1))]
+        self.proj_attn = Self_Attn(ndf * 4, 'relu')
+        self.proj_conv += [self.proj_attn]
+        self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1))]
+        self.proj_conv += [nn.LeakyReLU(0.2)]
+        # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf * 4, 1, kernel_size=3, stride=1, padding=1))]
         # self.proj_conv += [SpectralNorm(nn.Conv2d(ndf, 1, kernel_size=4, stride=2, padding=1))]
 
         # use some trick
@@ -72,7 +54,7 @@ class XiaoCganDiscriminator(nn.Module):
         # self.model_block.append(SpectralNorm(nn.Conv2d(ndf*2, ndf*4, 4, 2, 1)))
         # self.model_block += [nn.LeakyReLU(0.2)]
         # channel = 512
-        self.model_block += [SpectralNorm(nn.Conv2d(ndf*4, ndf*8, 4, 2, 1))]
+        self.model_block += [SpectralNorm(nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1))]
         self.model_block += [nn.LeakyReLU(0.2)]
         # self.model_block += [SpectralNorm(nn.Conv2d(ndf*8, ndf*16, 4, 2, 1))]
         # self.model_block += [nn.LeakyReLU(0.2)]
@@ -94,7 +76,7 @@ class XiaoCganDiscriminator(nn.Module):
         # self.model_block += [nn.AdaptiveAvgPool2d(ndf * 8)]
         # self.model_block += [nn.AdaptiveAvgPool2d(1)]
         # self.model_block += [nn.AdaptiveAvgPool2d(ndf * 16)]
-        self.model_block_out_size = ndf*8
+        self.model_block_out_size = ndf * 8
 
         # ==================== #
         #          fc          #
@@ -106,7 +88,6 @@ class XiaoCganDiscriminator(nn.Module):
         # nn.init.xavier_uniform_(self.fc.weight.data)
 
         # self.model_block += [self.fc]
-
 
         # self.c_block_2 = []
         # self.c_block_2.append(SpectralNorm(nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1)))
@@ -185,7 +166,7 @@ class XiaoCganDiscriminator(nn.Module):
         # output += torch.sum(proj_x*label)
         # todo: check gamma can robust model?
         # output = (1-self.gamma)*output + self.gamma*torch.sum(proj_x*label)
-        output += self.gamma*torch.sum(proj_x*label)
+        output += self.gamma * torch.sum(proj_x * label)
         # output += torch.sum(proj_x*label)
 
         # output = self.model_block(x)
@@ -196,28 +177,3 @@ class XiaoCganDiscriminator(nn.Module):
         # output += torch.sum(proj_x * y) * normalize
 
         return output, proj_x
-
-
-    def adain(self, style_code):
-        adain_params = self.mlp(style_code)
-
-        # assign the adain_params to the AdaIN layers in model
-        for m in self.c_block.modules():
-            if m.__class__.__name__ == "AdaptiveInstanceNorm2d":
-                mean = adain_params[:, :m.num_features]
-                std = adain_params[:, m.num_features:2*m.num_features]
-                m.bias = mean.contiguous().view(-1)
-                m.weight = std.contiguous().view(-1)
-                if adain_params.size(1) > 2*m.num_features:
-                    adain_params = adain_params[:, 2*m.num_features:]
-
-    def get_num_adain_params(self, model):
-        # return the number of AdaIN parameters needed by the model
-        num_adain_params = 0
-        for m in model.modules():
-            # print(m.__class__.__name__)
-            if m.__class__.__name__ == "AdaptiveInstanceNorm2d":
-                print("In discriminator I found a layer use AdaptiveInstanceNorm2d")
-                num_adain_params += 2*m.num_features
-        print("num_adain_params =", num_adain_params)
-        return num_adain_params
