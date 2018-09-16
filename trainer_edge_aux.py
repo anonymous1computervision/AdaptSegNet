@@ -73,6 +73,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D_ = SP_FCDiscriminator(num_classes=3+1)
+
         # self.model_D_cgan = XiaoCganDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = XiaoCganResAttnDiscriminator(num_classes=hyperparameters['num_classes'])
 
@@ -301,8 +303,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # d_out_fake, _ = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)
         # compute loss function
         # wants to fool discriminator
-        # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
-        adv_loss = self.loss_hinge_gen(d_out_fake)
+        adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
+        # adv_loss = self.loss_hinge_gen(d_out_fake)
 
         # todo: self attn loss
         pred_target_fake_label = pred_target_fake.permute(0, 2, 3, 1)
@@ -313,10 +315,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
                                  pred_target_fake_label.view(pred_target_fake_label.shape[0], -1,
                                                              pred_target_fake_label.shape[1],
                                                              pred_target_fake_label.shape[2]).cuda()))
-        #
+
         # in target domain compute edge loss - weakly constraint
         # edge_loss = self._compute_edge_loss(pred_target_edge, self.channel_to_label(F.softmax(pred_target_fake)))
-
+        # loss = self.lambda_adv_target * adv_loss
         # loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * edge_loss
         loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * attn_loss
         loss.backward()
@@ -361,23 +363,23 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini)
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini-0.5)
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=(self.pred_source_edge_mini - 0.5)*2)
-        # loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
-        # loss_real /= 2
+        loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+        loss_real /= 2
         # loss_real.backward()
 
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(self.target_image), self.pred_fake_edge), dim=1)
-        net_input = F.softmax(self.target_image)
+        # net_input = F.softmax(self.target_image)
         d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini)
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)
         # d_out_fake = self.model_D(F.softmax(self.target_image), label=self.interp_mini(self.target_image_input_image))
 
-        # loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
-        # loss_fake /= 2
+        loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+        loss_fake /= 2
 
-        # loss = loss_real + loss_fake
-        loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+        loss = loss_real + loss_fake
+        # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
         # loss = loss + loss_attn
         loss.backward()
 
