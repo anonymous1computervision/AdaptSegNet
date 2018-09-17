@@ -25,6 +25,7 @@ import model.fc_densenet as fc_densenet
 from model.discriminator import FCDiscriminator
 # from model.sp_discriminator import SP_FCDiscriminator
 from model.sp_feature_discriminator import SP_Feature_FCDiscriminator
+from model.gated_discriminator import Gated_Discriminator
 
 from model.xiao_sp_cgan_discriminator import XiaoCganDiscriminator
 from model.xiao_sp_cgan_res_discriminator import XiaoCganResAttnDiscriminator
@@ -76,7 +77,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
-        self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
+        self.model_D = Gated_Discriminator(num_classes=hyperparameters['num_classes']+1)
 
         # self.model_D_ = SP_FCDiscriminator(num_classes=3+1)
 
@@ -300,7 +303,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # print("net input shape =", net_input.shape)
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         # d_out_fake, _ = self.model_D(F.softmax(net_input), label=images)
-        d_out_fake, _ = self.model_D(net_input, label=images)
+        self.pred_fake_edge = nn.Sigmoid()(pred_target_edge).detach()
+
+        d_out_fake, _ = self.model_D(net_input, label=self.pred_fake_edge)
         #
         # net_input = torch.cat((net_input, pred_target_edge), dim=1)
         # d_out_fake, _ = self.model_D_cgan(net_input, label=images)
@@ -335,7 +340,6 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # save image for discriminator use
         self.target_image = pred_target_fake.detach()
         # self.pred_fake_edge = F.sigmoid(pred_target_edge).detach()
-        self.pred_fake_edge = nn.Sigmoid()(pred_target_edge).detach()
 
         # self.pred_fake_edge = pred_target_edge.detach()
         self.target_input_image = images.detach()
@@ -367,7 +371,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=None)
-        d_out_real, self._ = self.model_D(net_input, label=None)
+        d_out_real, _ = self.model_D(net_input, label=self.pred_real_edge)
 
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini)
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini-0.5)
@@ -381,7 +385,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         net_input = F.softmax(self.target_image)
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=None)
-        d_out_fake, _ = self.model_D(net_input, label=None)
+        d_out_fake, _ = self.model_D(net_input, label=self.pred_fake_edge)
 
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini)
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)

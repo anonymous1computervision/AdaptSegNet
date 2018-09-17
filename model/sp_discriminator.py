@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from .networks import SpectralNorm
+# from .spectral import spectral_norm
 
 
 class SP_FCDiscriminator(nn.Module):
