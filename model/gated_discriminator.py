@@ -2,18 +2,23 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .networks import Gated_conv
+from .networks import SpectralNorm
 
 class Gated_Discriminator(nn.Module):
 
 	def __init__(self, num_classes, ndf = 64):
 		super(Gated_Discriminator, self).__init__()
-		self.conv1 = Gated_conv(num_classes, ndf, kernel_size=5, stride=1, padding=2)
-		self.conv2 = Gated_conv(ndf, ndf * 2, kernel_size=5, stride=2, padding=2)
-		self.conv3 = Gated_conv(ndf * 2, ndf * 4, kernel_size=5, stride=2, padding=2)
-		self.conv4 = Gated_conv(ndf * 4, ndf * 4, kernel_size=5, stride=2, padding=2)
-		self.conv5 = Gated_conv(ndf * 4, ndf * 4, kernel_size=5, stride=2, padding=2)
-		self.conv6 = Gated_conv(ndf * 4, ndf * 4, kernel_size=5, stride=2, padding=2)
-
+		# self.conv1 = Gated_conv(num_classes, ndf, kernel_size=5, stride=1, padding=2)
+		# self.conv2 = Gated_conv(ndf, ndf * 2, kernel_size=5, stride=2, padding=2)
+		# self.conv3 = Gated_conv(ndf * 2, ndf * 4, kernel_size=5, stride=2, padding=2)
+		# self.conv4 = Gated_conv(ndf * 4, ndf * 4, kernel_size=5, stride=2, padding=2)
+		# self.conv5 = Gated_conv(ndf * 4, ndf * 4, kernel_size=5, stride=2, padding=2)
+		# self.conv6 = Gated_conv(ndf * 4, ndf * 4, kernel_size=5, stride=2, padding=2)
+		self.conv1 = Gated_conv(num_classes, ndf, kernel_size=4, stride=2, padding=1)
+		self.conv2 = Gated_conv(ndf, ndf * 2, kernel_size=4, stride=2, padding=1)
+		self.conv3 = Gated_conv(ndf * 2, ndf * 4, kernel_size=4, stride=2, padding=1)
+		self.conv4 = Gated_conv(ndf * 4, ndf * 8, kernel_size=4, stride=2, padding=1)
+		self.classifier = SpectralNorm(nn.Conv2d(ndf * 8, 1, kernel_size=4, stride=2, padding=1))
 		self.leaky_relu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 		self.activation = self.leaky_relu
 
@@ -34,9 +39,10 @@ class Gated_Discriminator(nn.Module):
 		# x = self.activation(x)
 		x = self.conv4(x)
 		# x = self.activation(x)
-		x = self.conv5(x)
+		x = self.classifier(x)
+		# x = self.conv5(x)
 		# x = self.activation(x)
-		x = self.conv6(x)
+		# x = self.conv6(x)
 		# x = self.activation(x)
 
 
