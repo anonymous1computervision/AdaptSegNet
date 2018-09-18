@@ -28,6 +28,7 @@ class Gated_conv(nn.Module):
         self.gated_conv = SpectralNorm(nn.Conv2d(in_channels, out_channels * 2, kernel_size, stride,
                           padding))
         self.leakyRelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
+        # self.leakyRelu = nn.LeakyReLU(negative_slope=0.2)
         self.sigmoid = nn.Sigmoid()
         # torch.nn.init.kaiming_normal_(self.gated_conv.weight)
 

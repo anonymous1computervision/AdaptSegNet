@@ -132,12 +132,12 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # for [log / check output]
         self.loss_d_value = 0
-        # self.loss_d_foreground_value = 0
+        self.loss_d_foreground_value = 0
         self.loss_source_value = 0
         self.loss_target_value = 0
         self.loss_edge_value = 0
 
-        # self.loss_target_foreground_value = 0
+        self.loss_target_foreground_value = 0
         # self.loss_target_weakly_seg_value = 0
         # self.loss_d_attn_value = 0
 
@@ -323,8 +323,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # wants to fool discriminator
         # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
         # adv_loss = self.loss_hinge_gen(d_out_fake)
-        adv_loss = self.loss_hinge_gen(d_out_fake) + \
-                   0.5 * self.loss_hinge_gen(d_out_foreground_fake)
+        loss_adv_foreground = self.loss_hinge_gen(d_out_foreground_fake)
+        adv_loss = self.loss_hinge_gen(d_out_fake) + 0.5 * loss_adv_foreground
+
 
         # todo: self attn loss
         # pred_target_fake_label = pred_target_fake.permute(0, 2, 3, 1)
@@ -354,6 +355,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.target_input_image = images.detach()
 
         # record log
+        self.loss_target_foreground_value += loss_adv_foreground.data.cpu().numpy()
         self.loss_target_value += loss.data.cpu().numpy()
 
     def dis_update(self, labels=None):
@@ -363,6 +365,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
                 """
         self.optimizer_G.zero_grad()
         self.optimizer_D.zero_grad()
+        self.optimizer_D_foreground.zero_grad()
 
         # Enable D backpropgation, train D
         for param in self.model_D.parameters():
@@ -384,7 +387,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=None)
         # d_out_real, _ = self.model_D(net_input, label=self.pred_real_edge)
         d_out_real, _ = self.model_D(net_input, label=None)
-        d_out_foreground_real, _ = self.model_D(net_input, label=self.pred_real_edge)
+        d_out_foreground_real, _ = self.model_D_foreground(net_input, label=self.pred_real_edge)
+        # d_out_foreground_real, _ = self.model_D(net_input, label=self.pred_real_edge)
 
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini)
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini-0.5)
@@ -400,7 +404,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=None)
         # d_out_fake, _ = self.model_D(net_input, label=self.pred_fake_edge)
         d_out_fake, _ = self.model_D(net_input, label=None)
-        d_out_foreground_fake, _ = self.model_D(net_input, label=None)
+        d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=self.pred_fake_edge)
 
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini)
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)
@@ -411,18 +415,25 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # loss = loss_real + loss_fake
         # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
-        loss = self.loss_hinge_dis(d_out_fake, d_out_real) + \
-               0.5 * self.loss_hinge_dis(d_out_foreground_fake, d_out_foreground_real)
+        loss = self.loss_hinge_dis(d_out_foreground_fake, d_out_foreground_real)
+        # print("fore loss=", loss)
+        self.loss_d_foreground_value += loss.data.cpu().numpy()
+        loss.backward()
+
+        loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+        self.loss_d_value += loss.data.cpu().numpy()
         # loss = loss + loss_attn
         loss.backward()
 
         # update loss
         self.optimizer_D.step()
+        self.optimizer_D_foreground.step()
+
         # self.optimizer_Attn.step()
 
         # record log
         # self.loss_d_value += loss_real.data.cpu().numpy() + loss_fake.data.cpu().numpy()
-        self.loss_d_value += loss.data.cpu().numpy()
+
 
     def loss_hinge_dis(self, dis_fake, dis_real):
         loss = torch.mean(F.relu(1. - dis_real))
@@ -436,10 +447,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
     def show_each_loss(self):
         # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f}".format(
         #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
-        print(
-            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_edge_loss= {3:.7f} loss_G_adv1 = {4:.5f} loss_D1 = {5:.3f}".format(
-                self.i_iter, self.num_steps, self.loss_source_value, self.loss_edge_value,
-                float(self.loss_target_value), float(self.loss_d_value)))
+        # print(
+        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_edge_loss= {3:.7f} loss_G_adv1 = {4:.5f} loss_D1 = {5:.3f}".format(
+        #         self.i_iter, self.num_steps, self.loss_source_value, self.loss_edge_value,
+        #         float(self.loss_target_value), float(self.loss_d_value)))
 
         # gamma version
         # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_edge_loss= {3:.7f} loss_G_adv1 = {4:.5f} loss_D1 = {5:.3f} D_gamma = {6:.5f}".format(
@@ -450,10 +461,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
         #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
         #     float(self.loss_d_value), self.loss_d_attn_value))
-        # print(
-        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_adv_foreground = {4:.5f}  loss_D1 = {5:.3f} loss_D1_foreground = {6:.3f}".format(
-        #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-        #         float(self.loss_target_foreground_value), float(self.loss_d_value), self.loss_d_foreground_value))
+        print(
+            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_adv_foreground = {4:.5f}  loss_D1 = {5:.3f} loss_D1_foreground = {6:.3f}".format(
+                self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
+                float(self.loss_target_foreground_value), float(self.loss_d_value), float(self.loss_d_foreground_value)))
 
         # print(
         #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_weakly_seg = {4:.5f} loss_D1 = {5:.3f} loss_D1_attn = {6:.3f}".format(
@@ -646,13 +657,14 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
     def init_each_epoch(self, i_iter):
         self.i_iter = i_iter
         self.loss_d_value = 0
-        # self.loss_d_foreground_value = 0
+        self.loss_d_foreground_value = 0
 
         self.loss_source_value = 0
         self.loss_target_value = 0
         self.loss_edge_value = 0
 
-        # self.loss_target_foreground_value = 0
+
+        self.loss_target_foreground_value = 0
 
         # self.loss_target_weakly_seg_value = 0
 

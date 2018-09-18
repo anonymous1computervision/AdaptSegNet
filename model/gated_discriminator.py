@@ -30,7 +30,6 @@ class Gated_Discriminator(nn.Module):
 		# mask = 1 - nn.Sigmoid()(label)
 		mask = 1 - label
 		x = torch.cat((x, mask), dim=1)
-
 		x = self.conv1(x)
 		# x = self.activation(x)
 		x = self.conv2(x)
@@ -38,12 +37,11 @@ class Gated_Discriminator(nn.Module):
 		x = self.conv3(x)
 		# x = self.activation(x)
 		x = self.conv4(x)
+		# print("x out =", x)
 		# x = self.activation(x)
 		x = self.classifier(x)
 		# x = self.conv5(x)
 		# x = self.activation(x)
 		# x = self.conv6(x)
 		# x = self.activation(x)
-
-
 		return x, None
