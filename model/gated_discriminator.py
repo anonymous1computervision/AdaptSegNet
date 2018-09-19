@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .networks import Gated_conv
-from .networks import SpectralNorm
+# from .networks import SpectralNorm
+from torch.nn.utils import spectral_norm
 
 class Gated_Discriminator(nn.Module):
 
@@ -18,7 +19,7 @@ class Gated_Discriminator(nn.Module):
 		self.conv2 = Gated_conv(ndf, ndf * 2, kernel_size=4, stride=2, padding=1)
 		self.conv3 = Gated_conv(ndf * 2, ndf * 4, kernel_size=4, stride=2, padding=1)
 		self.conv4 = Gated_conv(ndf * 4, ndf * 8, kernel_size=4, stride=2, padding=1)
-		self.classifier = SpectralNorm(nn.Conv2d(ndf * 8, 1, kernel_size=4, stride=2, padding=1))
+		self.classifier = spectral_norm(nn.Conv2d(ndf * 8, 1, kernel_size=4, stride=2, padding=1))
 		self.leaky_relu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 		self.activation = self.leaky_relu
 

@@ -5,7 +5,7 @@ import pdb
 from .networks import ResBlock_2018
 from .networks import FirstResBlock_2018_SN
 from .networks import ResBlock_2018_SN
-from .networks import SpectralNorm
+# from .networks import SpectralNorm
 
 class XiaoDiscriminator(nn.Module):
 
@@ -26,7 +26,7 @@ class XiaoDiscriminator(nn.Module):
         # channel = 256
         self.model_pre += [ResBlock_2018_SN(ndf*4, ndf*4, downsample=True, use_BN=False)]
 
-        self.proj_conv = SpectralNorm(nn.Conv2d(ndf * 4, num_classes, kernel_size=3, stride=1, padding=1))
+        # self.proj_conv = spectral_norm(nn.Conv2d(ndf * 4, num_classes, kernel_size=3, stride=1, padding=1))
         self.proj_block = []
         self.proj_block += [ResBlock_2018_SN(num_classes, 1, downsample=True, use_BN=False)]
         self.proj_block += [nn.ReLU()]

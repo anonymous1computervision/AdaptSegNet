@@ -7,7 +7,7 @@ import torchvision.models as models
 from .networks import FirstResBlock_2018_SN
 from .networks import ResBlock_2018_SN
 from .networks import Self_Attn
-from .networks import SpectralNorm
+# from .networks import SpectralNorm
 from .networks import AttentionModule
 
 from util import weights_init

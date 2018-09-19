@@ -8,7 +8,9 @@ import torch.nn.functional as F
 import numpy as np
 
 # from .spectral import spectral_norm
-from .spectral import SpectralNorm
+# from .spectral import SpectralNorm
+from torch.nn.utils import spectral_norm
+
 try:
     from itertools import izip as zip
 except ImportError: # will be 3.x series
@@ -25,7 +27,7 @@ class Gated_conv(nn.Module):
         super(Gated_conv, self).__init__()
         # self.relu = nn.ReLU()
 
-        self.gated_conv = SpectralNorm(nn.Conv2d(in_channels, out_channels * 2, kernel_size, stride,
+        self.gated_conv = spectral_norm(nn.Conv2d(in_channels, out_channels * 2, kernel_size, stride,
                           padding))
         self.leakyRelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
         # self.leakyRelu = nn.LeakyReLU(negative_slope=0.2)
@@ -330,9 +332,9 @@ class FirstResBlock_2018_SN(nn.Module):
             model += [nn.BatchNorm2d(in_channels)]
         # model += [nn.ReLU()]
         model += [self.activate]
-        model += [SpectralNorm(conv1)]
+        model += [spectral_norm(conv1)]
         model += [self.activate]
-        model += [SpectralNorm(conv2)]
+        model += [spectral_norm(conv2)]
         if downsample:
             model += [nn.AvgPool2d(2)]
         return nn.Sequential(*model)
@@ -341,7 +343,7 @@ class FirstResBlock_2018_SN(nn.Module):
         conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, padding=0)
 
         model = []
-        model += [SpectralNorm(conv1)]
+        model += [spectral_norm(conv1)]
         if self.downsample:
             model += [nn.AvgPool2d(2)]
             return nn.Sequential(*model)
@@ -370,9 +372,9 @@ class ResBlock_2018_SN(nn.Module):
         if use_BN:
             model += [nn.BatchNorm2d(in_channels)]
         model += [self.activate]
-        model += [SpectralNorm(conv1)]
+        model += [spectral_norm(conv1)]
         model += [self.activate]
-        model += [SpectralNorm(conv2)]
+        model += [spectral_norm(conv2)]
         if downsample:
             model += [nn.AvgPool2d(2)]
         return nn.Sequential(*model)
@@ -382,7 +384,7 @@ class ResBlock_2018_SN(nn.Module):
         nn.init.xavier_uniform_(conv1.weight.data, np.sqrt(2))
 
         model = []
-        model += [SpectralNorm(conv1)]
+        model += [spectral_norm(conv1)]
         if self.downsample:
             model += [nn.AvgPool2d(2)]
             return nn.Sequential(*model)

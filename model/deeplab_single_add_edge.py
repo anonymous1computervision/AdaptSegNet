@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from .networks import Self_Attn
-from .networks import SpectralNorm
+# from .networks import Self_Attn
+# from .networks import SpectralNorm
 
 affine_par = True
 
