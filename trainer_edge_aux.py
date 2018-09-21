@@ -23,8 +23,9 @@ from model.deeplav_v3_xception import DeepLabv3_plus
 
 import model.fc_densenet as fc_densenet
 from model.discriminator import FCDiscriminator
-from model.sp_discriminator import SP_FCDiscriminator
+from model.gated_discriminator import Gated_Discriminator
 from model.sp_feature_discriminator import SP_Feature_FCDiscriminator
+from model.partial_discriminator import Partial_Discriminator
 from model.partial_discriminator import Partial_Discriminator
 
 from model.xiao_sp_cgan_discriminator import XiaoCganDiscriminator
@@ -81,8 +82,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
-        self.model_D_foreground = Partial_Discriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        # self.model_D_foreground = Partial_Discriminator(num_classes=hyperparameters['num_classes'])
 
         # self.model_D_ = SP_FCDiscriminator(num_classes=3+1)
 
@@ -325,7 +326,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
         # adv_loss = self.loss_hinge_gen(d_out_fake)
         loss_adv_foreground = self.loss_hinge_gen(d_out_foreground_fake)
-        adv_loss = self.loss_hinge_gen(d_out_fake) + 0.5 * loss_adv_foreground
+        # adv_loss = self.loss_hinge_gen(d_out_fake) + 0.5 * loss_adv_foreground
+        adv_loss = self.loss_hinge_gen(d_out_fake) + loss_adv_foreground
 
 
         # todo: self attn loss
