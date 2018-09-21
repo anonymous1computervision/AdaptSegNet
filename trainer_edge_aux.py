@@ -23,9 +23,10 @@ from model.deeplav_v3_xception import DeepLabv3_plus
 
 import model.fc_densenet as fc_densenet
 from model.discriminator import FCDiscriminator
+from model.sp_discriminator import SP_FCDiscriminator
+
 from model.gated_discriminator import Gated_Discriminator
 from model.sp_feature_discriminator import SP_Feature_FCDiscriminator
-from model.partial_discriminator import Partial_Discriminator
 from model.partial_discriminator import Partial_Discriminator
 
 from model.xiao_sp_cgan_discriminator import XiaoCganDiscriminator
