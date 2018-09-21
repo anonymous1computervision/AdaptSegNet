@@ -60,15 +60,18 @@ class Gated_conv(nn.Module):
 ##################################################################################
 # Partial Conv
 ##################################################################################
+"""
+copy from : https://github.com/naoto0804/pytorch-inpainting-with-partial-conv
+"""
 class PartialConv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1, bias=True):
         super().__init__()
-        self.input_conv = nn.Conv2d(in_channels, out_channels, kernel_size,
-                                    stride, padding, dilation, groups, bias)
-        self.mask_conv = nn.Conv2d(in_channels, out_channels, kernel_size,
-                                   stride, padding, dilation, groups, False)
-        self.input_conv.apply(weights_init('kaiming'))
+        self.input_conv = spectral_norm(nn.Conv2d(in_channels, out_channels, kernel_size,
+                                    stride, padding, dilation, groups, bias))
+        self.mask_conv = spectral_norm(nn.Conv2d(in_channels, out_channels, kernel_size,
+                                   stride, padding, dilation, groups, False))
+        # self.input_conv.apply(weights_init('kaiming'))
 
         torch.nn.init.constant_(self.mask_conv.weight, 1.0)
 
@@ -102,7 +105,7 @@ class PartialConv(nn.Module):
 
         return output, new_mask
 class PCBActiv(nn.Module):
-    def __init__(self, in_ch, out_ch, bn=True, sample='none-3', activ='relu',
+    def __init__(self, in_ch, out_ch, sn=True, sample='down-5', activ='leaky',
                  conv_bias=False):
         super().__init__()
         if sample == 'down-5':
@@ -111,11 +114,15 @@ class PCBActiv(nn.Module):
             self.conv = PartialConv(in_ch, out_ch, 7, 2, 3, bias=conv_bias)
         elif sample == 'down-3':
             self.conv = PartialConv(in_ch, out_ch, 3, 2, 1, bias=conv_bias)
+        elif sample == 'down-4':
+            self.conv = PartialConv(in_ch, out_ch, 4, 2, 1, bias=conv_bias)
         else:
             self.conv = PartialConv(in_ch, out_ch, 3, 1, 1, bias=conv_bias)
-
-        if bn:
-            self.bn = nn.BatchNorm2d(out_ch)
+        # if bn:
+        #     self.bn = nn.BatchNorm2d(out_ch)
+        # if sn:
+        #     self.conv = spectral_norm(self.conv)
+        #     self.sn = spectral_norm(out_ch)
         if activ == 'relu':
             self.activation = nn.ReLU()
         elif activ == 'leaky':
@@ -123,8 +130,9 @@ class PCBActiv(nn.Module):
 
     def forward(self, input, input_mask):
         h, h_mask = self.conv(input, input_mask)
-        if hasattr(self, 'bn'):
-            h = self.bn(h)
+        # if hasattr(self, 'bn'):
+        #     h = self.bn(h)
+        # h = self.sn(h)
         if hasattr(self, 'activation'):
             h = self.activation(h)
         return h, h_mask

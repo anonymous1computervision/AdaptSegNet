@@ -25,7 +25,7 @@ import model.fc_densenet as fc_densenet
 from model.discriminator import FCDiscriminator
 from model.sp_discriminator import SP_FCDiscriminator
 from model.sp_feature_discriminator import SP_Feature_FCDiscriminator
-from model.gated_discriminator import Gated_Discriminator
+from model.partial_discriminator import Partial_Discriminator
 
 from model.xiao_sp_cgan_discriminator import XiaoCganDiscriminator
 from model.xiao_sp_cgan_res_discriminator import XiaoCganResAttnDiscriminator
@@ -81,7 +81,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        self.model_D_foreground = Partial_Discriminator(num_classes=hyperparameters['num_classes'])
 
         # self.model_D_ = SP_FCDiscriminator(num_classes=3+1)
 
