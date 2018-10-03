@@ -386,12 +386,12 @@ class AdaptSeg_Edge_Aux_SN_Trainer(nn.Module):
         loss_adv_l1 = self.loss_hinge_gen(d_out_fake_l1)
 
         adv_loss = loss_adv_l1 + loss_adv_l2
-        self.loss_g_match_l1_value  += loss_adv_l1.data.cpu().numpy()
+        self.loss_g_match_l1_value += loss_adv_l1.data.cpu().numpy()
         self.loss_g_match_l2_value += loss_adv_l2.data.cpu().numpy()
 
         # in target domain compute edge loss - weakly constraint
         # edge_loss = self._compute_edge_loss(pred_target_edge, self.channel_to_label(F.softmax(pred_target_fake)))
-        loss = self.lambda_adv_target * adv_loss
+        loss = 2 * self.lambda_adv_target * adv_loss
         loss.backward()
 
         # update loss
@@ -550,10 +550,10 @@ class AdaptSeg_Edge_Aux_SN_Trainer(nn.Module):
         #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
         #         float(self.loss_target_foreground_value), float(self.loss_d_value), float(self.loss_d_foreground_value)))
 
-        match_string = "loss_G_match_l1 = {0:.3f} loss_G_match_l2 = {1:.5f} loss_D_match_l1 = {2:.5f}  loss_D_match_l2 = {3:.5f}".format(
+        match_string = "loss_G_match_l1 = {0:.3f} loss_G_match_l2 = {1:.5f} loss_D_match_l1 = {2:.5f} loss_D_match_l2 = {3:.5f}".format(
             float(self.loss_g_match_l1_value), float(self.loss_g_match_l2_value), float(self.loss_g_match_l1_value), float(self.loss_d_match_l2_value))
         print(
-            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_adv_foreground = {4:.5f}  loss_D1 = {5:.3f} loss_D1_foreground = {6:.3f}".format(
+            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_adv_foreground = {4:.5f}  loss_D1 = {5:.3f} loss_D1_foreground = {6:.3f} ".format(
                 self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
                 float(self.loss_target_foreground_value), float(self.loss_d_value), float(self.loss_d_foreground_value)) + match_string)
 
