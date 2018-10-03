@@ -27,28 +27,28 @@ gamma = 0.00000
 
 
 ========= Current score =========
-epoches = 166100
+epoches = 167200
 gamma = 0.00000
-===>road:	94.6
-===>sidewalk:	48.01
-===>building:	76.59
-===>wall:	36.86
-===>fence:	19.82
-===>pole:	14.73
-===>light:	13.29
-===>sign:	12.41
-===>vegetation:	83.97
-===>terrain:	9.39
-===>sky:	78.75
-===>person:	43.17
-===>rider:	45.46
-===>car:	79.94
-===>truck:	36.26
-===>bus:	9.91
+===>road:	94.63
+===>sidewalk:	47.06
+===>building:	76.8
+===>wall:	33.6
+===>fence:	22.08
+===>pole:	14.64
+===>light:	13.54
+===>sign:	12.42
+===>vegetation:	83.55
+===>terrain:	9.3
+===>sky:	78.64
+===>person:	42.6
+===>rider:	46.72
+===>car:	78.5
+===>truck:	34.59
+===>bus:	8.86
 ===>train:	0.0
 ===>motocycle:	0.0
-===>bicycle:	13.18
-===> mIoU: 37.7
+===>bicycle:	12.9
+===> mIoU: 37.39
 
 ========= epoch score  = 0 =========
 gamma = 0.00000
@@ -4272,4 +4272,28 @@ gamma = 0.00000
 ===>motocycle:	0.0
 ===>bicycle:	13.08
 ===> mIoU: 37.4
+
+
+========= epoch score  = 167000 =========
+gamma = 0.00000
+===>road:	94.67
+===>sidewalk:	48.96
+===>building:	76.4
+===>wall:	32.14
+===>fence:	20.92
+===>pole:	14.22
+===>light:	12.98
+===>sign:	12.25
+===>vegetation:	83.69
+===>terrain:	9.1
+===>sky:	78.71
+===>person:	44.34
+===>rider:	44.78
+===>car:	78.61
+===>truck:	33.89
+===>bus:	6.21
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	14.27
+===> mIoU: 37.17
 
