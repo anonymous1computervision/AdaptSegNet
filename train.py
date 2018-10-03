@@ -28,6 +28,7 @@ from attn_trainer import AdaptSeg_Attn_Trainer
 from mini_trainer import Mini_AdaptSeg_Trainer
 from in_trainer import AdaptSeg_IN_Trainer
 from trainer_edge_aux import AdaptSeg_Edge_Aux_Trainer
+from trainer_edge_aux_sn import AdaptSeg_Edge_Aux_SN_Trainer
 from trainer_scratch_gen import DeepLab_Scratch_Trainer
 from dense_trainer import DenseSeg_Trainer
 from util import get_all_data_loaders, get_config
@@ -48,7 +49,7 @@ def main():
     # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
     # CONFIG_PATH = "./configs/default_edge.yaml"
-    CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
+    CONFIG_PATH = "./configs/default_edge_SN_TTUR.yaml"
 
     # CONFIG_PATH = "./configs/default-fc-dense.yaml"
     # CONFIG_PATH = "./configs/attention_v1.yaml"
@@ -79,7 +80,6 @@ def main():
     # data loader
     train_loader, target_loader = get_all_data_loaders(config)
 
-
     # model init
     if config["g_model"] == "attn":
         trainer = AdaptSeg_Attn_Trainer(config)
@@ -99,11 +99,18 @@ def main():
         trainer = AdaptSeg_Edge_Aux_Trainer(config)
         # trainer = DeepLab_Scratch_Trainer(config)
         print("use DeepLabEdge")
+    elif config["model"] == "DeepLabEdgeSN":
+        trainer = AdaptSeg_Edge_Aux_SN_Trainer(config)
+        # trainer = DeepLab_Scratch_Trainer(config)
+        print("use DeepLabEdgeSN")
+        print("use DeepLabEdgeSN")
+        print("use DeepLabEdgeSN")
+
     else:
         trainer = AdaptSeg_Trainer(config)
 
     # todo: remove this line without dev version
-    assert config["model"] == 'DeepLabEdge', True
+    assert config["model"] == "DeepLabEdgeSN"
 
     # trainer.cuda(gpu)
     print("config[restore] =", config["restore"])
