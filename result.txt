@@ -9,47 +9,47 @@ gamma = 0.00000
 ========= Current score =========
 epoches = 0
 gamma = 0.00000
-===>road:	16.19
-===>sidewalk:	1.31
-===>building:	3.18
-===>wall:	0.39
-===>fence:	0.61
-===>pole:	0.17
-===>light:	0.07
-===>sign:	0.59
-===>vegetation:	6.02
-===>terrain:	0.31
-===>sky:	4.72
-===>person:	2.25
-===>rider:	0.24
-===>car:	1.59
-===>truck:	0.35
-===>bus:	0.07
-===>train:	0.02
-===>motocycle:	0.0
-===>bicycle:	0.42
-===> mIoU: 2.03
+===>road:	2.39
+===>sidewalk:	1.87
+===>building:	13.31
+===>wall:	0.44
+===>fence:	0.0
+===>pole:	0.78
+===>light:	0.4
+===>sign:	0.57
+===>vegetation:	2.35
+===>terrain:	0.04
+===>sky:	2.02
+===>person:	1.73
+===>rider:	0.0
+===>car:	3.09
+===>truck:	0.09
+===>bus:	0.3
+===>train:	0.58
+===>motocycle:	0.07
+===>bicycle:	0.12
+===> mIoU: 1.59
 
 ========= epoch score  = 0 =========
 gamma = 0.00000
-===>road:	16.19
-===>sidewalk:	1.31
-===>building:	3.18
-===>wall:	0.39
-===>fence:	0.61
-===>pole:	0.17
-===>light:	0.07
-===>sign:	0.59
-===>vegetation:	6.02
-===>terrain:	0.31
-===>sky:	4.72
-===>person:	2.25
-===>rider:	0.24
-===>car:	1.59
-===>truck:	0.35
-===>bus:	0.07
-===>train:	0.02
-===>motocycle:	0.0
-===>bicycle:	0.42
-===> mIoU: 2.03
+===>road:	2.39
+===>sidewalk:	1.87
+===>building:	13.31
+===>wall:	0.44
+===>fence:	0.0
+===>pole:	0.78
+===>light:	0.4
+===>sign:	0.57
+===>vegetation:	2.35
+===>terrain:	0.04
+===>sky:	2.02
+===>person:	1.73
+===>rider:	0.0
+===>car:	3.09
+===>truck:	0.09
+===>bus:	0.3
+===>train:	0.58
+===>motocycle:	0.07
+===>bicycle:	0.12
+===> mIoU: 1.59
 
