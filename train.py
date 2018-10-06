@@ -48,8 +48,8 @@ def main():
     # CONFIG_PATH = "./configs/default-hinge-v7.yaml"
     # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
-    # CONFIG_PATH = "./configs/default_edge.yaml"
-    CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
+    CONFIG_PATH = "./configs/default_edge.yaml"
+    # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_SN_TTUR.yaml"
 
