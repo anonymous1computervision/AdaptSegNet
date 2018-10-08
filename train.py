@@ -29,6 +29,8 @@ from mini_trainer import Mini_AdaptSeg_Trainer
 from in_trainer import AdaptSeg_IN_Trainer
 from trainer_edge_aux import AdaptSeg_Edge_Aux_Trainer
 from trainer_edge_aux_sn import AdaptSeg_Edge_Aux_SN_Trainer
+from trainer_edge_aux_deeplab_v3 import AdaptSeg_Edge_Aux_v3_Trainer
+
 from trainer_scratch_gen import DeepLab_Scratch_Trainer
 from dense_trainer import DenseSeg_Trainer
 from util import get_all_data_loaders, get_config
@@ -48,7 +50,7 @@ def main():
     # CONFIG_PATH = "./configs/default-hinge-v7.yaml"
     # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
-    CONFIG_PATH = "./configs/default_edge.yaml"
+    CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_SN_TTUR.yaml"
@@ -107,17 +109,22 @@ def main():
         print("use DeepLabEdgeSN")
         print("use DeepLabEdgeSN")
         print("use DeepLabEdgeSN")
-
+    elif config["model"] == "DeepLabv3+":
+        trainer = AdaptSeg_Edge_Aux_v3_Trainer(config)
+        # trainer = DeepLab_Scratch_Trainer(config)
+        print("use DeepLabv3")
+        print("use DeepLabv3")
+        print("use DeepLabv3")
     else:
         trainer = AdaptSeg_Trainer(config)
 
     # todo: remove this line without dev version
-    assert config["model"] == "DeepLabEdge"
+    assert config["model"] == "DeepLabv3+"
 
     # trainer.cuda(gpu)
     print("config[restore] =", config["restore"])
     print("config[model]  =", config["model"])
-    if config["restore"]:
+    if config["restore"] and config["restore_from"] != "None":
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
     # if config["restore"] and config["model"] == "DeepLab_v3_plus":
     #     print(" in restore deeplab v3")

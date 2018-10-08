@@ -318,6 +318,14 @@ class DeepLabv3_plus(nn.Module):
                                        nn.ReLU(),
                                        nn.Conv2d(256, n_classes, kernel_size=1, stride=1))
 
+        self.last_edge_conv = nn.Sequential(nn.Conv2d(304, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                   nn.BatchNorm2d(256),
+                                   nn.ReLU(),
+                                   nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
+                                   nn.BatchNorm2d(256),
+                                   nn.ReLU(),
+                                   nn.Conv2d(256, 1, kernel_size=1, stride=1))
+
     def forward(self, x):
         x, low_level_features = self.xception_features(x)
         x1 = self.aspp1(x)
@@ -341,10 +349,13 @@ class DeepLabv3_plus(nn.Module):
 
 
         x = torch.cat((x, low_level_features), dim=1)
+        x_edge = self.last_edge_conv(x)
+        x_edge = F.upsample(x_edge, scale_factor=4, mode='bilinear', align_corners=True)
+
         x = self.last_conv(x)
         x = F.upsample(x, scale_factor=4, mode='bilinear', align_corners=True)
 
-        return x
+        return x, x_edge
 
     def freeze_bn(self):
         for m in self.modules():
