@@ -20,6 +20,7 @@ from model.deeplab_single import Res_Deeplab
 from model.deeplab_single_add_edge import Res_Deeplab as Res_Deeplab_Edge
 
 from model.deeplav_v3_xception import DeepLabv3_plus
+from model.deeplav_v3_xception_edge import DeepLabv3_plus_edge
 
 import model.fc_densenet as fc_densenet
 from model.discriminator import FCDiscriminator
@@ -62,10 +63,14 @@ class AdaptSeg_Edge_Aux_v3_Trainer(nn.Module):
         assert hyperparameters["model"] == 'DeepLabv3+'
 
         # init G
-        self.model = DeepLabv3_plus(nInputChannels=3,
-                                        n_classes=hyperparameters['num_classes'],
-                                        pretrained=True,
-                                        _print=True)
+        self.model = DeepLabv3_plus_edge(nInputChannels=3,
+                                    n_classes=hyperparameters['num_classes'],
+                                    pretrained=True,
+                                    _print=True)
+        # self.model = DeepLabv3_plus(nInputChannels=3,
+        #                                 n_classes=hyperparameters['num_classes'],
+        #                                 pretrained=True,
+        #                                 _print=True)
 
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
