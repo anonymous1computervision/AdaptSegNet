@@ -1,55 +1,195 @@
 Test summary = default setting use FastPhoto, G output seg and edge, D input pred seg
 
 ========= Best score =========
-best epoches = 0
+best epoches = 400
 gamma = 0.00000
+===>road:	81.39
+===>sidewalk:	15.56
+===>building:	62.75
+===>wall:	9.8
+===>fence:	0.28
+===>pole:	6.21
+===>light:	0.0
+===>sign:	0.0
+===>vegetation:	60.01
+===>terrain:	2.45
+===>sky:	47.3
+===>person:	6.06
+===>rider:	0.0
+===>car:	64.67
+===>truck:	8.89
+===>bus:	0.0
+===>train:	0.03
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 19.23
 
 
 
 ========= Current score =========
-epoches = 0
+epoches = 500
 gamma = 0.00000
-===>road:	8.18
-===>sidewalk:	0.84
-===>building:	2.73
-===>wall:	1.32
+===>road:	64.11
+===>sidewalk:	15.01
+===>building:	59.76
+===>wall:	10.78
 ===>fence:	0.01
-===>pole:	1.87
-===>light:	0.41
-===>sign:	0.52
-===>vegetation:	9.65
-===>terrain:	0.02
-===>sky:	3.1
-===>person:	0.38
-===>rider:	0.13
-===>car:	0.93
-===>truck:	0.64
-===>bus:	0.39
-===>train:	0.27
-===>motocycle:	0.07
-===>bicycle:	0.33
-===> mIoU: 1.67
+===>pole:	6.61
+===>light:	0.0
+===>sign:	0.0
+===>vegetation:	60.54
+===>terrain:	3.78
+===>sky:	52.05
+===>person:	5.75
+===>rider:	0.0
+===>car:	63.18
+===>truck:	5.58
+===>bus:	0.66
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 18.3
 
 ========= epoch score  = 0 =========
 gamma = 0.00000
-===>road:	8.18
-===>sidewalk:	0.84
-===>building:	2.73
-===>wall:	1.32
+===>road:	10.67
+===>sidewalk:	3.96
+===>building:	6.76
+===>wall:	3.12
+===>fence:	0.05
+===>pole:	0.97
+===>light:	0.22
+===>sign:	0.18
+===>vegetation:	1.06
+===>terrain:	0.1
+===>sky:	2.54
+===>person:	1.13
+===>rider:	0.0
+===>car:	2.75
+===>truck:	0.51
+===>bus:	0.02
+===>train:	0.17
+===>motocycle:	0.01
+===>bicycle:	0.14
+===> mIoU: 1.81
+
+
+========= epoch score  = 100 =========
+gamma = 0.00000
+===>road:	66.89
+===>sidewalk:	10.11
+===>building:	46.27
+===>wall:	3.16
+===>fence:	0.11
+===>pole:	2.33
+===>light:	0.0
+===>sign:	0.0
+===>vegetation:	39.54
+===>terrain:	0.68
+===>sky:	29.69
+===>person:	1.09
+===>rider:	0.0
+===>car:	49.19
+===>truck:	3.73
+===>bus:	0.0
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 13.3
+
+
+========= epoch score  = 200 =========
+gamma = 0.00000
+===>road:	36.0
+===>sidewalk:	8.97
+===>building:	53.18
+===>wall:	8.85
+===>fence:	0.06
+===>pole:	4.52
+===>light:	0.0
+===>sign:	0.0
+===>vegetation:	55.56
+===>terrain:	1.07
+===>sky:	37.69
+===>person:	1.75
+===>rider:	0.0
+===>car:	50.37
+===>truck:	3.3
+===>bus:	0.22
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 13.77
+
+
+========= epoch score  = 300 =========
+gamma = 0.00000
+===>road:	71.09
+===>sidewalk:	13.22
+===>building:	60.1
+===>wall:	7.19
+===>fence:	0.0
+===>pole:	4.61
+===>light:	0.0
+===>sign:	0.0
+===>vegetation:	57.79
+===>terrain:	3.13
+===>sky:	49.46
+===>person:	6.36
+===>rider:	0.0
+===>car:	57.57
+===>truck:	4.96
+===>bus:	0.09
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 17.66
+
+
+========= epoch score  = 400 =========
+gamma = 0.00000
+===>road:	81.39
+===>sidewalk:	15.56
+===>building:	62.75
+===>wall:	9.8
+===>fence:	0.28
+===>pole:	6.21
+===>light:	0.0
+===>sign:	0.0
+===>vegetation:	60.01
+===>terrain:	2.45
+===>sky:	47.3
+===>person:	6.06
+===>rider:	0.0
+===>car:	64.67
+===>truck:	8.89
+===>bus:	0.0
+===>train:	0.03
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 19.23
+
+
+========= epoch score  = 500 =========
+gamma = 0.00000
+===>road:	64.11
+===>sidewalk:	15.01
+===>building:	59.76
+===>wall:	10.78
 ===>fence:	0.01
-===>pole:	1.87
-===>light:	0.41
-===>sign:	0.52
-===>vegetation:	9.65
-===>terrain:	0.02
-===>sky:	3.1
-===>person:	0.38
-===>rider:	0.13
-===>car:	0.93
-===>truck:	0.64
-===>bus:	0.39
-===>train:	0.27
-===>motocycle:	0.07
-===>bicycle:	0.33
-===> mIoU: 1.67
+===>pole:	6.61
+===>light:	0.0
+===>sign:	0.0
+===>vegetation:	60.54
+===>terrain:	3.78
+===>sky:	52.05
+===>person:	5.75
+===>rider:	0.0
+===>car:	63.18
+===>truck:	5.58
+===>bus:	0.66
+===>train:	0.0
+===>motocycle:	0.0
+===>bicycle:	0.0
+===> mIoU: 18.3
 

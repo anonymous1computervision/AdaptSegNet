@@ -27,7 +27,7 @@ class Partial_Discriminator(nn.Module):
 		# self.classifier = spectral_norm(nn.Conv2d(ndf * 8, 1, kernel_size=4, stride=2, padding=1))
 		self.leaky_relu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 		self.activation = self.leaky_relu
-		self.__init_weight()
+		# self.__init_weight()
 
 	def __init_weight(self):
 		for m in self.modules():

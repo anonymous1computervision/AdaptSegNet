@@ -137,7 +137,7 @@ class PCBActiv(nn.Module):
             self.activation = nn.ReLU()
         elif activ == 'leaky':
             self.activation = nn.LeakyReLU(negative_slope=0.2)
-        self.__init_weight()
+        # self.__init_weight()
 
     def forward(self, input, input_mask):
         h, h_mask = self.conv(input, input_mask)
