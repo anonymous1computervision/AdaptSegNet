@@ -334,20 +334,20 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
 
         # todo: self attn loss
-        # pred_target_fake_label = pred_target_fake.permute(0, 2, 3, 1)
-        # _, pred_target_fake_label = torch.max(pred_target_fake_label, -1)
-        # bce_loss = nn.BCEWithLogitsLoss()
-        # attn_loss = bce_loss(pred_target_edge,
-        #                      self.get_foreground_attention(
-        #                          pred_target_fake_label.view(pred_target_fake_label.shape[0], -1,
-        #                                                      pred_target_fake_label.shape[1],
-        #                                                      pred_target_fake_label.shape[2]).cuda()))
+        pred_target_fake_label = pred_target_fake.permute(0, 2, 3, 1)
+        _, pred_target_fake_label = torch.max(pred_target_fake_label, -1)
+        bce_loss = nn.BCEWithLogitsLoss()
+        attn_loss = bce_loss(pred_target_edge,
+                             self.get_foreground_attention(
+                                 pred_target_fake_label.view(pred_target_fake_label.shape[0], -1,
+                                                             pred_target_fake_label.shape[1],
+                                                             pred_target_fake_label.shape[2]).cuda()))
 
         # in target domain compute edge loss - weakly constraint
         # edge_loss = self._compute_edge_loss(pred_target_edge, self.channel_to_label(F.softmax(pred_target_fake)))
-        loss = self.lambda_adv_target * adv_loss
+        # loss = self.lambda_adv_target * adv_loss
         # loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * edge_loss
-        # loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * attn_loss
+        loss = self.lambda_adv_target * adv_loss + 0.2*self.lambda_adv_target * attn_loss
         loss.backward()
 
         # update loss
