@@ -33,8 +33,6 @@ class Gated_conv(nn.Module):
         # self.leakyRelu = nn.LeakyReLU(negative_slope=0.2)
         self.sigmoid = nn.Sigmoid()
         # torch.nn.init.kaiming_normal_(self.gated_conv.weight)
-        # Init weights
-        self.__init_weight()
         # torch.nn.init.kaiming_normal_(self.conv1.weight)
 
     # out = []
@@ -58,15 +56,7 @@ class Gated_conv(nn.Module):
         x = self.leakyRelu(feature) * torch.sigmoid(mask)
         return x
 
-    def __init_weight(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                # n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                # m.weight.data.normal_(0, math.sqrt(2. / n))
-                torch.nn.init.kaiming_normal_(m.weight)
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
+
 ##################################################################################
 # Partial Conv
 ##################################################################################
@@ -137,7 +127,6 @@ class PCBActiv(nn.Module):
             self.activation = nn.ReLU()
         elif activ == 'leaky':
             self.activation = nn.LeakyReLU(negative_slope=0.2)
-        # self.__init_weight()
 
     def forward(self, input, input_mask):
         h, h_mask = self.conv(input, input_mask)
@@ -148,16 +137,6 @@ class PCBActiv(nn.Module):
             h = self.activation(h)
         return h, h_mask
 
-
-    def __init_weight(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                # n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                # m.weight.data.normal_(0, math.sqrt(2. / n))
-                torch.nn.init.kaiming_normal_(m.weight)
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
 
 
 ##################################################################################
