@@ -60,7 +60,7 @@ class Partial_Deep_Discriminator(nn.Module):
 
 		# print("x out =", x)
 		# x = self.activation(x)
-		x = self.classifier(x)
+		# x = self.classifier(x)
 		# x = self.conv5(x)
 		# x = self.activation(x)
 		# x = self.conv6(x)
