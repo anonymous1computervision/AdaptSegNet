@@ -27,24 +27,16 @@ class Partial_Discriminator(nn.Module):
 		# self.classifier = spectral_norm(nn.Conv2d(ndf * 8, 1, kernel_size=4, stride=2, padding=1))
 		self.leaky_relu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 		self.activation = self.leaky_relu
-		# self.__init_weight()
-
-	def __init_weight(self):
-		for m in self.modules():
-			if isinstance(m, nn.Conv2d):
-				# n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-				# m.weight.data.normal_(0, math.sqrt(2. / n))
-				torch.nn.init.kaiming_normal_(m.weight)
-			elif isinstance(m, nn.BatchNorm2d):
-				m.weight.data.fill_(1)
-				m.bias.data.zero_()
-
 
 	def forward(self, x, label=None):
 		assert label is not None
 		# origin label
 		# 1=foreground 0=background
 		# mask = 1 - nn.Sigmoid()(label)
+		# add threshold
+		threshold = 0.5
+		label[label >= threshold] = 1
+		label[label < threshold] = 0
 		mask = 1 - label
 		batch, channel, h, w = mask.shape
 		mask = mask.expand(batch, channel*self.num_classes, h, w)
