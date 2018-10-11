@@ -28,7 +28,6 @@ from model.sp_discriminator import SP_FCDiscriminator
 from model.gated_discriminator import Gated_Discriminator
 from model.sp_feature_discriminator import SP_Feature_FCDiscriminator
 from model.partial_discriminator import Partial_Discriminator
-from model.partial_deep_discriminator import Partial_Deep_Discriminator
 
 from model.xiao_sp_cgan_discriminator import XiaoCganDiscriminator
 from model.xiao_sp_cgan_res_discriminator import XiaoCganResAttnDiscriminator
@@ -79,15 +78,12 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             print("use DeepLab_v3_plus model")
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = Partial_Deep_Discriminator(num_classes=hyperparameters['num_classes'])
-
-
-        # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
         # self.model_D_foreground = Partial_Discriminator(num_classes=hyperparameters['num_classes'])
 
         # self.model_D_ = SP_FCDiscriminator(num_classes=3+1)
@@ -121,8 +117,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.model.cuda(self.gpu)
         self.model_D.train()
         self.model_D.cuda(self.gpu)
-        # self.model_D_foreground.train()
-        # self.model_D_foreground.cuda(self.gpu)
+        self.model_D_foreground.train()
+        self.model_D_foreground.cuda(self.gpu)
 
         # for dynamic adjust lr setting
         self.decay_power = hyperparameters['decay_power']
@@ -187,10 +183,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.optimizer_D.zero_grad()
         self._adjust_learning_rate_D(self.optimizer_D, 0)
 
-        # self.optimizer_D_foreground = optim.Adam([p for p in self.model_D_foreground.parameters() if p.requires_grad],
-        #                                          lr=self.lr_d, betas=(self.beta1, self.beta2))
-        # self.optimizer_D_foreground.zero_grad()
-        # self._adjust_learning_rate_D(self.optimizer_D_foreground, 0)
+        self.optimizer_D_foreground = optim.Adam([p for p in self.model_D_foreground.parameters() if p.requires_grad],
+                                                 lr=self.lr_d, betas=(self.beta1, self.beta2))
+        self.optimizer_D_foreground.zero_grad()
+        self._adjust_learning_rate_D(self.optimizer_D_foreground, 0)
 
     def forward(self, images):
         # self.eval()
@@ -215,8 +211,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         for param in self.model_D.parameters():
             param.requires_grad = False
 
-        # for param in self.model_D_foreground.parameters():
-        #     param.requires_grad = False
+        for param in self.model_D_foreground.parameters():
+            param.requires_grad = False
 
         self.source_label_path = label_path
 
@@ -229,11 +225,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         pred_source_real = interp(pred_source_real)
         # interp_source_mini = nn.Upsample(size=(int(self.input_size[0]/8), int(self.input_size[1]/8)), align_corners=False,
         #                             mode='bilinear')
-        interp_source_mini = nn.Upsample(
-            size=(int(self.input_size[0] / self.mini_factor_size), int(self.input_size[1] / self.mini_factor_size)),
-            align_corners=False,
-            mode='bilinear')
-        self.pred_source_edge_mini = interp_source_mini(pred_source_edge).detach()
+        # interp_source_mini = nn.Upsample(
+        #     size=(int(self.input_size[0] / self.mini_factor_size), int(self.input_size[1] / self.mini_factor_size)),
+        #     align_corners=False,
+        #     mode='bilinear')
+        # self.pred_source_edge_mini = interp_source_mini(pred_source_edge).detach()
         pred_source_edge = interp(pred_source_edge)
 
         # in source domain compute segmentation loss
@@ -284,8 +280,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         for param in self.model_D.parameters():
             param.requires_grad = False
 
-        # for param in self.model_D_foreground.parameters():
-        #     param.requires_grad = False
+        for param in self.model_D_foreground.parameters():
+            param.requires_grad = False
 
         self.target_image_path = image_path
 
@@ -317,9 +313,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.pred_fake_edge = nn.Sigmoid()(pred_target_edge).detach()
 
         # d_out_fake, _ = self.model_D(net_input, label=self.pred_fake_edge)
-        # d_out_fake, _ = self.model_D(net_input, label=None)
-        # d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=self.pred_fake_edge)
-        d_out_fake, _ = self.model_D(net_input, label=self.pred_fake_edge)
+        d_out_fake, _ = self.model_D(net_input, label=None)
+        d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=self.pred_fake_edge)
 
         #
         # net_input = torch.cat((net_input, pred_target_edge), dim=1)
@@ -330,12 +325,12 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # compute loss function
         # wants to fool discriminator
         # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
-        adv_loss = self.loss_hinge_gen(d_out_fake)
-        # loss_adv_foreground = self.loss_hinge_gen(d_out_foreground_fake)
+        # adv_loss = self.loss_hinge_gen(d_out_fake)
+        loss_adv_foreground = self.loss_hinge_gen(d_out_foreground_fake)
         # adv_loss = self.loss_hinge_gen(d_out_fake) + 0.5 * loss_adv_foreground
         # adv_loss = self.loss_hinge_gen(d_out_fake) + loss_adv_foreground
         # adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
-        # adv_loss = self.loss_hinge_gen(d_out_fake) + 5*loss_adv_foreground
+        adv_loss = self.loss_hinge_gen(d_out_fake) + 5*loss_adv_foreground
 
 
         # todo: self attn loss
@@ -352,7 +347,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # edge_loss = self._compute_edge_loss(pred_target_edge, self.channel_to_label(F.softmax(pred_target_fake)))
         loss = self.lambda_adv_target * adv_loss
         # loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * edge_loss
-        # loss = self.lambda_adv_target * adv_loss + 0.2*self.lambda_adv_target * attn_loss
+        # loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * attn_loss
         loss.backward()
 
         # update loss
@@ -366,7 +361,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.target_input_image = images.detach()
 
         # record log
-        # self.loss_target_foreground_value += loss_adv_foreground.data.cpu().numpy()
+        self.loss_target_foreground_value += loss_adv_foreground.data.cpu().numpy()
         self.loss_target_value += loss.data.cpu().numpy()
 
     def dis_update(self, labels=None):
@@ -376,14 +371,14 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
                 """
         self.optimizer_G.zero_grad()
         self.optimizer_D.zero_grad()
-        # self.optimizer_D_foreground.zero_grad()
+        self.optimizer_D_foreground.zero_grad()
 
         # Enable D backpropgation, train D
         for param in self.model_D.parameters():
             param.requires_grad = True
 
-        # for param in self.model_D_foreground.parameters():
-        #     param.requires_grad = True
+        for param in self.model_D_foreground.parameters():
+            param.requires_grad = True
 
         # we don't train target's G weight, we only train source'G
         self.target_image = self.target_image.detach()
@@ -397,10 +392,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=None)
         # d_out_real, _ = self.model_D(net_input, label=self.pred_real_edge)
-        # d_out_real, _ = self.model_D(net_input, label=None)
-        # d_out_foreground_real, _ = self.model_D_foreground(net_input, label=self.pred_real_edge)
+        d_out_real, _ = self.model_D(net_input, label=None)
+        d_out_foreground_real, _ = self.model_D_foreground(net_input, label=self.pred_real_edge)
         # d_out_foreground_real, _ = self.model_D(net_input, label=self.pred_real_edge)
-        d_out_real, _ = self.model_D(net_input, label=self.pred_real_edge)
 
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini)
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=self.pred_source_edge_mini-0.5)
@@ -415,9 +409,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=None)
         # d_out_fake, _ = self.model_D(net_input, label=self.pred_fake_edge)
-        # d_out_fake, _ = self.model_D(net_input, label=None)
-        # d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=self.pred_fake_edge)
-        d_out_fake, _ = self.model_D(net_input, label=self.pred_fake_edge)
+        d_out_fake, _ = self.model_D(net_input, label=None)
+        d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=self.pred_fake_edge)
 
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini)
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)
@@ -428,10 +421,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # loss = loss_real + loss_fake
         # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
-        # loss = self.loss_hinge_dis(d_out_foreground_fake, d_out_foreground_real)
+        loss = self.loss_hinge_dis(d_out_foreground_fake, d_out_foreground_real)
         # print("fore loss=", loss)
-        # self.loss_d_foreground_value += loss.data.cpu().numpy()
-        # loss.backward()
+        self.loss_d_foreground_value += loss.data.cpu().numpy()
+        loss.backward()
 
         loss = self.loss_hinge_dis(d_out_fake, d_out_real)
         self.loss_d_value += loss.data.cpu().numpy()
@@ -440,7 +433,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # update loss
         self.optimizer_D.step()
-        # self.optimizer_D_foreground.step()
+        self.optimizer_D_foreground.step()
 
         # self.optimizer_Attn.step()
 
@@ -549,8 +542,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # ignore background label include 255-ignore label
         # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 255]
-        # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
-        foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
+        foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        # foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
 
         # foreground_map = [1, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
         # foreground_map = [6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
@@ -800,8 +793,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         print('taking pth in shapshot dir ...')
         torch.save(self.model.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '.pth'))
         torch.save(self.model_D.state_dict(), os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D1.pth'))
-        # torch.save(self.model_D_foreground.state_dict(),
-        #            os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D_foreground.pth'))
+        torch.save(self.model_D_foreground.state_dict(),
+                   os.path.join(snapshot_save_dir, 'GTA5_' + str(self.i_iter) + '_D_foreground.pth'))
 
     def restore(self, model_name=None, num_classes=19, restore_from=None):
 
