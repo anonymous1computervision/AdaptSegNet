@@ -37,7 +37,8 @@ class Gated_Discriminator(nn.Module):
 		# 1=foreground 0=background
 		# mask = 1 - nn.Sigmoid()(label)
 		mask = 1 - label
-		threshold = 0.5
+		# threshold = 0.5
+		threshold = 0.7
 		label[label >= threshold] = 1
 		label[label < threshold] = 0
 		x = torch.cat((x, mask), dim=1)
