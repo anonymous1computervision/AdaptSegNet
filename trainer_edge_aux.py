@@ -134,6 +134,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.weight_decay = hyperparameters['weight_decay']
         self.beta1 = hyperparameters['beta1']
         self.beta2 = hyperparameters['beta2']
+        self.D_beta1 = hyperparameters['D_beta1']
+        self.D_beta2 = hyperparameters['D_beta2']
         self.init_opt()
 
         # for [log / check output]
@@ -187,7 +189,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self._adjust_learning_rate_D(self.optimizer_D, 0)
 
         self.optimizer_D_foreground = optim.Adam([p for p in self.model_D_foreground.parameters() if p.requires_grad],
-                                                 lr=self.lr_d, betas=(self.beta1, self.beta2))
+                                                 lr=self.lr_d, betas=(self.D_beta1, self.D_beta2))
         self.optimizer_D_foreground.zero_grad()
         self._adjust_learning_rate_D(self.optimizer_D_foreground, 0)
 

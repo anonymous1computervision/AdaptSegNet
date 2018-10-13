@@ -17,6 +17,8 @@ momentum: 0.9
 weight_decay: 0.0005          # weight decay
 beta1: 0.9                    # Adam parameter
 beta2: 0.99                  # Adam parameter
+D_beta1: 0.9                   # Adam parameter
+D_beta2: 0.99                  # Adam parameter
 lr_g: 0.00025                    # initial learning rate SGD
 lr_d: 0.001                    # initial learning rate Adam
 
