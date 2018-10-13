@@ -37,9 +37,9 @@ class Partial_Deep_Discriminator(nn.Module):
 		# 1=foreground 0=background
 		# mask = 1 - nn.Sigmoid()(label)
 		# add threshold
-		threshold = 0.5
-		label[label >= threshold] = 1
-		label[label < threshold] = 0
+		# threshold = 0.5
+		# label[label >= threshold] = 1
+		# label[label < threshold] = 0
 		mask = 1 - label
 		batch, channel, h, w = mask.shape
 		mask = mask.expand(batch, channel*self.num_classes, h, w)
