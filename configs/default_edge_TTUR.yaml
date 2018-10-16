@@ -34,7 +34,7 @@ restore_from: http://vllab.ucmerced.edu/ytsai/CVPR18/DeepLab_resnet_pretrained_i
 gen:
   lambda_seg: 1
   lambda_adv_target: 0.001
-  lambda_adv_edge: 0.2
+  lambda_adv_edge: 0.1
 
 dis:
   adv_loss_opt: bce  # [wgan-gp / hinge / bce]
