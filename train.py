@@ -30,6 +30,7 @@ from in_trainer import AdaptSeg_IN_Trainer
 from trainer_edge_aux import AdaptSeg_Edge_Aux_Trainer
 from trainer_edge_aux_sn import AdaptSeg_Edge_Aux_SN_Trainer
 from trainer_edge_aux_deeplab_v3 import AdaptSeg_Edge_Aux_v3_Trainer
+from trainer_PSP_edge_aux import AdaptSeg_PSP_Edge_Aux_Trainer
 
 from trainer_scratch_gen import DeepLab_Scratch_Trainer
 from dense_trainer import DenseSeg_Trainer
@@ -53,8 +54,9 @@ def main():
     # CONFIG_PATH = "./configs/default_edge.yaml"
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
+    CONFIG_PATH = "./configs/default_PSPNet_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR_D_beta.yaml"
-    CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
+    # CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_SN_TTUR.yaml"
 
@@ -118,11 +120,16 @@ def main():
         print("use DeepLabv3")
         print("use DeepLabv3")
         print("use DeepLabv3")
+    elif config["model"] == "PSPNet":
+        print("use PSPNet")
+        print("use PSPNet")
+        print("use PSPNet")
+        trainer = AdaptSeg_PSP_Edge_Aux_Trainer(config)
     else:
         trainer = AdaptSeg_Trainer(config)
 
     # todo: remove this line without dev version
-    assert config["model"] == "DeepLabEdge"
+    assert config["model"] == "PSPNet"
 
     # trainer.cuda(gpu)
     print("config[restore] =", config["restore"])

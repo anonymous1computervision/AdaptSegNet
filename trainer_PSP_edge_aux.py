@@ -17,6 +17,8 @@ from PIL import Image
 
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
+from model.PSPNet_add_edge import Res_Deeplab as PSP_Res
+
 from model.deeplab_single_add_edge import Res_Deeplab as Res_Deeplab_Edge
 
 from model.deeplav_v3_xception import DeepLabv3_plus
@@ -41,9 +43,9 @@ from model.sp_aspp_discriminator import SP_ASPP_FCDiscriminator
 from utils.loss import CrossEntropy2d
 
 
-class AdaptSeg_Edge_Aux_Trainer(nn.Module):
+class AdaptSeg_PSP_Edge_Aux_Trainer(nn.Module):
     def __init__(self, hyperparameters):
-        super(AdaptSeg_Edge_Aux_Trainer, self).__init__()
+        super(AdaptSeg_PSP_Edge_Aux_Trainer, self).__init__()
         self.hyperparameters = hyperparameters
         # input size setting
         self.input_size = (hyperparameters["input_size_h"], hyperparameters["input_size_w"])
@@ -60,23 +62,12 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         cudnn.benchmark = True
 
         # todo: remove this line without dev version
-        assert hyperparameters["model"] == 'DeepLabEdge', True
+        assert hyperparameters["model"] == 'PSPNet', True
 
         # init G
-        if hyperparameters["model"] == 'DeepLab':
-            self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
-        elif hyperparameters["model"] == 'FC-DenseNet':
-            self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
-            print("use fc densenet model")
-        elif hyperparameters["model"] == 'DeepLabEdge':
-            self.model = Res_Deeplab_Edge(num_classes=hyperparameters["num_classes"])
-            print("use DeepLabEdge model")
-        elif hyperparameters["model"] == 'DeepLab_v3_plus':
-            self.model = DeepLabv3_plus(nInputChannels=3,
-                                        n_classes=hyperparameters['num_classes'],
-                                        pretrained=True,
-                                        _print=True)
-            print("use DeepLab_v3_plus model")
+        # if hyperparameters["model"] == 'DeepLab':
+        self.model = PSP_Res(num_classes=hyperparameters["num_classes"])
+
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
@@ -198,7 +189,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
     def forward(self, images):
         # self.eval()
         # pdb.set_trace()
-        predict_seg, _ = self.model(images)
+        predict_seg, *_ = self.model(images)
         # self.train()
         return predict_seg
 
@@ -225,7 +216,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # print("images shape =", images.shape)
         # get predict output
-        pred_source_real, pred_source_edge = self.model(images)
+        pred_source_real, pred_source_edge, out_cls = self.model(images)
 
         # resize to source size
         interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
@@ -238,10 +229,15 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         #     mode='bilinear')
         # self.pred_source_edge_mini = interp_source_mini(pred_source_edge).detach()
         pred_source_edge = interp(pred_source_edge)
+        print("out_cls before", out_cls.shape)
+        out_cls = interp(out_cls)
+        print("out_cls after", out_cls.shape)
+        print("labels shape", labels.shape)
 
         # in source domain compute segmentation loss
         seg_loss = self._compute_seg_loss(pred_source_real, labels)
-
+        cls_criterion = nn.BCEWithLogitsLoss()
+        cls_loss = cls_criterion(out_cls, labels)
         # in source domain compute edge loss
         # edge_loss = self._compute_edge_loss(pred_source_edge, labels)
 
@@ -251,9 +247,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         #                       self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
         attn_loss = bce_loss(pred_source_edge,
                              self.get_foreground_attention(
-                                 labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
+                                 labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
         # proper normalization
-        seg_loss = self.lambda_seg * seg_loss + self.lambda_adv_edge * attn_loss
+        # seg_loss = self.lambda_seg * seg_loss + self.lambda_adv_edge * attn_loss
+        seg_loss = self.lambda_seg * (seg_loss + cls_loss) + self.lambda_adv_edge * attn_loss
+
         # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
         seg_loss.backward()
 
@@ -293,7 +291,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.target_image_path = image_path
 
         # get predict output
-        pred_target_fake, pred_target_edge = self.model(images)
+        pred_target_fake, pred_target_edge, _ = self.model(images)
 
         # resize to target size
         interp_target = nn.Upsample(size=self.input_size_target, align_corners=False,
