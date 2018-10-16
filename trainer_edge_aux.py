@@ -86,10 +86,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
         # self.model_D_foreground = Gated_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
 
-        # self.model_D_foreground = Partial_Discriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D_foreground = Partial_Discriminator(num_classes=hyperparameters['num_classes'])
 
         # self.model_D_ = SP_FCDiscriminator(num_classes=3+1)
 
