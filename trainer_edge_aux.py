@@ -693,7 +693,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         if self.optimizer_D:
             self.optimizer_D.zero_grad()
             self._adjust_learning_rate_D(self.optimizer_D, self.i_iter)
-
+        if self.optimizer_D_foreground:
+            self.optimizer_D_foreground.zero_grad()
+            self._adjust_learning_rate_D(self.optimizer_D_foreground, self.i_iter)
     @property
     def discriminator_gamma(self):
         # return float(self.model_D.gamma)
