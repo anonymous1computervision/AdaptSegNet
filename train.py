@@ -51,10 +51,10 @@ def main():
     # CONFIG_PATH = "./configs/default-in.yaml"
     # CONFIG_PATH = "./configs/default_edge.yaml"
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
-    CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
+    # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_PSPNet_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR_D_beta.yaml"
-    # CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
+    CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
     # CONFIG_PATH = "./configs/default_DUC.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_SN_TTUR.yaml"

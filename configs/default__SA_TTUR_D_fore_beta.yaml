@@ -1,4 +1,5 @@
 # logger options
+name: xiaoAdaptSeg
 test_summary: default setting use FastPhoto, G output seg and edge, D input pred seg
 log_iter: 1                   # How often do you want to log the training stats
 snapshot_save_iter: 5000     # How often do you want to save trained models
@@ -62,3 +63,13 @@ input_target_size_w: 1024        # resize to the width of target image (CityScap
 
 #gpu setting
 gpu: 0
+
+# for displays
+visualizer: true
+tf_log: true # if specified, use tensorboard logging. Requires tensorflow installed
+display_winsize: 512 # display window size
+# display_freq: 100 # frequency of showing training results on screen'
+# print_freq: 100 # frequency of showing training results on console')
+# save_latest_freq: 1000 # frequency of saving the latest results')
+use_html: true #do not save intermediate training results to [opt.checkpoints_dir]/[opt.name]/web/')
+# debug: true #only do one epoch and displays at each iteration')
