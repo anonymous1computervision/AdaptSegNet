@@ -652,7 +652,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # for i, group in enumerate(optimizer.param_groups):
         #     optimizer.param_groups[i]['lr'] = lr
         # print("len(optimizer.param_groups)", len(optimizer.param_groups))
-        # optimizer.param_groups[0]['lr'] = lr
+        optimizer.param_groups[0]['lr'] = lr
         if len(optimizer.param_groups) > 1:
             optimizer.param_groups[1]['lr'] = lr * 10
 
