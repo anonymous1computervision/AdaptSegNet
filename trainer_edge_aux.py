@@ -166,11 +166,16 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.loss_dict = {k: 0 for k in self.loss_names}
 
     def init_opt(self):
-        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-                                     lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+
+        # todo: change to origin
+        self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
+                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        self.optimizer_G.zero_grad()
+        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+        #                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
         #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
-        self.optimizer_G.zero_grad()
+        # self.optimizer_G.zero_grad()
         self._adjust_learning_rate_G(self.optimizer_G, 0)
 
         self.optimizer_D = optim.Adam([p for p in self.model_D.parameters() if p.requires_grad],
@@ -295,16 +300,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
                                     mode='bilinear')
         pred_target_fake = interp_target(pred_target_fake)
 
-        # todo: cgan version
-        # interp_target_mini = nn.Upsample(size=(int(self.input_size_target[0]/8), int(self.input_size_target[1]/8)), align_corners=False,
-        #                             mode='bilinear')
-        # interp_target_mini = nn.Upsample(size=(
-        # int(self.input_size_target[0] / self.mini_factor_size), int(self.input_size_target[1] / self.mini_factor_size)),
-        #                                  align_corners=False,
-        #                                  mode='bilinear')
-        # self.pred_target_edge_mini = interp_target_mini(pred_target_edge).detach()
         pred_target_edge = interp_target(pred_target_edge)
-        # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
 
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
@@ -652,8 +648,12 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
     def _adjust_learning_rate_G(self, optimizer, i_iter):
         lr = self._lr_poly(self.lr_g, i_iter, self.num_steps, self.decay_power)
-        for i, group in enumerate(optimizer.param_groups):
-            optimizer.param_groups[i]['lr'] = lr
+        # for i, group in enumerate(optimizer.param_groups):
+        #     optimizer.param_groups[i]['lr'] = lr
+        # print("len(optimizer.param_groups)", len(optimizer.param_groups))
+        # optimizer.param_groups[0]['lr'] = lr
+        if len(optimizer.param_groups) > 1:
+            optimizer.param_groups[1]['lr'] = lr * 10
 
     def init_each_epoch(self, i_iter):
         self.i_iter = i_iter

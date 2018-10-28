@@ -216,7 +216,7 @@ def main():
             # show log
             t = (time.time() - iter_start_time)
             if config["visualizer"]:
-                visualizer.print_current_errors(i_iter, num_steps, trainer.loss_dict, t)
+                visualizer.print_current_errors(num_steps, i_iter, trainer.loss_dict, t)
             else:
                 trainer.show_each_loss()
 

@@ -4,6 +4,7 @@
 *.jpg
 /lables
 /data
+/check_output
 /result
 /result_multi
 /model/GTA2Cityscapes_multi
