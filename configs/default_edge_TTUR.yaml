@@ -62,3 +62,11 @@ input_target_size_w: 1024        # resize to the width of target image (CityScap
 
 #gpu setting
 gpu: 0
+
+# for displays
+display_winsize: 512 # display window size
+display_freq: 100 # frequency of showing training results on screen'
+print_freq: 100 # frequency of showing training results on console')
+save_latest_freq: 1000 # frequency of saving the latest results')
+use_html: true #do not save intermediate training results to [opt.checkpoints_dir]/[opt.name]/web/')
+# debug: true #only do one epoch and displays at each iteration')

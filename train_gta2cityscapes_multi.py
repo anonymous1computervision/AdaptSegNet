@@ -3,31 +3,24 @@ import torch
 import torch.nn as nn
 from torch.utils import data, model_zoo
 import numpy as np
-import pickle
 from torch.autograd import Variable
 import torch.optim as optim
-import scipy.misc
 # from tensorboard_logger import configure, log_value
 import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
-import sys
 from PIL import Image
 import os
 import os.path as osp
-import matplotlib.pyplot as plt
 import shutil
-import random
 
 from model.deeplab_multi import Res_Deeplab
 from model.discriminator import FCDiscriminator
-from model.xiao_discriminator import XiaoDiscriminator
 
-from utils.loss import CrossEntropy2d
+from util import CrossEntropy2d
 from dataset.gta5_dataset import GTA5DataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
 from test_iou import output_to_image, compute_mIoU, get_test_mini_set
 
-import pdb
 IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
 
 MODEL = 'DeepLab'

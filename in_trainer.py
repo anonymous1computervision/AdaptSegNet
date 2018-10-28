@@ -1,6 +1,5 @@
 import os
 import shutil
-import pdb
 from itertools import chain
 
 # from tensorboard_logger import configure, log_value
@@ -19,16 +18,9 @@ from model.networks import StyleEncoder, MLP
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single_IN import Res_Deeplab
 from model.discriminator import FCDiscriminator
-from model.xiao_discriminator import XiaoDiscriminator
-from model.xiao_attention import XiaoAttention
-from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
 # from model.xiao_discriminator_addition_attention import XiaoAttentionDiscriminator
-from model.xiao_cgan_adain_discriminator import XiaoCganDiscriminator
 
-from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
-
-from utils.loss import CrossEntropy2d
-from util import weights_init
+from util.loss import CrossEntropy2d
 
 class AdaptSeg_IN_Trainer(nn.Module):
     def __init__(self, hyperparameters):

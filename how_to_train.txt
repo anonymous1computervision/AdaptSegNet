@@ -1,3 +1,21 @@
+conda create -n xiao python=3.6 anaconda
+
+conda create -n pytorch41 python=3.7 anaconda
+
+conda env remove -n xiao
+
+pip install http://download.pytorch.org/whl/cu90/torch-0.4.0-cp36-cp36m-win_amd64.whl 
+
+pip install torchvision
+
+conda env create -f Xiao_environment.yml
+
+conda env create -f environment.yml
+
+conda env export > xiao_92_environment.yml
+
+
+
 python train_gta2cityscapes_multi.py --snapshot-dir ./snapshots/GTA2Cityscapes_multi --lambda-seg 0.1 --lambda-adv-target1 0.0002 --lambda-adv-target2 0.001
 
 python train_gta2cityscapes_xiao_multi.py --snapshot-dir ./snapshots/GTA2Cityscapes_multi --lambda-seg 0.1 --lambda-adv-target1 0.0002 --lambda-adv-target2 0.001
@@ -6,8 +24,9 @@ python train_gta2cityscapes_xiao.py --snapshot-dir ./snapshots/GTA2Cityscapes_mu
 
 python train_gta2cityscapes_xiao_multi.py --snapshot-dir ./snapshots/GTA2Cityscapes_multi --lambda-seg 0.1 --lambda-adv-target1 0.0002 --lambda-adv-target2 0.001
 
-python evaluate_cityscapes.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_30000.pth
+python evaluate_cityscapes.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_90000.pth
 python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
+
 
 python evaluate_cityscapes.py --restore-from E:/AdaptionSe-v31-20180819--fastphoto-2DA-baseline-80k-D-1e-3-failed-acc36/snapshots/GTA2Cityscapes_multi/GTA5_45000.pth
 python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
@@ -16,8 +35,24 @@ python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
 python evaluate_cityscapes_only1.py --restore-from E:/AdaptionSeg_20180620-single_DA-baseline-disable-10x/GTA2Cityscapes_multi/GTA5_5000.pth
 python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
 
+python evaluate_cityscapes_only1.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_25000.pth
+python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
+
+
 python evaluate_cityscapes_only1.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_45000.pth
 python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
+
+python evaluate_cityscapes_only1.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_250000.pth
+python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
+
+
+python evaluate_cityscapes_only1.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_25000.pth
+python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
+
+
+python evaluate_cityscapes_only1.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_40000.pth
+python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
+
 
 
 python evaluate_cityscapes_in_1.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_70000_trainer_all.pth
@@ -39,4 +74,19 @@ python evaluate_cityscapes_only1.py --restore-from ./snapshots/GTA2Cityscapes_mu
 
 python evaluate_cityscapes_only1.py --restore-from E:/AdaptionSeg-v31-20180817--fastphoto-2DA-sp-and-fore-sp-acc-37-52k/snapshots/GTA2Cityscapes_multi/GTA5_52000.pth
 python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
+
+
+python evaluate_cityscapes.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_25000.pth
+python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
+
+python evaluate_cityscapes.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_45000.pth
+python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
+
+python evaluate_cityscapes.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_100000.pth
+python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
+
+python evaluate_cityscapes.py --restore-from ./snapshots/GTA2Cityscapes_multi/GTA5_150000.pth
+python compute_iou.py ./data/Cityscapes/data/gtFine/val result/cityscapes
+
+
 

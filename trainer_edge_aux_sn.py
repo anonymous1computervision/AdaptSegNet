@@ -1,6 +1,5 @@
 import os
 import shutil
-import pdb
 
 # from tensorboard_logger import configure, log_value
 from torch.autograd import Variable
@@ -23,23 +22,11 @@ from model.deeplab_single_add_edge_act_match import Res_Deeplab as Res_Deeplab_E
 from model.deeplav_v3_xception import DeepLabv3_plus
 
 import model.fc_densenet as fc_densenet
-from model.discriminator import FCDiscriminator
 from model.sp_discriminator import SP_FCDiscriminator
 
 from model.gated_discriminator import Gated_Discriminator
-from model.sp_feature_discriminator import SP_Feature_FCDiscriminator
-from model.partial_discriminator import Partial_Discriminator
 
-from model.xiao_sp_cgan_discriminator import XiaoCganDiscriminator
-from model.xiao_sp_cgan_res_discriminator import XiaoCganResAttnDiscriminator
-from model.xiao_discriminator import XiaoDiscriminator
-from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
-from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
-from model.sp_attn_discriminator import SP_ATTN_FCDiscriminator
-from model.sp_aspp_discriminator import SP_ASPP_FCDiscriminator
-
-from utils.loss import CrossEntropy2d
-
+from util.loss import CrossEntropy2d
 
 class AdaptSeg_Edge_Aux_SN_Trainer(nn.Module):
     def __init__(self, hyperparameters):

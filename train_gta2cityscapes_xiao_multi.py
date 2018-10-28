@@ -1,14 +1,9 @@
-import pickle
-import sys
 import os
 import os.path as osp
-import random
 import shutil
-import pdb
 
 import argparse
-import scipy.misc
-from tensorboard_logger import configure, log_value
+from tensorboard_logger import configure
 from torch.autograd import Variable
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
@@ -18,15 +13,13 @@ import torch.nn as nn
 from torch.utils import data, model_zoo
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
 
 # from model.deeplab_multi import Res_Deeplab
 # from model.deeplab_single import Res_Deeplab
 from model.deeplab_multi_attention import Res_Deeplab
 
-from model.discriminator import FCDiscriminator
 from model.xiao_discriminator import XiaoDiscriminator
-from utils.loss import CrossEntropy2d
+from util import CrossEntropy2d
 from dataset.gta5_dataset import GTA5DataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
 

@@ -1,6 +1,5 @@
 import os
 import shutil
-import pdb
 
 # from tensorboard_logger import configure, log_value
 from torch.autograd import Variable
@@ -20,15 +19,9 @@ from model.deeplab_single import Res_Deeplab
 from model.deeplav_v3_xception import DeepLabv3_plus
 
 import model.fc_densenet as fc_densenet
-from model.discriminator import FCDiscriminator
 from model.sp_discriminator import SP_FCDiscriminator
-from model.xiao_discriminator import XiaoDiscriminator
-from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
-from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
-from model.sp_attn_discriminator import SP_ATTN_FCDiscriminator
-from model.sp_aspp_discriminator import SP_ASPP_FCDiscriminator
 
-from utils.loss import CrossEntropy2d
+from util.loss import CrossEntropy2d
 
 class AdaptSeg_Trainer(nn.Module):
     def __init__(self, hyperparameters):

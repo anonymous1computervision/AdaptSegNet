@@ -35,7 +35,7 @@ from trainer_DUC_edge_aux import AdaptSeg_DUC_Edge_Aux_Trainer
 
 from trainer_scratch_gen import DeepLab_Scratch_Trainer
 from dense_trainer import DenseSeg_Trainer
-from util import get_all_data_loaders, get_config
+from util.util import get_all_data_loaders, get_config
 from test_iou import output_to_image, compute_mIoU, get_test_mini_set
 
 def main():
@@ -110,6 +110,9 @@ def main():
         trainer = AdaptSeg_Edge_Aux_Trainer(config)
         # trainer = DeepLab_Scratch_Trainer(config)
         print("use DeepLabEdge")
+        print("use DeepLabEdge")
+        print("use DeepLabEdge")
+
     elif config["model"] == "DeepLabEdgeSN":
         trainer = AdaptSeg_Edge_Aux_SN_Trainer(config)
         # trainer = DeepLab_Scratch_Trainer(config)

@@ -1,6 +1,5 @@
 import os
 import shutil
-import pdb
 
 # from tensorboard_logger import configure, log_value
 from torch.autograd import Variable
@@ -17,12 +16,8 @@ from PIL import Image
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
 from model.discriminator import FCDiscriminator
-from model.xiao_discriminator import XiaoDiscriminator
-from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
-from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
 
-from utils.loss import CrossEntropy2d
-
+from util.loss import CrossEntropy2d
 class Mini_AdaptSeg_Trainer(nn.Module):
     def __init__(self, hyperparameters):
         super(Mini_AdaptSeg_Trainer, self).__init__()

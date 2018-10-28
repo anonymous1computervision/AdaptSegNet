@@ -19,7 +19,7 @@ import torch.backends.cudnn as cudnn
 # from model.deeplab_multi import Res_Deeplab
 # from model.deeplab_single_IN import Res_Deeplab
 from in_trainer import AdaptSeg_IN_Trainer
-from util import get_all_data_loaders, get_config
+from util.util import get_all_data_loaders, get_config
 
 from dataset.cityscapes_dataset import cityscapesDataSet
 from collections import OrderedDict

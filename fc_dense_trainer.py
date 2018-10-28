@@ -15,15 +15,9 @@ import numpy as np
 from PIL import Image
 
 # from model.deeplab_multi import Res_Deeplab
-from model.deeplab_single import Res_Deeplab
 import model.fc_densenet as fc_densenet
-from model.discriminator import FCDiscriminator
-from model.xiao_discriminator import XiaoDiscriminator
-from model.xiao_attention_discriminator import XiaoAttentionDiscriminator
-from model.xiao_pretrained_attention_discriminator import XiaoPretrainAttentionDiscriminator
 
-from utils.loss import CrossEntropy2d
-
+from util.loss import CrossEntropy2d
 class FC_Dense_Trainer(nn.Module):
     def __init__(self, hyperparameters):
         super(FC_Dense_Trainer, self).__init__()

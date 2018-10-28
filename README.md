@@ -77,7 +77,8 @@ python train_gta2cityscapes_multi.py --snapshot-dir ./snapshots/GTA2Cityscapes_s
 * Y.-H. Chen, W.-Y. Chen, Y.-T. Chen, B.-C. Tsai, Y.-C. Frank Wang, and M. Sun. No More Discrimination: Cross City Adaptation of Road Scene Segmenters. In ICCV 2017. [[paper]](https://arxiv.org/abs/1704.08509) [[project]](https://yihsinchen.github.io/segmentation_adaptation/)
 
 ## Acknowledgment
-This code is heavily borrowed from [Pytorch-Deeplab](https://github.com/speedinghzl/Pytorch-Deeplab).
+This code is heavily borrowed from [AdaptSegNet](https://github.com/wasidennis/AdaptSegNet).
+Visualize part is heavily borrowed from [pix2pixHD](https://github.com/NVIDIA/pix2pixHD).
 
 ## Note
 The model and code are available for non-commercial research purposes only.
