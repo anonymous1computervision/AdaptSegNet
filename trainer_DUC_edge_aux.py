@@ -10,18 +10,22 @@ import torch
 import torch.nn as nn
 from torch.utils import model_zoo
 import torchvision.transforms as transforms
+
 import numpy as np
 from PIL import Image
 
 # from model.deeplab_multi import Res_Deeplab
-from model.ResNet_DUC_add_edge import Res_Deeplab as DUC_Edge
+from model.deeplab_single import Res_Deeplab
+from model.deeplab_single_add_edge import Res_Deeplab as Res_Deeplab_Edge
+# from model.deeplav_v3_xception import DeepLabv3_plus
+from model.ResNet_DUC_add_edge import Res_Deeplab as DUC_model
 
+import model.fc_densenet as fc_densenet
 from model.sp_discriminator import SP_FCDiscriminator
-
 from model.gated_discriminator import Gated_Discriminator
+from model.sp_aspp_discriminator import SP_ASPP_FCDiscriminator
 
 from util.loss import CrossEntropy2d
-from util.util import paint_predict_image
 
 class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
     def __init__(self, hyperparameters):
@@ -42,15 +46,18 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         cudnn.benchmark = True
 
         # todo: remove this line without dev version
-        assert hyperparameters["model"] == 'DUC_Edge'
+        assert hyperparameters["model"] == 'DUC_Edge', True
 
         # init G
-        self.model = DUC_Edge(num_classes=hyperparameters["num_classes"])
+        
+        self.model = DUC_model(num_classes=hyperparameters["num_classes"])
 
 
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = SP_ASPP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+
         # self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
         # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
@@ -145,15 +152,23 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         self.pred_fake_edge = None
         self.pred_real_d_proj = None
         self.pred_fake_d_proj = None
-        self.inter_mini = nn.Upsample(size=self.input_size_target, align_corners=False,
-                                      mode='bilinear')
+        # self.inter_mini = nn.Upsample(size=self.input_size_target, align_corners=False,
+        #                               mode='bilinear')
+
+        self.loss_names = ['Seg', 'Edge_Seg', 'Global_GAN_dis', 'Global_GAN_adv', 'Foreground_GAN_dis', 'Foreground_GAN_adv']
+        self.loss_dict = {k: 0 for k in self.loss_names}
 
     def init_opt(self):
-        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-                                     lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+
+        # todo: change to origin
+        self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
+                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        self.optimizer_G.zero_grad()
+        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+        #                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
         #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
-        self.optimizer_G.zero_grad()
+        # self.optimizer_G.zero_grad()
         self._adjust_learning_rate_G(self.optimizer_G, 0)
 
         self.optimizer_D = optim.Adam([p for p in self.model_D.parameters() if p.requires_grad],
@@ -198,14 +213,12 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         # get predict output
         pred_source_real, pred_source_edge = self.model(images)
 
-        # Original:
-        # out = self.my_block(inp1.inp2.inp)
-
-        # With checkpointing:
-        # pred_source_real, pred_source_edge = checkpoint_sequential(self.model, 2,images)
-
         # resize to source size
-        interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
+        interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
+
+
+        # old version
+        # interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
         pred_source_real = interp(pred_source_real)
         # interp_source_mini = nn.Upsample(size=(int(self.input_size[0]/8), int(self.input_size[1]/8)), align_corners=False,
         #                             mode='bilinear')
@@ -226,11 +239,10 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         # # Todo : here use softmax maybe wrong
         # edge_loss = bce_loss(pred_source_edge,
         #                       self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
-        attn_loss = bce_loss(pred_source_edge,
+        attn_loss =  bce_loss(pred_source_edge,
                              self.get_foreground_attention(
                                  labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
         # proper normalization
-        # seg_loss = self.lambda_seg * seg_loss
         seg_loss = self.lambda_seg * seg_loss + self.lambda_adv_edge * attn_loss
         # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
         seg_loss.backward()
@@ -246,7 +258,10 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         self.source_input_image = images.detach()
 
         # record log
-        self.loss_source_value += seg_loss.data.cpu().numpy()
+        self.loss_dict['Seg'] += seg_loss.data.cpu().numpy()
+        self.loss_dict['Edge_Seg'] += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
+
+        # self.loss_source_value += seg_loss.data.cpu().numpy()
         # self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
         # self.loss_edge_value += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
 
@@ -278,20 +293,11 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
                                     mode='bilinear')
         pred_target_fake = interp_target(pred_target_fake)
 
-        # todo: cgan version
-        # interp_target_mini = nn.Upsample(size=(int(self.input_size_target[0]/8), int(self.input_size_target[1]/8)), align_corners=False,
-        #                             mode='bilinear')
-        # interp_target_mini = nn.Upsample(size=(
-        # int(self.input_size_target[0] / self.mini_factor_size), int(self.input_size_target[1] / self.mini_factor_size)),
-        #                                  align_corners=False,
-        #                                  mode='bilinear')
-        # self.pred_target_edge_mini = interp_target_mini(pred_target_edge).detach()
         pred_target_edge = interp_target(pred_target_edge)
-        # d_out_fake = model_D(F.softmax(pred_target_fake), inter_mini(F.softmax(pred_target_fake)))
 
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
-        net_input = F.softmax(pred_target_fake)
+        net_input = F.softmax(pred_target_fake, dim=1)
         # print("net input shape =", net_input.shape)
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         # d_out_fake, _ = self.model_D(F.softmax(net_input), label=images)
@@ -349,6 +355,9 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         self.loss_target_foreground_value += loss_adv_foreground.data.cpu().numpy()
         self.loss_target_value += loss.data.cpu().numpy()
 
+        self.loss_dict['Global_GAN_adv'] += loss_adv_foreground.data.cpu().numpy()
+        self.loss_dict['Foreground_GAN_adv'] += loss.data.cpu().numpy()
+
     def dis_update(self, labels=None):
         """
                 use [gen_source_update / gen_target_update]'s image to discriminator,
@@ -372,7 +381,7 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(self.source_image), self.pred_get_edges(self.source_image)), dim=1)
         # net_input = torch.cat((F.softmax(self.source_image), self.pred_real_edge), dim=1)
-        net_input = F.softmax(self.source_image)
+        net_input = F.softmax(self.source_image, dim=1)
 
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=None)
@@ -390,7 +399,7 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
 
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(self.target_image), self.pred_fake_edge), dim=1)
-        net_input = F.softmax(self.target_image)
+        net_input = F.softmax(self.target_image, dim=1)
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=None)
         # d_out_fake, _ = self.model_D(net_input, label=self.pred_fake_edge)
@@ -409,11 +418,12 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         loss = self.loss_hinge_dis(d_out_foreground_fake, d_out_foreground_real)
         # print("fore loss=", loss)
         self.loss_d_foreground_value += loss.data.cpu().numpy()
+        self.loss_dict['Foreground_GAN_dis'] += loss.data.cpu().numpy()
         loss.backward()
 
         loss = self.loss_hinge_dis(d_out_fake, d_out_real)
         self.loss_d_value += loss.data.cpu().numpy()
-        # loss = loss + loss_attn
+        self.loss_dict['Global_GAN_dis'] += loss.data.cpu().numpy()
         loss.backward()
 
         # update loss
@@ -436,41 +446,21 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         return loss
 
     def show_each_loss(self):
-        # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f}".format(
-        #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
-        # print(
-        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_edge_loss= {3:.7f} loss_G_adv1 = {4:.5f} loss_D1 = {5:.3f}".format(
-        #         self.i_iter, self.num_steps, self.loss_source_value, self.loss_edge_value,
-        #         float(self.loss_target_value), float(self.loss_d_value)))
-
-        # gamma version
-        # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_edge_loss= {3:.7f} loss_G_adv1 = {4:.5f} loss_D1 = {5:.3f} D_gamma = {6:.5f}".format(
-        #     self.i_iter, self.num_steps, self.loss_source_value, self.loss_edge_value, float(self.loss_target_value),
-        #     float(self.loss_d_value), float(self.model_D.gamma)))
-
-        # print(
-        # "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
-        #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-        #     float(self.loss_d_value), self.loss_d_attn_value))
         # print(
         #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_adv_foreground = {4:.5f}  loss_D1 = {5:.3f} loss_D1_foreground = {6:.3f}".format(
         #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
         #         float(self.loss_target_foreground_value), float(self.loss_d_value), float(self.loss_d_foreground_value)))
-
-        # print(
-        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_weakly_seg = {4:.5f} loss_D1 = {5:.3f} loss_D1_attn = {6:.3f}".format(
-        #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-        #         float(self.loss_target_weakly_seg_value), float(self.loss_d_value), self.loss_d_attn_value))
-
-        message = '(epoch: %d, iters: %d, ) ' % (self.i_iter, self.num_steps)
+        message = '(epoch: %d, iters: %d) ' % (self.num_steps, self.i_iter)
         for k, v in self.loss_dict.items():
             if v != 0:
-                message += '%s: %.5f ' % (k, v)
+                message += '%s: %.3f ' % (k, v)
 
         print(message)
+        with open(self.log_name, "a") as log_file:
+            log_file.write('%s\n' % message)
 
     def pred_get_edges(self, t):
-        pred = F.softmax(t)
+        pred = F.softmax(t, dim=1)
         # print("predl  origin softmax shape", pred.shape)
         pred = pred.cpu().data.numpy()
         # print("predl softmax shape", pred.shape)
@@ -635,11 +625,11 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
 
         return loss
 
-    def _resize(self, img, size=None):
-        # resize to source size
-        interp = nn.Upsample(size=size, align_corners=False, mode='bilinear')
-        img = interp(img)
-        return img
+    # def _resize(self, img, size=None):
+    #     # resize to source size
+    #     interp = nn.Upsample(size=size, align_corners=False, mode='bilinear')
+    #     img = interp(img)
+    #     return img
 
     def _lr_poly(self, base_lr, i_iter, max_iter, power):
         return base_lr * ((1 - float(i_iter) / max_iter) ** power)
@@ -651,20 +641,25 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
 
     def _adjust_learning_rate_G(self, optimizer, i_iter):
         lr = self._lr_poly(self.lr_g, i_iter, self.num_steps, self.decay_power)
-        for i, group in enumerate(optimizer.param_groups):
-            optimizer.param_groups[i]['lr'] = lr
+        # for i, group in enumerate(optimizer.param_groups):
+        #     optimizer.param_groups[i]['lr'] = lr
+        # print("len(optimizer.param_groups)", len(optimizer.param_groups))
+        optimizer.param_groups[0]['lr'] = lr
+        if len(optimizer.param_groups) > 1:
+            optimizer.param_groups[1]['lr'] = lr * 10
 
     def init_each_epoch(self, i_iter):
         self.i_iter = i_iter
-        self.loss_d_value = 0
-        self.loss_d_foreground_value = 0
+        self.loss_dict = {k: 0 for k in self.loss_names}
+        # self.loss_d_value = 0
+        # self.loss_d_foreground_value = 0
+        #
+        # self.loss_source_value = 0
+        # self.loss_target_value = 0
+        # self.loss_edge_value = 0
 
-        self.loss_source_value = 0
-        self.loss_target_value = 0
-        self.loss_edge_value = 0
 
-
-        self.loss_target_foreground_value = 0
+        # self.loss_target_foreground_value = 0
 
         # self.loss_target_weakly_seg_value = 0
 
@@ -714,7 +709,7 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
 
         if target_save:
             target_name = os.path.join("data", "Cityscapes", "data", "leftImg8bit", "train", self.target_image_path[0])
-            save_name = os.path.join(dir_name, "Image_target_domain_seg", '%s_label.png' % self.i_iter)
+            save_name = os.path.join(dir_name, "Image_target_domain_seg", '%s_input.png' % self.i_iter)
             shutil.copyfile(target_name, save_name)
             paint_predict_image(self.target_image).save('check_output/Image_target_domain_seg/%s.png' % self.i_iter)
 
@@ -838,3 +833,41 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         image = pilTrans(tensor.cpu().squeeze(0))
         return image
 
+
+def paint_predict_image(predict_image):
+    """input model's output image it will paint color """
+    # ===============for colorize mask==============
+    palette = [128, 64, 128, 244, 35, 232, 70, 70, 70, 102, 102, 156, 190, 153, 153, 153, 153, 153, 250, 170, 30,
+               220, 220, 0, 107, 142, 35, 152, 251, 152, 70, 130, 180, 220, 20, 60, 255, 0, 0, 0, 0, 142, 0, 0, 70,
+               0, 60, 100, 0, 80, 100, 0, 0, 230, 119, 11, 32]
+    zero_pad = 256 * 3 - len(palette)
+    for i in range(zero_pad):
+        palette.append(0)
+
+    def colorize_mask(mask):
+        # mask: numpy array of the mask
+        new_mask = Image.fromarray(mask.astype(np.uint8)).convert('P')
+        new_mask.putpalette(palette)
+
+        return new_mask
+
+    def output_to_image(output):
+        # input
+        # ------------------
+        #   G's output feature map :(c, w, h, num_classes)
+        #
+        #
+        # output
+        # ------------------
+        #   output_color : PIL Image paint segmentaion color (1024, 2048)
+        #
+        #
+        interp = nn.Upsample(size=(1024, 2048), align_corners=False, mode='bilinear')
+        output = interp(output).permute(0, 2, 3, 1)
+        _, output = torch.max(output, -1)
+        output = output.cpu().data[0].numpy().astype(np.uint8)
+        output_color = colorize_mask(output)
+
+        return output_color
+
+    return output_to_image(predict_image)
