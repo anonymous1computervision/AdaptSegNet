@@ -11,18 +11,13 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 """
 
 import os
+import time
 import pdb
-import json
 
 import torch
-import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
-from torch.utils import data
-from PIL import Image
 
-from dataset.gta5_dataset import GTA5DataSet
-from dataset.cityscapes_dataset import cityscapesDataSet
 from trainer import AdaptSeg_Trainer
 from attn_trainer import AdaptSeg_Attn_Trainer
 from mini_trainer import Mini_AdaptSeg_Trainer
@@ -32,10 +27,8 @@ from trainer_edge_aux_sn import AdaptSeg_Edge_Aux_SN_Trainer
 from trainer_edge_aux_deeplab_v3 import AdaptSeg_Edge_Aux_v3_Trainer
 from trainer_PSP_edge_aux import AdaptSeg_PSP_Edge_Aux_Trainer
 from trainer_DUC_edge_aux import AdaptSeg_DUC_Edge_Aux_Trainer
-
-from trainer_scratch_gen import DeepLab_Scratch_Trainer
-from dense_trainer import DenseSeg_Trainer
 from util.util import get_all_data_loaders, get_config
+from util.visualizer import Visualizer
 from test_iou import output_to_image, compute_mIoU, get_test_mini_set
 
 def main():
@@ -167,8 +160,13 @@ def main():
     }
     # train_only_src = True
     # Start training
+    # set visualizer [tensorboard/html]
+    visualizer = Visualizer(config)
+
     while True:
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
+            iter_start_time = time.time()
+
             # if memory issue can clear cache
             # torch.cuda.empty_cache()
             trainer.init_each_epoch(i_iter)
@@ -208,10 +206,11 @@ def main():
 
             # train G use weakly label
             # trainer.gen_weakly_update(target_images, target_name)
-
+            t = (time.time() - iter_start_time)
+            visualizer.print_current_errors(i_iter, num_steps, trainer.loss_dict, t)
 
             # show log
-            trainer.show_each_loss()
+            # trainer.show_each_loss()
 
 
             # save image to check

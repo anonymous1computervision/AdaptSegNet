@@ -80,33 +80,16 @@ def get_all_data_loaders(conf):
 
     return train_loader, target_loader
 
+def mkdirs(paths):
+    if isinstance(paths, list) and not isinstance(paths, str):
+        for path in paths:
+            mkdir(path)
+    else:
+        mkdir(paths)
 
-def get_data_loader_list(root, file_list, batch_size, train, new_size=None,
-                           height=256, width=256, num_workers=4, crop=True):
-    transform_list = [transforms.ToTensor(),
-                      transforms.Normalize((0.5, 0.5, 0.5),
-                                           (0.5, 0.5, 0.5))]
-    transform_list = [transforms.RandomCrop((height, width))] + transform_list if crop else transform_list
-    transform_list = [transforms.Resize(new_size)] + transform_list if new_size is not None else transform_list
-    transform_list = [transforms.RandomHorizontalFlip()] + transform_list if train else transform_list
-    transform = transforms.Compose(transform_list)
-    dataset = ImageFilelist(root, file_list, transform=transform)
-    loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=train, drop_last=True, num_workers=num_workers)
-    return loader
-
-def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
-                           height=256, width=256, num_workers=4, crop=True):
-    transform_list = [transforms.ToTensor(),
-                      transforms.Normalize((0.5, 0.5, 0.5),
-                                           (0.5, 0.5, 0.5))]
-    transform_list = [transforms.RandomCrop((height, width))] + transform_list if crop else transform_list
-    transform_list = [transforms.Resize(new_size)] + transform_list if new_size is not None else transform_list
-    transform_list = [transforms.RandomHorizontalFlip()] + transform_list if train else transform_list
-    transform = transforms.Compose(transform_list)
-    dataset = ImageFolder(input_folder, transform=transform)
-    loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=train, drop_last=True, num_workers=num_workers)
-    return loader
-
+def mkdir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 def get_config(config):
     with open(config, 'r') as stream:

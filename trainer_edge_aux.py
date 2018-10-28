@@ -159,8 +159,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.pred_fake_edge = None
         self.pred_real_d_proj = None
         self.pred_fake_d_proj = None
-        self.inter_mini = nn.Upsample(size=self.input_size_target, align_corners=False,
-                                      mode='bilinear')
+        # self.inter_mini = nn.Upsample(size=self.input_size_target, align_corners=False,
+        #                               mode='bilinear')
+
+        self.loss_names = ['Seg', 'Edge_Seg', 'Global_GAN_dis', 'Global_GAN_adv', 'Foreground_GAN_dis', 'Foreground_GAN_adv']
+        self.loss_dict = {k: 0 for k in self.loss_names}
 
     def init_opt(self):
         self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
@@ -213,7 +216,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         pred_source_real, pred_source_edge = self.model(images)
 
         # resize to source size
-        interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
+        interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
+
+
+        # old version
+        # interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
         pred_source_real = interp(pred_source_real)
         # interp_source_mini = nn.Upsample(size=(int(self.input_size[0]/8), int(self.input_size[1]/8)), align_corners=False,
         #                             mode='bilinear')
@@ -234,7 +241,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # # Todo : here use softmax maybe wrong
         # edge_loss = bce_loss(pred_source_edge,
         #                       self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
-        attn_loss = bce_loss(pred_source_edge,
+        attn_loss =  bce_loss(pred_source_edge,
                              self.get_foreground_attention(
                                  labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
         # proper normalization
@@ -253,9 +260,12 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.source_input_image = images.detach()
 
         # record log
-        self.loss_source_value += seg_loss.data.cpu().numpy()
+        self.loss_dict['Seg'] += seg_loss.data.cpu().numpy()
+        self.loss_dict['Edge_Seg'] += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
+
+        # self.loss_source_value += seg_loss.data.cpu().numpy()
         # self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
-        self.loss_edge_value += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
+        # self.loss_edge_value += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
 
     def gen_target_update(self, images, image_path):
         """
@@ -298,7 +308,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
-        net_input = F.softmax(pred_target_fake)
+        net_input = F.softmax(pred_target_fake, dim=1)
         # print("net input shape =", net_input.shape)
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         # d_out_fake, _ = self.model_D(F.softmax(net_input), label=images)
@@ -356,6 +366,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.loss_target_foreground_value += loss_adv_foreground.data.cpu().numpy()
         self.loss_target_value += loss.data.cpu().numpy()
 
+        self.loss_dict['Global_GAN_adv'] += loss_adv_foreground.data.cpu().numpy()
+        self.loss_dict['Foreground_GAN_adv'] += loss.data.cpu().numpy()
+
     def dis_update(self, labels=None):
         """
                 use [gen_source_update / gen_target_update]'s image to discriminator,
@@ -379,7 +392,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(self.source_image), self.pred_get_edges(self.source_image)), dim=1)
         # net_input = torch.cat((F.softmax(self.source_image), self.pred_real_edge), dim=1)
-        net_input = F.softmax(self.source_image)
+        net_input = F.softmax(self.source_image, dim=1)
 
         # d_out_real, _ = self.model_D(F.softmax(self.source_image), label=self.source_input_image)
         # d_out_real, self.pred_real_d_proj = self.model_D(net_input, label=None)
@@ -397,7 +410,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(self.target_image), self.pred_fake_edge), dim=1)
-        net_input = F.softmax(self.target_image)
+        net_input = F.softmax(self.target_image, dim=1)
         # d_out_fake, _ = self.model_D(F.softmax(self.target_image), label=self.target_input_image)
         # d_out_fake, self.pred_fake_d_proj = self.model_D(net_input, label=None)
         # d_out_fake, _ = self.model_D(net_input, label=self.pred_fake_edge)
@@ -416,11 +429,12 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         loss = self.loss_hinge_dis(d_out_foreground_fake, d_out_foreground_real)
         # print("fore loss=", loss)
         self.loss_d_foreground_value += loss.data.cpu().numpy()
+        self.loss_dict['Foreground_GAN_dis'] += loss.data.cpu().numpy()
         loss.backward()
 
         loss = self.loss_hinge_dis(d_out_fake, d_out_real)
         self.loss_d_value += loss.data.cpu().numpy()
-        # loss = loss + loss_attn
+        self.loss_dict['Global_GAN_dis'] += loss.data.cpu().numpy()
         loss.backward()
 
         # update loss
@@ -470,7 +484,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         #         float(self.loss_target_weakly_seg_value), float(self.loss_d_value), self.loss_d_attn_value))
 
     def pred_get_edges(self, t):
-        pred = F.softmax(t)
+        pred = F.softmax(t, dim=1)
         # print("predl  origin softmax shape", pred.shape)
         pred = pred.cpu().data.numpy()
         # print("predl softmax shape", pred.shape)
@@ -635,11 +649,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         return loss
 
-    def _resize(self, img, size=None):
-        # resize to source size
-        interp = nn.Upsample(size=size, align_corners=False, mode='bilinear')
-        img = interp(img)
-        return img
+    # def _resize(self, img, size=None):
+    #     # resize to source size
+    #     interp = nn.Upsample(size=size, align_corners=False, mode='bilinear')
+    #     img = interp(img)
+    #     return img
 
     def _lr_poly(self, base_lr, i_iter, max_iter, power):
         return base_lr * ((1 - float(i_iter) / max_iter) ** power)
@@ -656,15 +670,16 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
     def init_each_epoch(self, i_iter):
         self.i_iter = i_iter
-        self.loss_d_value = 0
-        self.loss_d_foreground_value = 0
+        self.loss_dict = {k: 0 for k in self.loss_names}
+        # self.loss_d_value = 0
+        # self.loss_d_foreground_value = 0
+        #
+        # self.loss_source_value = 0
+        # self.loss_target_value = 0
+        # self.loss_edge_value = 0
 
-        self.loss_source_value = 0
-        self.loss_target_value = 0
-        self.loss_edge_value = 0
 
-
-        self.loss_target_foreground_value = 0
+        # self.loss_target_foreground_value = 0
 
         # self.loss_target_weakly_seg_value = 0
 
@@ -867,7 +882,7 @@ def paint_predict_image(predict_image):
         #   output_color : PIL Image paint segmentaion color (1024, 2048)
         #
         #
-        interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
+        interp = nn.Upsample(size=(1024, 2048), align_corners=False, mode='bilinear')
         output = interp(output).permute(0, 2, 3, 1)
         _, output = torch.max(output, -1)
         output = output.cpu().data[0].numpy().astype(np.uint8)
