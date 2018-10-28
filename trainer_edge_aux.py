@@ -457,31 +457,18 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         return loss
 
     def show_each_loss(self):
-        # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f}".format(
-        #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value), float(self.loss_d_value)))
         # print(
-        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_edge_loss= {3:.7f} loss_G_adv1 = {4:.5f} loss_D1 = {5:.3f}".format(
-        #         self.i_iter, self.num_steps, self.loss_source_value, self.loss_edge_value,
-        #         float(self.loss_target_value), float(self.loss_d_value)))
-
-        # gamma version
-        # print("trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_edge_loss= {3:.7f} loss_G_adv1 = {4:.5f} loss_D1 = {5:.3f} D_gamma = {6:.5f}".format(
-        #     self.i_iter, self.num_steps, self.loss_source_value, self.loss_edge_value, float(self.loss_target_value),
-        #     float(self.loss_d_value), float(self.model_D.gamma)))
-
-        # print(
-        # "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
-        #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-        #     float(self.loss_d_value), self.loss_d_attn_value))
-        print(
-            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_adv_foreground = {4:.5f}  loss_D1 = {5:.3f} loss_D1_foreground = {6:.3f}".format(
-                self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-                float(self.loss_target_foreground_value), float(self.loss_d_value), float(self.loss_d_foreground_value)))
-
-        # print(
-        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_weakly_seg = {4:.5f} loss_D1 = {5:.3f} loss_D1_attn = {6:.3f}".format(
+        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_adv_foreground = {4:.5f}  loss_D1 = {5:.3f} loss_D1_foreground = {6:.3f}".format(
         #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-        #         float(self.loss_target_weakly_seg_value), float(self.loss_d_value), self.loss_d_attn_value))
+        #         float(self.loss_target_foreground_value), float(self.loss_d_value), float(self.loss_d_foreground_value)))
+        message = '(epoch: %d, iters: %d) ' % (self.num_steps, self.i_iter)
+        for k, v in self.loss_dict.items():
+            if v != 0:
+                message += '%s: %.3f ' % (k, v)
+
+        print(message)
+        with open(self.log_name, "a") as log_file:
+            log_file.write('%s\n' % message)
 
     def pred_get_edges(self, t):
         pred = F.softmax(t, dim=1)

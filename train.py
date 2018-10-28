@@ -231,7 +231,7 @@ def main():
                     # tf_board loss visualization
                     # visualizer.plot_current_errors(trainer.loss_dict, i_iter)
                     # tf_board loss visualization
-                    
+
                     checkoutput_dir = config["image_save_dir"]
                     source_input_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_input.png' % i_iter)
                     source_label_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_label.png' % i_iter)
