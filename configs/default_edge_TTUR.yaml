@@ -66,6 +66,7 @@ input_target_size_w: 1024        # resize to the width of target image (CityScap
 gpu: 0
 
 # for displays
+visualizer: true
 tf_log: true # if specified, use tensorboard logging. Requires tensorflow installed
 display_winsize: 512 # display window size
 display_freq: 100 # frequency of showing training results on screen'

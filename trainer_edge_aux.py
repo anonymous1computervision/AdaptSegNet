@@ -729,7 +729,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         if target_save:
             target_name = os.path.join("data", "Cityscapes", "data", "leftImg8bit", "train", self.target_image_path[0])
-            save_name = os.path.join(dir_name, "Image_target_domain_seg", '%s_label.png' % self.i_iter)
+            save_name = os.path.join(dir_name, "Image_target_domain_seg", '%s_input.png' % self.i_iter)
             shutil.copyfile(target_name, save_name)
             paint_predict_image(self.target_image).save('check_output/Image_target_domain_seg/%s.png' % self.i_iter)
 

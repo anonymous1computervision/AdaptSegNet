@@ -2,6 +2,10 @@
 Modify from https://github.com/NVlabs/MUNIT/blob/master/utils.py
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
+
+from PIL import Image
+import yaml
+import numpy as np
 from torch.utils.serialization import load_lua
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
@@ -11,10 +15,10 @@ import torch
 import os
 import math
 import torchvision.utils as vutils
-import yaml
-import numpy as np
+import torch.nn as nn
 import torch.nn.init as init
 from torch.utils import data
+
 from dataset.gta5_dataset import GTA5DataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
 
@@ -95,80 +99,14 @@ def get_config(config):
     with open(config, 'r') as stream:
         return yaml.load(stream)
 
+def open_Image(path):
+    return Image.open(path)
 
 def eformat(f, prec):
     s = "%.*e"%(prec, f)
     mantissa, exp = s.split('e')
     # add 1 to digits as 1 is taken by sign +/-
     return "%se%d"%(mantissa, int(exp))
-
-
-def __write_images(image_outputs, display_image_num, file_name):
-    image_outputs = [images.expand(-1, 3, -1, -1) for images in image_outputs] # expand gray-scale images to 3 channels
-    image_tensor = torch.cat([images[:display_image_num] for images in image_outputs], 0)
-    image_grid = vutils.make_grid(image_tensor.data, nrow=display_image_num, padding=0, normalize=True)
-    vutils.save_image(image_grid, file_name, nrow=1)
-
-
-def write_2images(image_outputs, display_image_num, image_directory, postfix):
-    n = len(image_outputs)
-    __write_images(image_outputs[0:n//2], display_image_num, '%s/gen_a2b_%s.jpg' % (image_directory, postfix))
-    __write_images(image_outputs[n//2:n], display_image_num, '%s/gen_b2a_%s.jpg' % (image_directory, postfix))
-
-
-def prepare_sub_folder(output_directory):
-    image_directory = os.path.join(output_directory, 'images')
-    if not os.path.exists(image_directory):
-        print("Creating directory: {}".format(image_directory))
-        os.makedirs(image_directory)
-    checkpoint_directory = os.path.join(output_directory, 'checkpoints')
-    if not os.path.exists(checkpoint_directory):
-        print("Creating directory: {}".format(checkpoint_directory))
-        os.makedirs(checkpoint_directory)
-    return checkpoint_directory, image_directory
-
-
-def write_one_row_html(html_file, iterations, img_filename, all_size):
-    html_file.write("<h3>iteration [%d] (%s)</h3>" % (iterations,img_filename.split('/')[-1]))
-    html_file.write("""
-        <p><a href="%s">
-          <img src="%s" style="width:%dpx">
-        </a><br>
-        <p>
-        """ % (img_filename, img_filename, all_size))
-    return
-
-
-def write_html(filename, iterations, image_save_iterations, image_directory, all_size=1536):
-    html_file = open(filename, "w")
-    html_file.write('''
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Experiment name = %s</title>
-      <meta http-equiv="refresh" content="30">
-    </head>
-    <body>
-    ''' % os.path.basename(filename))
-    html_file.write("<h3>current</h3>")
-    write_one_row_html(html_file, iterations, '%s/gen_a2b_train_current.jpg' % (image_directory), all_size)
-    write_one_row_html(html_file, iterations, '%s/gen_b2a_train_current.jpg' % (image_directory), all_size)
-    for j in range(iterations, image_save_iterations-1, -1):
-        if j % image_save_iterations == 0:
-            write_one_row_html(html_file, j, '%s/gen_a2b_test_%08d.jpg' % (image_directory, j), all_size)
-            write_one_row_html(html_file, j, '%s/gen_b2a_test_%08d.jpg' % (image_directory, j), all_size)
-            write_one_row_html(html_file, j, '%s/gen_a2b_train_%08d.jpg' % (image_directory, j), all_size)
-            write_one_row_html(html_file, j, '%s/gen_b2a_train_%08d.jpg' % (image_directory, j), all_size)
-    html_file.write("</body></html>")
-    html_file.close()
-
-
-def write_loss(iterations, trainer, train_writer):
-    members = [attr for attr in dir(trainer) \
-               if not callable(getattr(trainer, attr)) and not attr.startswith("__") and ('loss' in attr or 'grad' in attr or 'nwd' in attr)]
-    for m in members:
-        train_writer.add_scalar(m, getattr(trainer, m), iterations + 1)
-
 
 
 def slerp(val, low, high):
@@ -198,50 +136,6 @@ def get_slerp_interp(nb_latents, nb_interp, z_dim):
         latent_interps = np.vstack((latent_interps, latent_interp))
 
     return latent_interps[:, :, np.newaxis, np.newaxis]
-
-
-# Get model list for resume
-def get_model_list(dirname, key):
-    if os.path.exists(dirname) is False:
-        return None
-    gen_models = [os.path.join(dirname, f) for f in os.listdir(dirname) if
-                  os.path.isfile(os.path.join(dirname, f)) and key in f and ".pt" in f]
-    if gen_models is None:
-        return None
-    gen_models.sort()
-    last_model_name = gen_models[-1]
-    return last_model_name
-
-
-# def load_vgg16(model_dir):
-#     """ Use the model from https://github.com/abhiskk/fast-neural-style/blob/master/neural_style/utils.py """
-#     if not os.path.exists(model_dir):
-#         os.mkdir(model_dir)
-#     if not os.path.exists(os.path.join(model_dir, 'vgg16.weight')):
-#         if not os.path.exists(os.path.join(model_dir, 'vgg16.t7')):
-#             os.system('wget https://www.dropbox.com/s/76l3rt4kyi3s8x7/vgg16.t7?dl=1 -O ' + os.path.join(model_dir, 'vgg16.t7'))
-#         vgglua = load_lua(os.path.join(model_dir, 'vgg16.t7'))
-#         vgg = Vgg16()
-#         for (src, dst) in zip(vgglua.parameters()[0], vgg.parameters()):
-#             dst.data[:] = src
-#         torch.save(vgg.state_dict(), os.path.join(model_dir, 'vgg16.weight'))
-#     vgg = Vgg16()
-#     vgg.load_state_dict(torch.load(os.path.join(model_dir, 'vgg16.weight')))
-#     return vgg
-
-
-def vgg_preprocess(batch):
-    tensortype = type(batch.data)
-    (r, g, b) = torch.chunk(batch, 3, dim = 1)
-    batch = torch.cat((b, g, r), dim = 1) # convert RGB to BGR
-    batch = (batch + 1) * 255 * 0.5 # [-1, 1] -> [0, 255]
-    mean = tensortype(batch.data.size())
-    mean[:, 0, :, :] = 103.939
-    mean[:, 1, :, :] = 116.779
-    mean[:, 2, :, :] = 123.680
-    batch = batch.sub(Variable(mean)) # subtract mean
-    return batch
-
 
 def get_scheduler(optimizer, hyperparameters, iterations=-1):
     if 'lr_policy' not in hyperparameters or hyperparameters['lr_policy'] == 'constant':
@@ -276,3 +170,66 @@ def weights_init(init_type='gaussian'):
 
     return init_fun
 
+# Converts a Tensor into a Numpy array
+# |imtype|: the desired type of the converted numpy array
+def tensor2im(image_tensor, imtype=np.uint8, normalize=True):
+    if isinstance(image_tensor, list):
+        image_numpy = []
+        for i in range(len(image_tensor)):
+            image_numpy.append(tensor2im(image_tensor[i], imtype, normalize))
+        return image_numpy
+    image_numpy = image_tensor.cpu().float().numpy()
+    if normalize:
+        image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
+    else:
+        image_numpy = np.transpose(image_numpy, (1, 2, 0)) * 255.0
+    image_numpy = np.clip(image_numpy, 0, 255)
+    if image_numpy.shape[2] == 1 or image_numpy.shape[2] > 3:
+        image_numpy = image_numpy[:,:,0]
+    return image_numpy.astype(imtype)
+
+
+def save_image(image_numpy, image_path):
+    image_pil = Image.fromarray(image_numpy)
+    image_pil.save(image_path)
+
+def paint_predict_image_np(predict_image):
+   return np.asarray(paint_predict_image(predict_image))
+
+def paint_predict_image(predict_image):
+    """input model's output image it will paint color """
+    # ===============for colorize mask==============
+    palette = [128, 64, 128, 244, 35, 232, 70, 70, 70, 102, 102, 156, 190, 153, 153, 153, 153, 153, 250, 170, 30,
+               220, 220, 0, 107, 142, 35, 152, 251, 152, 70, 130, 180, 220, 20, 60, 255, 0, 0, 0, 0, 142, 0, 0, 70,
+               0, 60, 100, 0, 80, 100, 0, 0, 230, 119, 11, 32]
+    zero_pad = 256 * 3 - len(palette)
+    for i in range(zero_pad):
+        palette.append(0)
+
+    def colorize_mask(mask):
+        # mask: numpy array of the mask
+        new_mask = Image.fromarray(mask.astype(np.uint8)).convert('P')
+        new_mask.putpalette(palette)
+
+        return new_mask
+
+    def output_to_image(output):
+        # input
+        # ------------------
+        #   G's output feature map :(c, w, h, num_classes)
+        #
+        #
+        # output
+        # ------------------
+        #   output_color : PIL Image paint segmentaion color (1024, 2048)
+        #
+        #
+        interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
+        output = interp(output).permute(0, 2, 3, 1)
+        _, output = torch.max(output, -1)
+        output = output.cpu().data[0].numpy().astype(np.uint8)
+        output_color = colorize_mask(output)
+
+        return output_color
+
+    return output_to_image(predict_image)

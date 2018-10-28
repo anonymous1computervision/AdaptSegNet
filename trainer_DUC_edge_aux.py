@@ -21,6 +21,7 @@ from model.sp_discriminator import SP_FCDiscriminator
 from model.gated_discriminator import Gated_Discriminator
 
 from util.loss import CrossEntropy2d
+from util.util import paint_predict_image
 
 class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
     def __init__(self, hyperparameters):
@@ -451,15 +452,22 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         # "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_D1 = {4:.3f} loss_D1_attn = {5:.3f}".format(
         #     self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
         #     float(self.loss_d_value), self.loss_d_attn_value))
-        print(
-            "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_adv_foreground = {4:.5f}  loss_D1 = {5:.3f} loss_D1_foreground = {6:.3f}".format(
-                self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
-                float(self.loss_target_foreground_value), float(self.loss_d_value), float(self.loss_d_foreground_value)))
+        # print(
+        #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_adv_foreground = {4:.5f}  loss_D1 = {5:.3f} loss_D1_foreground = {6:.3f}".format(
+        #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
+        #         float(self.loss_target_foreground_value), float(self.loss_d_value), float(self.loss_d_foreground_value)))
 
         # print(
         #     "trainer - iter = {0:8d}/{1:8d}, loss_G_source_1 = {2:.3f} loss_G_adv1 = {3:.5f} loss_G_weakly_seg = {4:.5f} loss_D1 = {5:.3f} loss_D1_attn = {6:.3f}".format(
         #         self.i_iter, self.num_steps, self.loss_source_value, float(self.loss_target_value),
         #         float(self.loss_target_weakly_seg_value), float(self.loss_d_value), self.loss_d_attn_value))
+
+        message = '(epoch: %d, iters: %d, ) ' % (self.i_iter, self.num_steps)
+        for k, v in self.loss_dict.items():
+            if v != 0:
+                message += '%s: %.5f ' % (k, v)
+
+        print(message)
 
     def pred_get_edges(self, t):
         pred = F.softmax(t)
@@ -830,41 +838,3 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         image = pilTrans(tensor.cpu().squeeze(0))
         return image
 
-
-def paint_predict_image(predict_image):
-    """input model's output image it will paint color """
-    # ===============for colorize mask==============
-    palette = [128, 64, 128, 244, 35, 232, 70, 70, 70, 102, 102, 156, 190, 153, 153, 153, 153, 153, 250, 170, 30,
-               220, 220, 0, 107, 142, 35, 152, 251, 152, 70, 130, 180, 220, 20, 60, 255, 0, 0, 0, 0, 142, 0, 0, 70,
-               0, 60, 100, 0, 80, 100, 0, 0, 230, 119, 11, 32]
-    zero_pad = 256 * 3 - len(palette)
-    for i in range(zero_pad):
-        palette.append(0)
-
-    def colorize_mask(mask):
-        # mask: numpy array of the mask
-        new_mask = Image.fromarray(mask.astype(np.uint8)).convert('P')
-        new_mask.putpalette(palette)
-
-        return new_mask
-
-    def output_to_image(output):
-        # input
-        # ------------------
-        #   G's output feature map :(c, w, h, num_classes)
-        #
-        #
-        # output
-        # ------------------
-        #   output_color : PIL Image paint segmentaion color (1024, 2048)
-        #
-        #
-        interp = nn.Upsample(size=(1024, 2048), mode='bilinear')
-        output = interp(output).permute(0, 2, 3, 1)
-        _, output = torch.max(output, -1)
-        output = output.cpu().data[0].numpy().astype(np.uint8)
-        output_color = colorize_mask(output)
-
-        return output_color
-
-    return output_to_image(predict_image)

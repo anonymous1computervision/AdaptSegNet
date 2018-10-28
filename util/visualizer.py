@@ -5,6 +5,9 @@ import numpy as np
 import os
 import ntpath
 import time
+import shutil
+from PIL import Image
+
 from . import util
 from . import html
 import scipy.misc
@@ -39,10 +42,56 @@ class Visualizer():
             now = time.strftime("%c")
             log_file.write('================ Training Loss (%s) ================\n' % now)
 
+    def display_current_results_by_path(self, image_paths, epoch, step=50):
+        if self.use_html:
+            # save images to a html file
+            if self.tf_log:  # show images in tensorboard output
+                img_summaries = []
+                for label, path in image_paths.items():
+                    if isinstance(path, list):
+                        for i in range(len(path)):
+                            img_path = os.path.join(self.img_dir, 'epoch%.3d_%s_%d.jpg' % (epoch, label, i))
+                            shutil.copyfile(path[i], img_path)
+                    else:
+                        img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.jpg' % (epoch, label))
+                        shutil.copyfile(path, img_path)
+
+            # update website
+            webpage = html.HTML(self.web_dir, 'Experiment name = %s' % self.name, refresh=30)
+            # contain 0 epoch
+            for n in range(epoch, -step, -step):
+                webpage.add_header('epoch [%d]' % n)
+                ims = []
+                txts = []
+                links = []
+
+                for label, image_path in image_paths.items():
+                    assert isinstance(image_path, str)
+                    img_path = 'epoch%.3d_%s.jpg' % (n, label)
+                    ims.append(img_path)
+                    txts.append(label)
+                    links.append(img_path)
+                if len(ims) < 10:
+                    webpage.add_images(ims, txts, links, width=self.win_size)
+                else:
+                    num = int(round(len(ims)/2.0))
+                    webpage.add_images(ims[:num], txts[:num], links[:num], width=self.win_size)
+                    webpage.add_images(ims[num:], txts[num:], links[num:], width=self.win_size)
+            webpage.save()
+
     # |visuals|: dictionary of images to display or save
     def display_current_results(self, visuals, epoch, step):
         if self.tf_log: # show images in tensorboard output
             img_summaries = []
+            for label, image_numpy in visuals.items():
+                if isinstance(image_numpy, list):
+                    for i in range(len(image_numpy)):
+                        img_path = os.path.join(self.img_dir, 'epoch%.3d_%s_%d.jpg' % (epoch, label, i))
+                        util.save_image(image_numpy[i], img_path)
+                else:
+                    img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.jpg' % (epoch, label))
+                    util.save_image(image_numpy, img_path)
+
             for label, image_numpy in visuals.items():
                 # Write the image to a string
                 try:

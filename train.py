@@ -12,12 +12,15 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 
 import os
 import time
+from collections import OrderedDict
+
 import pdb
 
 import torch
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 
+import util
 from trainer import AdaptSeg_Trainer
 from attn_trainer import AdaptSeg_Attn_Trainer
 from mini_trainer import Mini_AdaptSeg_Trainer
@@ -27,9 +30,10 @@ from trainer_edge_aux_sn import AdaptSeg_Edge_Aux_SN_Trainer
 from trainer_edge_aux_deeplab_v3 import AdaptSeg_Edge_Aux_v3_Trainer
 from trainer_PSP_edge_aux import AdaptSeg_PSP_Edge_Aux_Trainer
 from trainer_DUC_edge_aux import AdaptSeg_DUC_Edge_Aux_Trainer
-from util.util import get_all_data_loaders, get_config
+from util.util import get_all_data_loaders, get_config, tensor2im, paint_predict_image, paint_predict_image_np
 from util.visualizer import Visualizer
 from test_iou import output_to_image, compute_mIoU, get_test_mini_set
+
 
 def main():
 
@@ -161,7 +165,9 @@ def main():
     # train_only_src = True
     # Start training
     # set visualizer [tensorboard/html]
-    visualizer = Visualizer(config)
+
+    if config["visualizer"]:
+        visualizer = Visualizer(config)
 
     while True:
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
@@ -184,7 +190,7 @@ def main():
             # print("get source labels shape", labels.shape)
             src_images = Variable(src_images).cuda(gpu)
             trainer.gen_source_update(src_images, labels, names)
-            del src_images
+            # del src_images
             # torch.cuda.empty_cache()
 
             # train G use target image
@@ -195,7 +201,7 @@ def main():
             trainer.gen_target_update(target_images, target_name)
             # trainer.gen_target_foreground_update(target_images, target_name)
 
-            del target_images
+            # del target_images
             # torch.cuda.empty_cache()
 
             # train discriminator use prior generator image
@@ -206,18 +212,43 @@ def main():
 
             # train G use weakly label
             # trainer.gen_weakly_update(target_images, target_name)
-            t = (time.time() - iter_start_time)
-            visualizer.print_current_errors(i_iter, num_steps, trainer.loss_dict, t)
 
             # show log
-            # trainer.show_each_loss()
+            t = (time.time() - iter_start_time)
+            if config["visualizer"]:
+                visualizer.print_current_errors(i_iter, num_steps, trainer.loss_dict, t)
+            else:
+                trainer.show_each_loss()
 
 
-            # save image to check
+            ### display output images
             if i_iter % image_save_iter == 0:
                 print("image_save_dir", image_save_dir)
                 trainer.snapshot_image_save(dir_name=image_save_dir)
                 trainer.snapshot_edge_save(dir_name=image_save_dir, labels=labels)
+
+                if config["visualizer"]:
+                    # tf_board loss visualization
+                    # visualizer.plot_current_errors(trainer.loss_dict, i_iter)
+                    # tf_board loss visualization
+                    
+                    checkoutput_dir = config["image_save_dir"]
+                    source_input_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_input.png' % i_iter)
+                    source_label_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_label.png' % i_iter)
+                    source_output_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s.png' % i_iter)
+                    source_edge_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_edge.png' % i_iter)
+                    target_input_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_input.png' % i_iter)
+                    target_output_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s.png' % i_iter)
+                    target_edge_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_edge.png' % i_iter)
+
+                    visuals = OrderedDict([('source_input', source_input_path),
+                                           ('source_label', source_label_path),
+                                           ('source_output', source_output_path),
+                                           ('source_edge', source_edge_path),
+                                           ('target_input', target_input_path),
+                                           ('target_output', target_output_path),
+                                           ('target_edge', target_edge_path)])
+                    visualizer.display_current_results_by_path(visuals, i_iter, step=image_save_iter)
 
             # save checkpoint .pth
             if i_iter % snapshot_save_iter == 0:
