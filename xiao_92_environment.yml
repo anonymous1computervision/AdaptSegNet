@@ -9,6 +9,3 @@ dependencies:
   - matplotlib
   - pyyaml
   - dominate
-  
-prefix: C:\Users\VIPLAB\Anaconda3\envs\xiao
-
