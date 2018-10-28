@@ -31,6 +31,7 @@ from trainer_edge_aux import AdaptSeg_Edge_Aux_Trainer
 from trainer_edge_aux_sn import AdaptSeg_Edge_Aux_SN_Trainer
 from trainer_edge_aux_deeplab_v3 import AdaptSeg_Edge_Aux_v3_Trainer
 from trainer_PSP_edge_aux import AdaptSeg_PSP_Edge_Aux_Trainer
+from trainer_DUC_edge_aux import AdaptSeg_DUC_Edge_Aux_Trainer
 
 from trainer_scratch_gen import DeepLab_Scratch_Trainer
 from dense_trainer import DenseSeg_Trainer
@@ -53,10 +54,11 @@ def main():
     # CONFIG_PATH = "./configs/default-in.yaml"
     # CONFIG_PATH = "./configs/default_edge.yaml"
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
-    # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
+    CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_PSPNet_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR_D_beta.yaml"
-    CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
+    # CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
+    # CONFIG_PATH = "./configs/default_DUC.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_SN_TTUR.yaml"
 
@@ -125,10 +127,16 @@ def main():
         print("use PSPNet")
         print("use PSPNet")
         trainer = AdaptSeg_PSP_Edge_Aux_Trainer(config)
+    elif config["model"] == "DUC_Edge":
+        print("use DUC_Edge")
+        print("use DUC_Edge")
+        print("use DUC_Edge")
+        trainer = AdaptSeg_DUC_Edge_Aux_Trainer(config)
     else:
         trainer = AdaptSeg_Trainer(config)
 
     # todo: remove this line without dev version
+    # assert config["model"] == "DeepLabEdge"
     assert config["model"] == "DeepLabEdge"
 
     # trainer.cuda(gpu)
@@ -159,10 +167,11 @@ def main():
     while True:
         for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
             # if memory issue can clear cache
-            torch.cuda.empty_cache()
+            # torch.cuda.empty_cache()
             trainer.init_each_epoch(i_iter)
             # todo:scratch train so temporally out comment
             trainer.update_learning_rate()
+            torch.cuda.empty_cache()
 
             # ====================== #
             #   Main training code   #
@@ -192,6 +201,7 @@ def main():
             trainer.dis_update(labels=labels)
             # trainer.dis_foreground_update(labels=labels)
 
+            torch.cuda.empty_cache()
 
             # train G use weakly label
             # trainer.gen_weakly_update(target_images, target_name)

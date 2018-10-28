@@ -1,16 +1,16 @@
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
-from torch.nn.utils import spectral_norm
-
 import numpy as np
 
-from .networks import Self_Attn
+# from .networks import Self_Attn
 # from .networks import SpectralNorm
 
 affine_par = True
 
-
+'''
+heavily copy from
+https://github.com/zijundeng/pytorch-semantic-segmentation/blob/master/models/duc_hdc.py
+'''
 def outS(i):
     i = int(i)
     i = (i + 1) / 2
@@ -23,6 +23,24 @@ def conv3x3(in_planes, out_planes, stride=1):
     "3x3 convolution with padding"
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
+class _DenseUpsamplingConvModule(nn.Module):
+    def __init__(self, down_factor, in_dim, num_classes):
+        super(_DenseUpsamplingConvModule, self).__init__()
+        upsample_dim = (down_factor ** 2) * num_classes
+        self.conv = nn.Conv2d(in_dim, upsample_dim, kernel_size=3, padding=1)
+        self.bn = nn.BatchNorm2d(upsample_dim)
+        self.relu = nn.ReLU(inplace=True)
+        self.pixel_shuffle = nn.PixelShuffle(down_factor)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        x = self.pixel_shuffle(x)
+        return x
+
+
+
 
 
 class BasicBlock(nn.Module):
@@ -137,29 +155,47 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
-        # layer 5 for edge
-        # self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], 1)
-        # self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], 1)
 
-        self.layer5 = []
-        self.layer5 += [spectral_norm(nn.Conv2d(1024, 256, kernel_size=1, stride=1, padding=0))]
-        self.layer5 += [nn.ReLU(inplace=True)]
-        # self.layer5 += [Self_Attn(256, 'relu')]
-        self.layer5 += [nn.Conv2d(256, 1, kernel_size=1, stride=1, padding=0)]
-        self.layer5 = nn.Sequential(*self.layer5)
+        for n, m in self.layer3.named_modules():
+            if 'conv2' in n or 'downsample.0' in n:
+                m.stride = (1, 1)
+        for n, m in self.layer4.named_modules():
+            if 'conv2' in n or 'downsample.0' in n:
+                m.stride = (1, 1)
+        layer3_group_config = [1, 2, 5, 9]
+        for idx in range(len(self.layer3)):
+            self.layer3[idx].conv2.dilation = (layer3_group_config[idx % 4], layer3_group_config[idx % 4])
+            self.layer3[idx].conv2.padding = (layer3_group_config[idx % 4], layer3_group_config[idx % 4])
+        layer4_group_config = [5, 9, 17]
+        for idx in range(len(self.layer4)):
+            self.layer4[idx].conv2.dilation = (layer4_group_config[idx], layer4_group_config[idx])
+            self.layer4[idx].conv2.padding = (layer4_group_config[idx], layer4_group_config[idx])
+
+        # self.duc = _DenseUpsamplingConvModule(8, 2048, num_classes)
+
+
+        # layer 5 for edge
+        self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], 1)
+        # self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18], [6, 12, 18], 1)
+
+        # self.layer5 = _DenseUpsamplingConvModule(8, 1024, num_classes)
+
+        # self.layer5 = []
+        # self.model_block += [SpectralNorm(nn.Conv2d(1024, 256, kernel_size=1, stride=1, padding=0)]
+        # self.layer5 += [Self_Attn(1024, 'relu')]
+        # self.layer5 += [nn.Conv2d(1024, 1, kernel_size=1, stride=1, padding=0)]
+        # self.layer5 = nn.Sequential(*self.layer5)
 
 
         # self.layer5 = nn.Sequential(
         #                 nn.Conv2d(1024, 512, kernel_size=3, padding=1, dilation=1),
-        #                 nn.ReLU(inplace=True),
+        #                 nn.ReLU(),
         #                 nn.Conv2d(512, 512, kernel_size=3, padding=1, dilation=1),
-        #                 nn.ReLU(inplace=True),
+        #                 nn.ReLU(),
         #                 nn.Conv2d(512, 1, kernel_size=1, padding=0, dilation=1))
         # self.attn2 = Self_Attn(19, 'relu')
         # self.layer6 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
-        # self.layer6 = self._make_pred_layer(PSPClassifier, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
-        self.layer6 = PSPClassifier(n_classes=num_classes, sizes=(1, 2, 3, 6), psp_size=2048, deep_features_size=1024)
-
+        self.layer6 = _DenseUpsamplingConvModule(8, 2048, num_classes)
         # self.layer6 = self._make_pred_layer(Classifier_Module, 2049, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
 
 
@@ -201,27 +237,25 @@ class ResNet(nn.Module):
         x = self.layer1(x)
         x = self.layer2(x)
 
-        x3 = self.layer3(x)
+        x = self.layer3(x)
 
         # layer 5 for edge
-        edge = self.layer5(x3)
+        auxiliary = self.layer5(x)
         # print("aux shape", auxiliary.shape)
-        x = self.layer4(x3)
+        x = self.layer4(x)
         # print("x shape", x.shape)
         # todo:try constraint
         # x = torch.cat((x, auxiliary), dim=1)
 
         # x = self.attn2(x)
-        # print("x3 shape", x3.shape)
-
-        out, aux_cls_out = self.layer6(x, x3)
+        out = self.layer6(x)
         # out = self.attn2(out)
 
         # attention_mask, _ =self.attn1(x)
         # attention_mask = self.deconv(attention_mask)
         # auxiliary = attention_mask * auxiliary
 
-        return out, edge, aux_cls_out
+        return out, auxiliary
     def get_1x_lr_params_NOscale(self):
         """
         This generator returns all the parameters of the net except for
@@ -274,81 +308,3 @@ def Res_Deeplab(num_classes=21):
     model = ResNet(Bottleneck, [3, 4, 23, 3], num_classes)
     return model
 
-class PSPModule(nn.Module):
-    def __init__(self, features, out_features=1024, sizes=(1, 2, 3, 6)):
-        super().__init__()
-        self.stages = []
-        self.stages = nn.ModuleList([self._make_stage(features, size) for size in sizes])
-        self.bottleneck = nn.Conv2d(features * (len(sizes) + 1), out_features, kernel_size=1)
-        self.relu = nn.ReLU()
-
-    def _make_stage(self, features, size):
-        prior = nn.AdaptiveAvgPool2d(output_size=(size, size))
-        conv = nn.Conv2d(features, features, kernel_size=1, bias=False)
-        return nn.Sequential(prior, conv)
-
-    def forward(self, feats):
-        h, w = feats.size(2), feats.size(3)
-        priors = [F.upsample(input=stage(feats), size=(h, w), mode='bilinear') for stage in self.stages] + [feats]
-        bottle = self.bottleneck(torch.cat(priors, 1))
-        return self.relu(bottle)
-
-
-class PSPUpsample(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            nn.PReLU()
-        )
-
-    def forward(self, x):
-        h, w = 2 * x.size(2), 2 * x.size(3)
-        p = F.upsample(input=x, size=(h, w), mode='bilinear')
-        return self.conv(p)
-
-
-class PSPClassifier(nn.Module):
-    def __init__(self, n_classes=18, sizes=(1, 2, 3, 6), psp_size=2048, deep_features_size=1024, backend='resnet34',
-                 pretrained=True):
-        super().__init__()
-        # self.feats = getattr(extractors, backend)(pretrained)
-        self.psp = PSPModule(psp_size, 1024, sizes)
-        self.drop_1 = nn.Dropout2d(p=0.3)
-
-        self.up_1 = PSPUpsample(1024, 256)
-        self.up_2 = PSPUpsample(256, 64)
-        self.up_3 = PSPUpsample(64, 64)
-
-        self.drop_2 = nn.Dropout2d(p=0.15)
-        self.final = nn.Sequential(
-            nn.Conv2d(64, n_classes, kernel_size=1),
-            nn.LogSoftmax()
-        )
-
-        self.classifier = nn.Sequential(
-            nn.Linear(deep_features_size, 256),
-            nn.ReLU(),
-            nn.Linear(256, n_classes)
-        )
-
-    # def forward(self, x):
-    def forward(self, f, class_f):
-        # f:ResNet layer4 # class_f:ResNet layer3
-        # f, class_f = self.feats(x)
-        p = self.psp(f)
-        p = self.drop_1(p)
-
-        p = self.up_1(p)
-        p = self.drop_2(p)
-
-        p = self.up_2(p)
-        p = self.drop_2(p)
-
-        p = self.up_3(p)
-        p = self.drop_2(p)
-
-        auxiliary = F.adaptive_max_pool2d(input=class_f, output_size=(1, 1)).view(-1, class_f.size(1))
-
-        return self.final(p), self.classifier(auxiliary)

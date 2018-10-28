@@ -11,13 +11,14 @@ import torch
 import torch.nn as nn
 from torch.utils import model_zoo
 import torchvision.transforms as transforms
-
+from torch.utils.checkpoint import checkpoint_sequential
 import numpy as np
 from PIL import Image
 
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
 from model.deeplab_single_add_edge import Res_Deeplab as Res_Deeplab_Edge
+from model.ResNet_DUC_add_edge import Res_Deeplab as DUC_Edge
 
 from model.deeplav_v3_xception import DeepLabv3_plus
 
@@ -41,9 +42,9 @@ from model.sp_aspp_discriminator import SP_ASPP_FCDiscriminator
 from utils.loss import CrossEntropy2d
 
 
-class AdaptSeg_Edge_Aux_Trainer(nn.Module):
+class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
     def __init__(self, hyperparameters):
-        super(AdaptSeg_Edge_Aux_Trainer, self).__init__()
+        super(AdaptSeg_DUC_Edge_Aux_Trainer, self).__init__()
         self.hyperparameters = hyperparameters
         # input size setting
         self.input_size = (hyperparameters["input_size_h"], hyperparameters["input_size_w"])
@@ -60,28 +61,15 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         cudnn.benchmark = True
 
         # todo: remove this line without dev version
-        assert hyperparameters["model"] == 'DeepLabEdge', True
+        assert hyperparameters["model"] == 'DUC_Edge'
 
         # init G
-        if hyperparameters["model"] == 'DeepLab':
-            self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
-        elif hyperparameters["model"] == 'FC-DenseNet':
-            self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
-            print("use fc densenet model")
-        elif hyperparameters["model"] == 'DeepLabEdge':
-            self.model = Res_Deeplab_Edge(num_classes=hyperparameters["num_classes"])
-            print("use DeepLabEdge model")
-        elif hyperparameters["model"] == 'DeepLab_v3_plus':
-            self.model = DeepLabv3_plus(nInputChannels=3,
-                                        n_classes=hyperparameters['num_classes'],
-                                        pretrained=True,
-                                        _print=True)
-            print("use DeepLab_v3_plus model")
+        self.model = DUC_Edge(num_classes=hyperparameters["num_classes"])
+
+
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = SP_ASPP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-
+        self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
         # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
@@ -229,6 +217,12 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # get predict output
         pred_source_real, pred_source_edge = self.model(images)
 
+        # Original:
+        # out = self.my_block(inp1.inp2.inp)
+
+        # With checkpointing:
+        # pred_source_real, pred_source_edge = checkpoint_sequential(self.model, 2,images)
+
         # resize to source size
         interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
         pred_source_real = interp(pred_source_real)
@@ -255,6 +249,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
                              self.get_foreground_attention(
                                  labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
         # proper normalization
+        # seg_loss = self.lambda_seg * seg_loss
         seg_loss = self.lambda_seg * seg_loss + self.lambda_adv_edge * attn_loss
         # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
         seg_loss.backward()
@@ -272,7 +267,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # record log
         self.loss_source_value += seg_loss.data.cpu().numpy()
         # self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
-        self.loss_edge_value += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
+        # self.loss_edge_value += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
 
     def gen_target_update(self, images, image_path):
         """
