@@ -54,7 +54,9 @@ def main():
     # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_PSPNet_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR_D_beta.yaml"
-    CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
+    # CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
+    CONFIG_PATH = "./configs/default_decay_beta.yaml"
+
     # CONFIG_PATH = "./configs/default_DUC.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_SN_TTUR.yaml"

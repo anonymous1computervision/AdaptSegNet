@@ -329,7 +329,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # adv_loss = self.loss_hinge_gen(d_out_fake) + 0.5 * loss_adv_foreground
         # adv_loss = self.loss_hinge_gen(d_out_fake) + loss_adv_foreground
         # adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
-        adv_loss = self.loss_hinge_gen(d_out_fake) + 5*loss_adv_foreground
+        adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
 
 
         # todo: self attn loss
@@ -414,7 +414,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # adv_loss = self.loss_hinge_gen(d_out_fake) + 0.5 * loss_adv_foreground
         # adv_loss = self.loss_hinge_gen(d_out_fake) + loss_adv_foreground
         # adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
-        adv_loss = self.loss_hinge_gen(d_out_fake) + 5*loss_adv_foreground
+        adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
 
 
 
