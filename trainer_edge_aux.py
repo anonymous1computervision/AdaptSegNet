@@ -365,7 +365,82 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         self.loss_dict['Global_GAN_adv'] += loss_adv_foreground.data.cpu().numpy()
         self.loss_dict['Foreground_GAN_adv'] += loss.data.cpu().numpy()
+    def gen_target_update_clamp(self, images, image_path):
+        """
+                 Input target domain image and compute adversarial loss.
 
+                :param images:
+                :param image_path: just for save path to record model predict, use in  snapshot_image_save function
+                :return:
+                """
+
+        self.optimizer_G.zero_grad()
+
+        # Disable D backpropgation, we only train G
+        for param in self.model_D.parameters():
+            param.requires_grad = False
+
+        for param in self.model_D_foreground.parameters():
+            param.requires_grad = False
+
+        # get predict output
+        pred_target_fake, pred_target_edge = self.model(images)
+
+        # resize to target size
+        interp_target = nn.Upsample(size=self.input_size_target, align_corners=False,
+                                    mode='bilinear')
+        pred_target_fake = interp_target(pred_target_fake)
+
+        pred_target_edge = interp_target(pred_target_edge)
+
+
+        net_input = F.softmax(pred_target_fake, dim=1)
+
+        # foreground is 1
+        # let foreground focus on confused part
+        # if we know it is car, then we focus on bus part
+        d_out_fake, _ = self.model_D(net_input, label=None)
+
+        threshold = 0.5
+        threshold_edge = nn.Sigmoid()(pred_target_edge).detach()
+        threshold_edge[threshold_edge < threshold] = 0
+        d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=threshold_edge)
+
+        # compute loss function
+        # wants to fool discriminator
+        # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
+        # adv_loss = self.loss_hinge_gen(d_out_fake)
+        loss_adv_foreground = self.loss_hinge_gen(d_out_foreground_fake)
+        # adv_loss = self.loss_hinge_gen(d_out_fake) + 0.5 * loss_adv_foreground
+        # adv_loss = self.loss_hinge_gen(d_out_fake) + loss_adv_foreground
+        # adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
+        adv_loss = self.loss_hinge_gen(d_out_fake) + 5*loss_adv_foreground
+
+
+
+        # in target domain compute edge loss - weakly constraint
+        # edge_loss = self._compute_edge_loss(pred_target_edge, self.channel_to_label(F.softmax(pred_target_fake)))
+        loss = self.lambda_adv_target * adv_loss
+        # loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * edge_loss
+        # loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * attn_loss
+        loss.backward()
+
+        # update loss
+        self.optimizer_G.step()
+
+        # save image for discriminator use
+        self.target_image = pred_target_fake.detach()
+        # self.pred_fake_edge = F.sigmoid(pred_target_edge).detach()
+
+        # self.pred_fake_edge = pred_target_edge.detach()
+        self.target_input_image = images.detach()
+
+        # record log
+        self.loss_target_foreground_value += loss_adv_foreground.data.cpu().numpy()
+        self.loss_target_value += loss.data.cpu().numpy()
+
+        self.loss_dict['Global_GAN_adv'] += loss_adv_foreground.data.cpu().numpy()
+        self.loss_dict['Foreground_GAN_adv'] += loss.data.cpu().numpy()
     def dis_update(self, labels=None):
         """
                 use [gen_source_update / gen_target_update]'s image to discriminator,

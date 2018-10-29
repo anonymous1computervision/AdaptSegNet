@@ -199,6 +199,8 @@ def main():
             #trainer.gen_target_and_foreground_update(target_images, target_name)
 
             trainer.gen_target_update(target_images, target_name)
+            trainer.gen_target_update_clamp(target_images, target_name)
+
             # trainer.gen_target_foreground_update(target_images, target_name)
 
             # del target_images
