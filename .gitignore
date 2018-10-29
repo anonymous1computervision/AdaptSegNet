@@ -1,9 +1,8 @@
 *.pyc
 *.pth
-*.png
-*.jpg
-/lables
 /data
+/labels
+/my_test_img
 /check_output
 /result
 /result_multi
