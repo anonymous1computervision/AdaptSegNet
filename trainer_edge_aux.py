@@ -392,6 +392,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         pred_target_fake = interp_target(pred_target_fake)
 
         pred_target_edge = interp_target(pred_target_edge)
+        self.pred_fake_edge = nn.Sigmoid()(pred_target_edge).detach()
 
 
         net_input = F.softmax(pred_target_fake, dim=1)
