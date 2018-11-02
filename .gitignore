@@ -2,6 +2,7 @@
 *.pth
 /data
 /labels
+/web
 /my_test_img
 /check_output
 /result

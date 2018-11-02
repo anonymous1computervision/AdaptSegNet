@@ -27,7 +27,7 @@ from mini_trainer import Mini_AdaptSeg_Trainer
 from in_trainer import AdaptSeg_IN_Trainer
 from trainer_edge_aux import AdaptSeg_Edge_Aux_Trainer
 from trainer_edge_aux_sn import AdaptSeg_Edge_Aux_SN_Trainer
-from trainer_edge_aux_deeplab_v3 import AdaptSeg_Edge_Aux_v3_Trainer
+from trainer_edge_aux_deeplab_v3 import AdaptSeg_Deeplabv3_Edge_Aux_Trainer
 from trainer_PSP_edge_aux import AdaptSeg_PSP_Edge_Aux_Trainer
 from trainer_DUC_edge_aux import AdaptSeg_DUC_Edge_Aux_Trainer
 from util.util import get_all_data_loaders, get_config, tensor2im, paint_predict_image, paint_predict_image_np
@@ -55,8 +55,8 @@ def main():
     # CONFIG_PATH = "./configs/default_PSPNet_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR_D_beta.yaml"
     # CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
-    CONFIG_PATH = "./configs/default_decay_beta.yaml"
-
+    # CONFIG_PATH = "./configs/default_DUC_decay_beta.yaml"
+    CONFIG_PATH = "./configs/Deeplab_v3_plus_10000.yaml"
     # CONFIG_PATH = "./configs/default_DUC.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_SN_TTUR.yaml"
@@ -101,10 +101,6 @@ def main():
     elif config["model"] == "FC-DenseNet":
         trainer = AdaptSeg_Trainer(config)
         print("use FC-DenseNet")
-    elif config["model"] == "DeepLab_v3_plus":
-        trainer = AdaptSeg_Trainer(config)
-        # trainer = DeepLab_Scratch_Trainer(config)
-        print("use DeepLab_v3_plus")
     elif config["model"] == "DeepLabEdge":
         trainer = AdaptSeg_Edge_Aux_Trainer(config)
         # trainer = DeepLab_Scratch_Trainer(config)
@@ -119,7 +115,7 @@ def main():
         print("use DeepLabEdgeSN")
         print("use DeepLabEdgeSN")
     elif config["model"] == "DeepLabv3+":
-        trainer = AdaptSeg_Edge_Aux_v3_Trainer(config)
+        trainer = AdaptSeg_Deeplabv3_Edge_Aux_Trainer(config)
         # trainer = DeepLab_Scratch_Trainer(config)
         print("use DeepLabv3")
         print("use DeepLabv3")
@@ -139,13 +135,25 @@ def main():
 
     # todo: remove this line without dev version
     # assert config["model"] == "DeepLabEdge"
-    assert config["model"] == "DeepLabEdge"
+    assert config["model"] == "DeepLabv3+"
 
     # trainer.cuda(gpu)
     print("config[restore] =", config["restore"])
     print("config[model]  =", config["model"])
-    if config["restore"] and config["restore_from"] != "None":
+
+    checkpoint_iter = 0
+    if config["restore"] and config["restore_from"] != "None" and config["model"] != "DeepLabv3+":
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
+    if config["model"] == "DeepLabv3+":
+        saved_state_dict = torch.load(os.path.join("Deeplabv3_pth", "GTA2Cityscapes_multi", "GTA5_10000_trainer_all.pth"))
+        trainer.load_state_dict(saved_state_dict)
+        checkpoint_iter = 10000
+
+        print("use Deeplabv3 pretrained checkpoint_iter =", checkpoint_iter)
+        print("use Deeplabv3 pretrained checkpoint_iter =", checkpoint_iter)
+        print("use Deeplabv3 pretrained checkpoint_iter =", checkpoint_iter)
+
+
     # if config["restore"] and config["model"] == "DeepLab_v3_plus":
     #     print(" in restore deeplab v3")
     #     trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
@@ -172,7 +180,7 @@ def main():
         visualizer = Visualizer(config)
 
     while True:
-        for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader)):
+        for i_iter, (train_batch, target_batch) in enumerate(zip(train_loader, target_loader), start=checkpoint_iter):
             iter_start_time = time.time()
 
             # if memory issue can clear cache
@@ -201,7 +209,7 @@ def main():
             #trainer.gen_target_and_foreground_update(target_images, target_name)
 
             trainer.gen_target_update(target_images, target_name)
-            trainer.gen_target_update_clamp(target_images, target_name)
+            # trainer.gen_target_update_clamp(target_images, target_name)
 
             # trainer.gen_target_foreground_update(target_images, target_name)
 
