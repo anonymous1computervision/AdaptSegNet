@@ -56,7 +56,8 @@ def main():
     # CONFIG_PATH = "./configs/default_edge_TTUR_D_beta.yaml"
     # CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
     # CONFIG_PATH = "./configs/default_DUC_decay_beta.yaml"
-    CONFIG_PATH = "./configs/Deeplab_v3_plus_10000.yaml"
+    CONFIG_PATH = "./configs/Deeplab_v3_plus.yaml"
+    # CONFIG_PATH = "./configs/Deeplab_v3_plus_10000.yaml"
     # CONFIG_PATH = "./configs/default_DUC.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_SN_TTUR.yaml"
@@ -144,14 +145,14 @@ def main():
     checkpoint_iter = 0
     if config["restore"] and config["restore_from"] != "None" and config["model"] != "DeepLabv3+":
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
-    if config["model"] == "DeepLabv3+":
-        saved_state_dict = torch.load(os.path.join("Deeplabv3_pth", "GTA2Cityscapes_multi", "GTA5_10000_trainer_all.pth"))
-        trainer.load_state_dict(saved_state_dict)
-        checkpoint_iter = 10000
-
-        print("use Deeplabv3 pretrained checkpoint_iter =", checkpoint_iter)
-        print("use Deeplabv3 pretrained checkpoint_iter =", checkpoint_iter)
-        print("use Deeplabv3 pretrained checkpoint_iter =", checkpoint_iter)
+    # if config["model"] == "DeepLabv3+":
+    #     saved_state_dict = torch.load(os.path.join("Deeplabv3_pth", "GTA2Cityscapes_multi", "GTA5_10000_trainer_all.pth"))
+    #     trainer.load_state_dict(saved_state_dict)
+    #     checkpoint_iter = 10000
+    #
+    #     print("use Deeplabv3 pretrained checkpoint_iter =", checkpoint_iter)
+    #     print("use Deeplabv3 pretrained checkpoint_iter =", checkpoint_iter)
+    #     print("use Deeplabv3 pretrained checkpoint_iter =", checkpoint_iter)
 
 
     # if config["restore"] and config["model"] == "DeepLab_v3_plus":

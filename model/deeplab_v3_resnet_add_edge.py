@@ -294,33 +294,36 @@ class DeepLabv3_plus_edge(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-def get_1x_lr_params(model):
-    """
-    This generator returns all the parameters of the net except for
-    the last classification layer. Note that for each batchnorm layer,
-    requires_grad is set to False in deeplab_resnet.py, therefore this function does not return
-    any batchnorm parameter
-    """
-    b = [model.resnet_features]
-    for i in range(len(b)):
-        for k in b[i].parameters():
-            if k.requires_grad:
-                yield k
-
-
-def get_10x_lr_params(model):
-    """
-    This generator returns all the parameters for the last layer of the net,
-    which does the classification of pixel into classes
-    """
-    # b = [model.aspp1, model.aspp2, model.aspp3, model.aspp4, model.conv1, model.conv2, model.last_conv]
-    b = [model.pred_edge, model.aspp1, model.aspp2, model.aspp3, model.aspp4, model.conv1, model.conv2, model.last_conv]
-    for j in range(len(b)):
-        for k in b[j].parameters():
-            if k.requires_grad:
-                yield k
-
-
+    def get_1x_lr_params(self):
+        """
+        This generator returns all the parameters of the net except for
+        the last classification layer. Note that for each batchnorm layer,
+        requires_grad is set to False in deeplab_resnet.py, therefore this function does not return
+        any batchnorm parameter
+        """
+        b = [self.resnet_features]
+        for i in range(len(b)):
+            for k in b[i].parameters():
+                if k.requires_grad:
+                    yield k
+    
+    
+    def get_10x_lr_params(self):
+        """
+        This generator returns all the parameters for the last layer of the net,
+        which does the classification of pixel into classes
+        """
+        # b = [model.aspp1, model.aspp2, model.aspp3, model.aspp4, model.conv1, model.conv2, model.last_conv]
+        b = [self.pred_edge, self.aspp1, self.aspp2, self.aspp3, self.aspp4, self.conv1, self.conv2, self.last_conv]
+        for j in range(len(b)):
+            for k in b[j].parameters():
+                if k.requires_grad:
+                    yield k
+    def optim_parameters_lr(self, lr):
+        return [{'params': self.get_1x_lr_params(), 'lr': lr},
+                # {'params': self.get_10x_lr_params(), 'lr':  10 * args.learning_rate}]
+                {'params': self.get_10x_lr_params(), 'lr': lr}]
+    
 if __name__ == "__main__":
     model = DeepLabv3_plus_edge(nInputChannels=3, n_classes=21, os=16, pretrained=True, _print=True)
     model.eval()

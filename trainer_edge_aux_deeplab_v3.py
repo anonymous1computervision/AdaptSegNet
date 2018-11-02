@@ -24,6 +24,8 @@ from model.deeplab_v3_resnet_add_edge import DeepLabv3_plus_edge
 import model.fc_densenet as fc_densenet
 from model.sp_discriminator import SP_FCDiscriminator
 from model.gated_discriminator import Gated_Discriminator
+from model.partial_discriminator import Partial_Discriminator
+
 from model.sp_aspp_discriminator import SP_ASPP_FCDiscriminator
 
 from util.loss import CrossEntropy2d
@@ -68,10 +70,10 @@ class AdaptSeg_Deeplabv3_Edge_Aux_Trainer(nn.Module):
 		# self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 		# self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
 		# self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-		self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+		# self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
 		# self.model_D_foreground = Gated_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
 		
-		# self.model_D_foreground = Partial_Discriminator(num_classes=hyperparameters['num_classes'])
+		self.model_D_foreground = Partial_Discriminator(num_classes=hyperparameters['num_classes'])
 		
 		# self.model_D_ = SP_FCDiscriminator(num_classes=3+1)
 		
@@ -166,15 +168,15 @@ class AdaptSeg_Deeplabv3_Edge_Aux_Trainer(nn.Module):
 	def init_opt(self):
 		
 		# todo: change to origin
-		# self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
-		#                       lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+		self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
+		                      lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
 		#
-		self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-		                             lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+		# self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+		#                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
 		self.scheduler_G = None
-		# self.scheduler_G = torch.optim.lr_scheduler.MultiStepLR(self.optimizer_G,
-		#                                                         milestones=[10000, 50000, 100000, 150000],
-		#                                                         gamma=0.5)
+		self.scheduler_G = torch.optim.lr_scheduler.MultiStepLR(self.optimizer_G,
+		                                                        milestones=[10000, 50000, 100000, 150000],
+		                                                        gamma=0.1)
 		self.optimizer_G.zero_grad()
 		self._adjust_learning_rate_G(self.optimizer_G, 0)
 		
@@ -247,7 +249,7 @@ class AdaptSeg_Deeplabv3_Edge_Aux_Trainer(nn.Module):
 		#                       self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
 		attn_loss = bce_loss(pred_source_edge,
 		                     self.get_foreground_attention(
-			                     labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
+			                     labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
 		# proper normalization
 		seg_loss = self.lambda_seg * seg_loss + self.lambda_adv_edge * attn_loss
 		# seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
@@ -265,8 +267,8 @@ class AdaptSeg_Deeplabv3_Edge_Aux_Trainer(nn.Module):
 		
 		# record log
 		self.loss_dict['Seg'] += seg_loss.data.cpu().numpy()
-		self.loss_dict['Edge_Seg'] += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
-		
+		# self.loss_dict['Edge_Seg'] += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
+		self.loss_dict['Edge_Seg'] += attn_loss.data.cpu().numpy()
 		# self.loss_source_value += seg_loss.data.cpu().numpy()
 		# self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
 		# self.loss_edge_value += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
@@ -329,7 +331,7 @@ class AdaptSeg_Deeplabv3_Edge_Aux_Trainer(nn.Module):
 		# adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
 		adv_loss = self.loss_hinge_gen(d_out_fake) + 2 * loss_adv_foreground
 		
-		# todo: self attn loss
+		# todo: self training - attn loss
 		# pred_target_fake_label = pred_target_fake.permute(0, 2, 3, 1)
 		# _, pred_target_fake_label = torch.max(pred_target_fake_label, -1)
 		# bce_loss = nn.BCEWithLogitsLoss()
