@@ -56,7 +56,9 @@ def main():
     # CONFIG_PATH = "./configs/default_edge_TTUR_D_beta.yaml"
     # CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
     # CONFIG_PATH = "./configs/default_DUC_decay_beta.yaml"
-    CONFIG_PATH = "./configs/Deeplab_v3_plus.yaml"
+    # CONFIG_PATH = "./configs/Deeplab_v3_plus.yaml"
+    CONFIG_PATH = "./configs/Deeplab_v3_plus_origin.yaml"
+
     # CONFIG_PATH = "./configs/Deeplab_v3_plus_10000.yaml"
     # CONFIG_PATH = "./configs/default_DUC.yaml"
 

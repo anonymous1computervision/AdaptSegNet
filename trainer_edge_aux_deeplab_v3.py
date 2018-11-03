@@ -174,9 +174,9 @@ class AdaptSeg_Deeplabv3_Edge_Aux_Trainer(nn.Module):
 		# self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
 		#                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
 		self.scheduler_G = None
-		self.scheduler_G = torch.optim.lr_scheduler.MultiStepLR(self.optimizer_G,
-		                                                        milestones=[10000, 50000, 100000, 150000],
-		                                                        gamma=0.1)
+		# self.scheduler_G = torch.optim.lr_scheduler.MultiStepLR(self.optimizer_G,
+		#                                                         milestones=[10000, 50000, 100000, 150000],
+		#                                                         gamma=0.1)
 		self.optimizer_G.zero_grad()
 		self._adjust_learning_rate_G(self.optimizer_G, 0)
 		
