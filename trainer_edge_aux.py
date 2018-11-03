@@ -36,6 +36,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # training setting
         self.num_steps = hyperparameters["num_steps"]
 
+
+
         # log setting
         # configure(hyperparameters['config_path'])
 
@@ -144,13 +146,14 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # for generator
         self.lambda_seg = hyperparameters['gen']['lambda_seg']
         self.lambda_adv_target = hyperparameters['gen']['lambda_adv_target']
+        self.lambda_adv_foreground = hyperparameters['gen']['lambda_adv_foreground']
         self.lambda_adv_edge = hyperparameters['gen']['lambda_adv_edge']
 
         self.decay_power = hyperparameters['decay_power']
 
         # for discriminator
         self.adv_loss_opt = hyperparameters['dis']['adv_loss_opt']
-        self.lambda_attn = hyperparameters['dis']['lambda_attn']
+        # self.lambda_attn = hyperparameters['dis']['lambda_attn']
 
         self.mini_factor_size = 8
         self.source_image = None
@@ -158,8 +161,6 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.saliency_mask = None
         self.pred_real_edge = None
         self.pred_fake_edge = None
-        self.pred_real_d_proj = None
-        self.pred_fake_d_proj = None
         # self.inter_mini = nn.Upsample(size=self.input_size_target, align_corners=False,
         #                               mode='bilinear')
 
@@ -247,9 +248,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # # Todo : here use softmax maybe wrong
         # edge_loss = bce_loss(pred_source_edge,
         #                       self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
-        attn_loss =  bce_loss(pred_source_edge,
+        attn_loss = bce_loss(pred_source_edge,
                              self.get_foreground_attention(
-                                 labels.view(1, labels.shape[0], labels.shape[1], labels.shape[2]).cuda()))
+                                 labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
         # proper normalization
         seg_loss = self.lambda_seg * seg_loss + self.lambda_adv_edge * attn_loss
         # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
@@ -323,13 +324,22 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # d_out_fake, _ = self.model_D(net_input, label=self.pred_target_edge_mini-0.5)
         # compute loss function
         # wants to fool discriminator
-        # adv_loss = self._compute_adv_loss_real(d_out_fake, loss_opt=self.adv_loss_opt)
         # adv_loss = self.loss_hinge_gen(d_out_fake)
-        loss_adv_foreground = self.loss_hinge_gen(d_out_foreground_fake)
+
+        # loss_adv_foreground = self.loss_hinge_gen(d_out_foreground_fake)
+
+        loss_adv = self._compute_adv_loss_real(d_out_fake)
+
+        loss_adv_foreground = self._compute_adv_loss_real(d_out_foreground_fake)
+
+
         # adv_loss = self.loss_hinge_gen(d_out_fake) + 0.5 * loss_adv_foreground
         # adv_loss = self.loss_hinge_gen(d_out_fake) + loss_adv_foreground
         # adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
-        adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
+
+        adv_loss = loss_adv + self.lambda_adv_foreground * loss_adv_foreground
+
+        # adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
 
 
         # todo: self attn loss
@@ -344,10 +354,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # in target domain compute edge loss - weakly constraint
         # edge_loss = self._compute_edge_loss(pred_target_edge, self.channel_to_label(F.softmax(pred_target_fake)))
-        loss = self.lambda_adv_target * adv_loss
+        adv_loss = self.lambda_adv_target * adv_loss
         # loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * edge_loss
         # loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * attn_loss
-        loss.backward()
+        adv_loss.backward()
 
         # update loss
         self.optimizer_G.step()
@@ -361,10 +371,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # record log
         self.loss_target_foreground_value += loss_adv_foreground.data.cpu().numpy()
-        self.loss_target_value += loss.data.cpu().numpy()
+        self.loss_target_value += adv_loss.data.cpu().numpy()
 
-        self.loss_dict['Global_GAN_adv'] += loss_adv_foreground.data.cpu().numpy()
-        self.loss_dict['Foreground_GAN_adv'] += loss.data.cpu().numpy()
+        self.loss_dict['Global_GAN_adv'] += adv_loss.data.cpu().numpy() / self.lambda_adv_target
+        self.loss_dict['Foreground_GAN_adv'] += loss_adv_foreground.data.cpu().numpy()
     def gen_target_update_clamp(self, images, image_path):
         """
                  Input target domain image and compute adversarial loss.
@@ -499,16 +509,31 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # loss = loss_real + loss_fake
         # loss = self.loss_hinge_dis(d_out_fake, d_out_real)
-        loss = self.loss_hinge_dis(d_out_foreground_fake, d_out_foreground_real)
-        # print("fore loss=", loss)
+        # foreground part
+        if self.adv_loss_opt == "hinge":
+            loss = self.loss_hinge_dis(d_out_foreground_fake, d_out_foreground_real)
+            # print("fore loss=", loss)
+            # print("hinge")
+        else:
+            # print("self.adv_loss_opt")
+            loss_fake = self._compute_adv_loss_fake(d_out_foreground_fake, self.adv_loss_opt)
+            loss_real = self._compute_adv_loss_real(d_out_foreground_real, self.adv_loss_opt)
+            loss = (loss_real + loss_fake)/2
+        loss.backward()
         self.loss_d_foreground_value += loss.data.cpu().numpy()
         self.loss_dict['Foreground_GAN_dis'] += loss.data.cpu().numpy()
-        loss.backward()
 
-        loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+        # global part
+        if self.adv_loss_opt == "hinge":
+            loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+            # print("fore loss=", loss)
+        else:
+            loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+            loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+            loss = (loss_real + loss_fake)/2
+        loss.backward()
         self.loss_d_value += loss.data.cpu().numpy()
         self.loss_dict['Global_GAN_dis'] += loss.data.cpu().numpy()
-        loss.backward()
 
         # update loss
         self.optimizer_D.step()
@@ -642,11 +667,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
                 :param label:
                 :return:
                 """
+        # print("_compute_adv_loss_real loss_opt", loss_opt)
         d_loss_real = None
         if loss_opt == 'wgan-gp':
             d_loss_real = - d_out_real.mean()
-        elif loss_opt == 'hinge':
-            d_loss_real = torch.nn.ReLU()(1.0 - d_out_real).mean()
         elif loss_opt == 'bce':
             bce_loss = torch.nn.BCEWithLogitsLoss()
             d_loss_real = bce_loss(d_out_real,
@@ -662,12 +686,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
                 :param label:
                 :return:
                 """
+        # print("_compute_adv_loss_fake loss_opt", loss_opt)
         d_loss_fake = None
         if loss_opt == 'wgan-gp':
             d_loss_fake = - d_out_fake.mean()
-        elif loss_opt == 'hinge':
-            # d_loss_fake = - d_out_fake.mean()
-            d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
         elif loss_opt == 'bce':
             bce_loss = torch.nn.BCEWithLogitsLoss()
             d_loss_fake = bce_loss(d_out_fake,

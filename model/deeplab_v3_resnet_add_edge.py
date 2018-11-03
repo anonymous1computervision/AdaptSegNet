@@ -199,18 +199,10 @@ class ASPP_module(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
+class DeepLabv3_plus_clssifier(nn.Module):
 
-class DeepLabv3_plus_edge(nn.Module):
-    def __init__(self, nInputChannels=3, n_classes=21, os=16, pretrained=False, _print=True):
-        if _print:
-            print("Constructing DeepLabv3+ model...")
-            print("Number of classes: {}".format(n_classes))
-            print("Output stride: {}".format(os))
-            print("Number of Input Channels: {}".format(nInputChannels))
-        super(DeepLabv3_plus_edge, self).__init__()
-
-        # Atrous Conv
-        self.resnet_features = ResNet101(nInputChannels, os, pretrained=pretrained)
+    def __init__(self, n_classes=21, os=16, feature_dim=2048):
+        super(DeepLabv3_plus_clssifier, self).__init__()
 
         # ASPP
         if os == 16:
@@ -220,15 +212,15 @@ class DeepLabv3_plus_edge(nn.Module):
         else:
             raise NotImplementedError
 
-        self.aspp1 = ASPP_module(2048, 256, rate=rates[0])
-        self.aspp2 = ASPP_module(2048, 256, rate=rates[1])
-        self.aspp3 = ASPP_module(2048, 256, rate=rates[2])
-        self.aspp4 = ASPP_module(2048, 256, rate=rates[3])
+        self.aspp1 = ASPP_module(feature_dim, 256, rate=rates[0])
+        self.aspp2 = ASPP_module(feature_dim, 256, rate=rates[1])
+        self.aspp3 = ASPP_module(feature_dim, 256, rate=rates[2])
+        self.aspp4 = ASPP_module(feature_dim, 256, rate=rates[3])
 
         self.relu = nn.ReLU()
 
         self.global_avg_pool = nn.Sequential(nn.AdaptiveAvgPool2d((1, 1)),
-                                             nn.Conv2d(2048, 256, 1, stride=1, bias=False),
+                                             nn.Conv2d(feature_dim, 256, 1, stride=1, bias=False),
                                              # nn.BatchNorm2d(256),
                                              nn.ReLU())
 
@@ -238,10 +230,6 @@ class DeepLabv3_plus_edge(nn.Module):
         # adopt [1x1, 48] for channel reduction.
         self.conv2 = nn.Conv2d(256, 48, 1, bias=False)
         self.bn2 = nn.BatchNorm2d(48)
-
-        self.pred_edge = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], 1)
-
-
         self.last_conv = nn.Sequential(nn.Conv2d(304, 256, kernel_size=3, stride=1, padding=1, bias=False),
                                        nn.BatchNorm2d(256),
                                        nn.ReLU(),
@@ -249,10 +237,12 @@ class DeepLabv3_plus_edge(nn.Module):
                                        nn.BatchNorm2d(256),
                                        nn.ReLU(),
                                        nn.Conv2d(256, n_classes, kernel_size=1, stride=1))
-    def _make_pred_layer(self, block, inplanes, dilation_series, padding_series, num_classes):
-        return block(inplanes, dilation_series, padding_series, num_classes)
-    def forward(self, input):
-        x, low_level_features, res_x3 = self.resnet_features(input)
+
+    def forward(self, x, low_level_features, input_size=None):
+        # x, low_level_features, res_x3 = self.resnet_features(input)
+        # input_size = x.size()
+        # print("input_size shape", input_size)
+
         x1 = self.aspp1(x)
         x2 = self.aspp2(x)
         x3 = self.aspp3(x)
@@ -265,19 +255,57 @@ class DeepLabv3_plus_edge(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        x = F.upsample(x, size=(int(math.ceil(input.size()[-2]/4)),
-                                int(math.ceil(input.size()[-1]/4))), mode='bilinear', align_corners=True)
+        x = F.upsample(x, size=(int(math.ceil(input_size[-2]/4)),
+                                int(math.ceil(input_size[-1]/4))), mode='bilinear', align_corners=True)
 
         low_level_features = self.conv2(low_level_features)
         low_level_features = self.bn2(low_level_features)
         low_level_features = self.relu(low_level_features)
 
-
+        # print("x shape", x.size())
+        # print("low_level_features shape", low_level_features.size())
         x = torch.cat((x, low_level_features), dim=1)
         x = self.last_conv(x)
-        x = F.upsample(x, size=input.size()[2:], mode='bilinear', align_corners=True)
-        aux_edge = self.pred_edge(res_x3)
-        return x, aux_edge
+        x = F.upsample(x, size=input_size[2:], mode='bilinear', align_corners=True)
+        return x
+
+    def freeze_bn(self):
+        for m in self.modules():
+            if isinstance(m, nn.BatchNorm2d):
+                m.eval()
+
+    def __init_weight(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                # n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                # m.weight.data.normal_(0, math.sqrt(2. / n))
+                torch.nn.init.kaiming_normal_(m.weight)
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+class DeepLabv3_plus_edge(nn.Module):
+    def __init__(self, nInputChannels=3, n_classes=21, os=16, pretrained=False, _print=True):
+        super(DeepLabv3_plus_edge, self).__init__()
+
+        if _print:
+            print("Constructing DeepLabv3+ model...")
+            print("Number of classes: {}".format(n_classes))
+            print("Output stride: {}".format(os))
+            print("Number of Input Channels: {}".format(nInputChannels))
+        super(DeepLabv3_plus_edge, self).__init__()
+
+        # Atrous Conv
+        self.resnet_features = ResNet101(nInputChannels, os, pretrained=pretrained)
+        # ASPP
+        self.classifier = DeepLabv3_plus_clssifier(n_classes, os, feature_dim=2048)
+        self.aux_edge = DeepLabv3_plus_clssifier(1, os, feature_dim=1024)
+
+
+    def forward(self, input):
+        x, low_level_features, res_x3 = self.resnet_features(input)
+        out = self.classifier(x, low_level_features, input_size=input.size())
+        aux_edge = self.aux_edge(res_x3, low_level_features, input_size=input.size())
+        return out, aux_edge
 
     def freeze_bn(self):
         for m in self.modules():
@@ -314,7 +342,7 @@ class DeepLabv3_plus_edge(nn.Module):
         which does the classification of pixel into classes
         """
         # b = [model.aspp1, model.aspp2, model.aspp3, model.aspp4, model.conv1, model.conv2, model.last_conv]
-        b = [self.pred_edge, self.aspp1, self.aspp2, self.aspp3, self.aspp4, self.conv1, self.conv2, self.last_conv]
+        b = [self.classifier, self.aux_edge]
         for j in range(len(b)):
             for k in b[j].parameters():
                 if k.requires_grad:

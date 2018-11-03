@@ -247,9 +247,11 @@ class AdaptSeg_Deeplabv3_Edge_Aux_Trainer(nn.Module):
 		# # Todo : here use softmax maybe wrong
 		# edge_loss = bce_loss(pred_source_edge,
 		#                       self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
-		attn_loss = bce_loss(pred_source_edge,
-		                     self.get_foreground_attention(
-			                     labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
+
+		# attn_loss = bce_loss(pred_source_edge,
+		#                      self.get_foreground_attention(
+		# 	                     labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
+
 		# proper normalization
 		seg_loss = self.lambda_seg * seg_loss + self.lambda_adv_edge * attn_loss
 		# seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
