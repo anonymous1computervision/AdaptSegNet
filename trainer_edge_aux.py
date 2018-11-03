@@ -337,7 +337,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # adv_loss = self.loss_hinge_gen(d_out_fake) + loss_adv_foreground
         # adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
 
-        adv_loss = loss_adv + self.lambda_adv_foreground * loss_adv_foreground
+        loss = loss_adv + self.lambda_adv_foreground * loss_adv_foreground
 
         # adv_loss = self.loss_hinge_gen(d_out_fake) + 2*loss_adv_foreground
 
@@ -354,10 +354,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # in target domain compute edge loss - weakly constraint
         # edge_loss = self._compute_edge_loss(pred_target_edge, self.channel_to_label(F.softmax(pred_target_fake)))
-        adv_loss = self.lambda_adv_target * adv_loss
+        loss = self.lambda_adv_target * loss
         # loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * edge_loss
         # loss = self.lambda_adv_target * adv_loss + 0.1*self.lambda_adv_target * attn_loss
-        adv_loss.backward()
+        loss.backward()
 
         # update loss
         self.optimizer_G.step()
@@ -371,10 +371,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # record log
         self.loss_target_foreground_value += loss_adv_foreground.data.cpu().numpy()
-        self.loss_target_value += adv_loss.data.cpu().numpy()
+        self.loss_target_value += loss_adv.data.cpu().numpy()
 
-        self.loss_dict['Global_GAN_adv'] += adv_loss.data.cpu().numpy() / self.lambda_adv_target
+        self.loss_dict['Global_GAN_adv'] += loss_adv.data.cpu().numpy()
         self.loss_dict['Foreground_GAN_adv'] += loss_adv_foreground.data.cpu().numpy()
+
     def gen_target_update_clamp(self, images, image_path):
         """
                  Input target domain image and compute adversarial loss.
