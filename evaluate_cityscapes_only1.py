@@ -11,7 +11,8 @@ import torch.nn.functional as F
 from torch.utils import data, model_zoo
 # from model.deeplab_multi import Res_Deeplab
 # from model.deeplab_single import Res_Deeplab
-from model.deeplab_single_add_edge import Res_Deeplab
+# from model.deeplab_single_add_edge import Res_Deeplab
+from model.deeplab_v3_resnet_add_edge import DeepLabv3_plus_edge
 
 # from model.deeplab_single_attention import Res_Deeplab
 from dataset.cityscapes_dataset import cityscapesDataSet
@@ -84,8 +85,11 @@ def main():
     if not os.path.exists(args.save):
         os.makedirs(args.save)
 
-    model = Res_Deeplab(num_classes=args.num_classes)
-
+    # model = Res_Deeplab(num_classes=args.num_classes)
+    model = DeepLabv3_plus_edge(nInputChannels=3,
+                                n_classes=args.num_classes,
+                                pretrained=True,
+                                _print=True)
     if args.restore_from[:4] == 'http' :
         saved_state_dict = model_zoo.load_url(args.restore_from)
     else:
