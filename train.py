@@ -49,7 +49,9 @@ def main():
     # CONFIG_PATH = "./configs/default-hinge-v7.yaml"
     # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
-    CONFIG_PATH = "./configs/default_edge_bce.yaml"
+    # CONFIG_PATH = "./configs/default_edge_bce.yaml"
+    CONFIG_PATH = "./configs/default_edge_bce_lambda2.yaml"
+
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_PSPNet_edge_TTUR.yaml"
