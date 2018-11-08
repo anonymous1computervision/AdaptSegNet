@@ -25,6 +25,8 @@ from trainer import AdaptSeg_Trainer
 from attn_trainer import AdaptSeg_Attn_Trainer
 from mini_trainer import Mini_AdaptSeg_Trainer
 from in_trainer import AdaptSeg_IN_Trainer
+from trainer_edge_multi import AdaptSeg_Edge_Aux_Multi_Trainer
+
 from trainer_edge_aux import AdaptSeg_Edge_Aux_Trainer
 from trainer_edge_aux_sn import AdaptSeg_Edge_Aux_SN_Trainer
 from trainer_edge_aux_deeplab_v3 import AdaptSeg_Deeplabv3_Edge_Aux_Trainer
@@ -50,7 +52,8 @@ def main():
     # CONFIG_PATH = "./configs/default-in-hinge-v5.yaml"
     # CONFIG_PATH = "./configs/default-in.yaml"
     # CONFIG_PATH = "./configs/default_edge_bce.yaml"
-    CONFIG_PATH = "./configs/default_edge_bce_lambda2.yaml"
+    # CONFIG_PATH = "./configs/default_edge_bce_lambda2.yaml"
+    CONFIG_PATH = "./configs/multi-edge-hinge.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
@@ -106,6 +109,12 @@ def main():
     elif config["model"] == "FC-DenseNet":
         trainer = AdaptSeg_Trainer(config)
         print("use FC-DenseNet")
+    elif config["model"] == "DeepLabEdgeMulti":
+        trainer = AdaptSeg_Edge_Aux_Multi_Trainer(config)
+        # trainer = DeepLab_Scratch_Trainer(config)
+        print("use DeepLabEdgeMulti")
+        print("use DeepLabEdgeMulti")
+        print("use DeepLabEdgeMulti")
     elif config["model"] == "DeepLabEdge":
         trainer = AdaptSeg_Edge_Aux_Trainer(config)
         # trainer = DeepLab_Scratch_Trainer(config)
@@ -139,7 +148,8 @@ def main():
         trainer = AdaptSeg_Trainer(config)
 
     # todo: remove this line without dev version
-    assert config["model"] == "DeepLabEdge"
+    assert config["model"] == "DeepLabEdgeMulti"
+    # assert config["model"] == "DeepLabEdge"
     # assert config["model"] == "DeepLabv3+"
 
     # trainer.cuda(gpu)
@@ -257,6 +267,9 @@ def main():
                     target_input_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_input.png' % i_iter)
                     target_output_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s.png' % i_iter)
                     target_edge_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_edge.png' % i_iter)
+                    source_last_output_path = os.path.join(checkoutput_dir, "Image_source_domain_last_seg",
+                                                     '%s.png' % i_iter)
+                    target_last_output_path = os.path.join(checkoutput_dir, "Image_target_domain_last_seg", '%s.png' % i_iter)
 
                     visuals = OrderedDict([('source_input', source_input_path),
                                            ('source_label', source_label_path),
@@ -264,7 +277,10 @@ def main():
                                            ('source_edge', source_edge_path),
                                            ('target_input', target_input_path),
                                            ('target_output', target_output_path),
-                                           ('target_edge', target_edge_path)])
+                                           ('target_edge', target_edge_path),
+                                           ('source_last_output', source_last_output_path),
+                                           ('targer_last_output', target_last_output_path)
+                                           ])
                     visualizer.display_current_results_by_path(visuals, i_iter, step=image_save_iter)
 
             # save checkpoint .pth

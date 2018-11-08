@@ -135,7 +135,10 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
         # layer 5 for edge
-        self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], 1)
+        self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
+        self.layer5_to_edge = nn.Sequential(nn.Conv2d(num_classes, 1, kernel_size=3, padding=1, dilation=1))
+        # self.attn2 = Self_Attn(19, 'relu')
+
         # self.layer5 = []
         # self.model_block += [SpectralNorm(nn.Conv2d(1024, 256, kernel_size=1, stride=1, padding=0)]
         # self.layer5 += [Self_Attn(1024, 'relu')]
@@ -195,7 +198,8 @@ class ResNet(nn.Module):
         x = self.layer3(x)
 
         # layer 5 for edge
-        auxiliary = self.layer5(x)
+        out2 = self.layer5(x)
+        auxiliary_edge = self.layer5_to_edge(out2)
         # print("aux shape", auxiliary.shape)
         x = self.layer4(x)
         # print("x shape", x.shape)
@@ -210,7 +214,7 @@ class ResNet(nn.Module):
         # attention_mask = self.deconv(attention_mask)
         # auxiliary = attention_mask * auxiliary
 
-        return out, auxiliary
+        return out, auxiliary_edge, out2
     def get_1x_lr_params_NOscale(self):
         """
         This generator returns all the parameters of the net except for
@@ -226,7 +230,6 @@ class ResNet(nn.Module):
         b.append(self.layer2)
         b.append(self.layer3)
         b.append(self.layer4)
-        # b.append(self.layer5)
 
         for i in range(len(b)):
             for j in b[i].modules():
@@ -243,6 +246,7 @@ class ResNet(nn.Module):
         """
         b = []
         b.append(self.layer5.parameters())
+        b.append(self.layer5_to_edge.parameters())
         b.append(self.layer6.parameters())
 
         for j in range(len(b)):
