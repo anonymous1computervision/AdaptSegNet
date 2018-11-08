@@ -247,7 +247,8 @@ class AdaptSeg_Edge_Aux_Multi_Trainer(nn.Module):
         # save image for discriminator use
         self.source_image = pred_source_real.detach()
         self.source_last_image = pred_source_real_last.detach()
-        self.pred_real_edge = nn.Sigmoid()(pred_source_edge).detach()
+        self.pred_real_edge = pred_source_edge.detach()
+        # self.pred_real_edge = nn.Sigmoid()(pred_source_edge).detach()
         # self.pred_real_edge = pred_source_edge.detach()
 
         self.source_input_image = images.detach()
@@ -291,7 +292,7 @@ class AdaptSeg_Edge_Aux_Multi_Trainer(nn.Module):
         pred_target_fake = interp_target(pred_target_fake)
         pred_target_fake_last = interp_target(pred_target_fake_last)
         pred_target_edge = interp_target(pred_target_edge)
-        pred_target_edge = nn.Sigmoid()(pred_target_edge)
+        # pred_target_edge = nn.Sigmoid()(pred_target_edge)
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
 
