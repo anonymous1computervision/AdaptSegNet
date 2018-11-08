@@ -136,8 +136,9 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, layers[3], stride=1, dilation=4)
         # layer 5 for edge
         self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
-        self.layer5_to_edge = nn.Sequential(nn.Conv2d(num_classes, 1, kernel_size=3, padding=1, dilation=1),
-                                            nn.Sigmoid())
+        # self.layer5_to_edge = nn.Sequential(nn.Conv2d(num_classes, 1, kernel_size=3, padding=1, dilation=1),
+        #                                     nn.Sigmoid())
+        self.layer5_to_edge = nn.Sequential(nn.Conv2d(num_classes, 1, kernel_size=3, padding=1, dilation=1))
         # self.attn2 = Self_Attn(19, 'relu')
 
         # self.layer5 = []

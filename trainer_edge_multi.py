@@ -248,7 +248,7 @@ class AdaptSeg_Edge_Aux_Multi_Trainer(nn.Module):
         self.source_image = pred_source_real.detach()
         self.source_last_image = pred_source_real_last.detach()
         self.pred_real_edge = pred_source_edge.detach()
-        # self.pred_real_edge = nn.Sigmoid()(pred_source_edge).detach()
+        self.pred_real_edge = nn.Sigmoid()(pred_source_edge).detach()
         # self.pred_real_edge = pred_source_edge.detach()
 
         self.source_input_image = images.detach()
@@ -256,8 +256,9 @@ class AdaptSeg_Edge_Aux_Multi_Trainer(nn.Module):
         # record log
         self.loss_dict['Seg'] += seg_loss.data.cpu().numpy()
         self.loss_dict['Seg_last'] += seg_loss_last.data.cpu().numpy()
+        self.loss_dict['Edge_Seg'] += attn_loss.data.cpu().numpy()
 
-        self.loss_dict['Edge_Seg'] += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
+        # self.loss_dict['Edge_Seg'] += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
 
         # self.loss_source_value += seg_loss.data.cpu().numpy()
         # self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
@@ -292,7 +293,7 @@ class AdaptSeg_Edge_Aux_Multi_Trainer(nn.Module):
         pred_target_fake = interp_target(pred_target_fake)
         pred_target_fake_last = interp_target(pred_target_fake_last)
         pred_target_edge = interp_target(pred_target_edge)
-        # pred_target_edge = nn.Sigmoid()(pred_target_edge)
+        pred_target_edge = nn.Sigmoid()(pred_target_edge)
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
 
