@@ -160,11 +160,11 @@ class AdaptSeg_Edge_Aux_Multi_Trainer(nn.Module):
     def init_opt(self):
 
         # todo: change to origin
-        self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
-                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        # self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
+        #                       lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         # self.optimizer_G.zero_grad()
-        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-        #                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+                                     lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
         #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
         self.optimizer_G.zero_grad()
@@ -669,12 +669,12 @@ class AdaptSeg_Edge_Aux_Multi_Trainer(nn.Module):
 
     def _adjust_learning_rate_G(self, optimizer, i_iter):
         lr = self._lr_poly(self.lr_g, i_iter, self.num_steps, self.decay_power)
-        # for i, group in enumerate(optimizer.param_groups):
-        #     optimizer.param_groups[i]['lr'] = lr
+        for i, group in enumerate(optimizer.param_groups):
+            optimizer.param_groups[i]['lr'] = lr
         # print("len(optimizer.param_groups)", len(optimizer.param_groups))
-        optimizer.param_groups[0]['lr'] = lr
-        if len(optimizer.param_groups) > 1:
-            optimizer.param_groups[1]['lr'] = lr * 10
+        # optimizer.param_groups[0]['lr'] = lr
+        # if len(optimizer.param_groups) > 1:
+        #     optimizer.param_groups[1]['lr'] = lr * 10
 
     def init_each_epoch(self, i_iter):
         self.i_iter = i_iter
