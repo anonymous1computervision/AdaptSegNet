@@ -160,14 +160,14 @@ class AdaptSeg_Edge_Aux_Multi_Trainer(nn.Module):
     def init_opt(self):
 
         # todo: change to origin
-        # self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
-        #                       lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
+                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         # self.optimizer_G.zero_grad()
-        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-                                     lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+        #                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
         #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
-        # self.optimizer_G.zero_grad()
+        self.optimizer_G.zero_grad()
         self._adjust_learning_rate_G(self.optimizer_G, 0)
 
         self.optimizer_D_last = optim.Adam([p for p in self.model_D_last.parameters() if p.requires_grad],
@@ -291,18 +291,22 @@ class AdaptSeg_Edge_Aux_Multi_Trainer(nn.Module):
         pred_target_fake = interp_target(pred_target_fake)
         pred_target_fake_last = interp_target(pred_target_fake_last)
         pred_target_edge = interp_target(pred_target_edge)
-
+        pred_target_edge = nn.Sigmoid()(pred_target_edge)
         # cobime predict and use predict output get edge
         # net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
 
         # print("net input shape =", net_input.shape)
         # d_out_fake, _ = self.model_D(F.softmax(pred_target_fake), label=images)
         # d_out_fake, _ = self.model_D(F.softmax(net_input), label=images)
-        self.pred_fake_edge = nn.Sigmoid()(pred_target_edge).detach()
+
+        # self.pred_fake_edge = nn.Sigmoid()(pred_target_edge).detach()
 
         # d_out_fake, _ = self.model_D(net_input, label=self.pred_fake_edge)
+
         d_out_fake_last, _ = self.model_D_last(F.softmax(pred_target_fake_last, dim=1), label=None)
-        d_out_fake, _ = self.model_D_final(F.softmax(pred_target_fake, dim=1), label=self.pred_fake_edge)
+        # can use edge to backprop
+        d_out_fake, _ = self.model_D_final(F.softmax(pred_target_fake, dim=1), label=pred_target_edge)
+        self.pred_fake_edge = pred_target_edge.detach()
 
         #
         # net_input = torch.cat((net_input, pred_target_edge), dim=1)
@@ -665,12 +669,12 @@ class AdaptSeg_Edge_Aux_Multi_Trainer(nn.Module):
 
     def _adjust_learning_rate_G(self, optimizer, i_iter):
         lr = self._lr_poly(self.lr_g, i_iter, self.num_steps, self.decay_power)
-        for i, group in enumerate(optimizer.param_groups):
-            optimizer.param_groups[i]['lr'] = lr
+        # for i, group in enumerate(optimizer.param_groups):
+        #     optimizer.param_groups[i]['lr'] = lr
         # print("len(optimizer.param_groups)", len(optimizer.param_groups))
-        # optimizer.param_groups[0]['lr'] = lr
-        # if len(optimizer.param_groups) > 1:
-        #     optimizer.param_groups[1]['lr'] = lr * 10
+        optimizer.param_groups[0]['lr'] = lr
+        if len(optimizer.param_groups) > 1:
+            optimizer.param_groups[1]['lr'] = lr * 10
 
     def init_each_epoch(self, i_iter):
         self.i_iter = i_iter

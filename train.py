@@ -273,13 +273,13 @@ def main():
 
                     visuals = OrderedDict([('source_input', source_input_path),
                                            ('source_label', source_label_path),
+                                           ('source_last_output', source_last_output_path),
                                            ('source_output', source_output_path),
                                            ('source_edge', source_edge_path),
                                            ('target_input', target_input_path),
+                                           ('targer_last_output', target_last_output_path),
                                            ('target_output', target_output_path),
-                                           ('target_edge', target_edge_path),
-                                           ('source_last_output', source_last_output_path),
-                                           ('targer_last_output', target_last_output_path)
+                                           ('target_edge', target_edge_path)
                                            ])
                     visualizer.display_current_results_by_path(visuals, i_iter, step=image_save_iter)
 
