@@ -12,8 +12,8 @@ from torch.utils import data, model_zoo
 # from model.deeplab_multi import Res_Deeplab
 # from model.deeplab_single import Res_Deeplab
 # from model.deeplab_single_add_edge import Res_Deeplab
-from model.deeplab_v3_resnet_add_edge import DeepLabv3_plus_edge
-
+# from model.deeplab_v3_resnet_add_edge import DeepLabv3_plus_edge
+from model.deeplab_multi_add_edge import Res_Deeplab
 # from model.deeplab_single_attention import Res_Deeplab
 from dataset.cityscapes_dataset import cityscapesDataSet
 from collections import OrderedDict
@@ -85,11 +85,11 @@ def main():
     if not os.path.exists(args.save):
         os.makedirs(args.save)
 
-    # model = Res_Deeplab(num_classes=args.num_classes)
-    model = DeepLabv3_plus_edge(nInputChannels=3,
-                                n_classes=args.num_classes,
-                                pretrained=True,
-                                _print=True)
+    model = Res_Deeplab(num_classes=args.num_classes)
+    # model = DeepLabv3_plus_edge(nInputChannels=3,
+    #                             n_classes=args.num_classes,
+    #                             pretrained=True,
+    #                             _print=True)
     if args.restore_from[:4] == 'http' :
         saved_state_dict = model_zoo.load_url(args.restore_from)
     else:
@@ -120,7 +120,7 @@ def main():
                 print('%d processd' % index)
             image, _, _, name = batch
             # output1 = model(Variable(image, volatile=True).cuda(gpu0))
-            output1, _ = model(Variable(image, volatile=True).cuda(gpu0))
+            output1, *_ = model(Variable(image, volatile=True).cuda(gpu0))
 
             output = interp(output1).cpu().data[0].numpy()
 

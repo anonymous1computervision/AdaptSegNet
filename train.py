@@ -30,6 +30,7 @@ from trainer_edge_multi import AdaptSeg_Edge_Aux_Multi_Trainer
 from trainer_edge_aux import AdaptSeg_Edge_Aux_Trainer
 from trainer_edge_aux_sn import AdaptSeg_Edge_Aux_SN_Trainer
 from trainer_edge_aux_deeplab_v3 import AdaptSeg_Deeplabv3_Edge_Aux_Trainer
+from trainer_edge_triple import AdaptSeg_Edge_Aux_Triple_Trainer
 from trainer_PSP_edge_aux import AdaptSeg_PSP_Edge_Aux_Trainer
 from trainer_DUC_edge_aux import AdaptSeg_DUC_Edge_Aux_Trainer
 from util.util import get_all_data_loaders, get_config, tensor2im, paint_predict_image, paint_predict_image_np
@@ -53,7 +54,9 @@ def main():
     # CONFIG_PATH = "./configs/default-in.yaml"
     # CONFIG_PATH = "./configs/default_edge_bce.yaml"
     # CONFIG_PATH = "./configs/default_edge_bce_lambda2.yaml"
-    CONFIG_PATH = "./configs/multi-edge-hinge.yaml"
+    # CONFIG_PATH = "./configs/multi-edge-hinge.yaml"
+    # CONFIG_PATH = "./configs/triple-edge-hinge-TTUR.yaml"
+    CONFIG_PATH = "./configs/triple-edge-hinge-lambda.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
@@ -115,6 +118,13 @@ def main():
         print("use DeepLabEdgeMulti")
         print("use DeepLabEdgeMulti")
         print("use DeepLabEdgeMulti")
+    elif config["model"] == "DeepLabEdgeTriple":
+        trainer = AdaptSeg_Edge_Aux_Triple_Trainer(config)
+        # trainer = DeepLab_Scratch_Trainer(config)
+        print("use DeepLabEdgeTriple")
+        print("use DeepLabEdgeTriple")
+        print("use DeepLabEdgeTriple")
+        
     elif config["model"] == "DeepLabEdge":
         trainer = AdaptSeg_Edge_Aux_Trainer(config)
         # trainer = DeepLab_Scratch_Trainer(config)
@@ -148,7 +158,7 @@ def main():
         trainer = AdaptSeg_Trainer(config)
 
     # todo: remove this line without dev version
-    assert config["model"] == "DeepLabEdgeMulti"
+    assert config["model"] == "DeepLabEdgeTriple"
     # assert config["model"] == "DeepLabEdge"
     # assert config["model"] == "DeepLabv3+"
 
