@@ -17,6 +17,8 @@ from PIL import Image
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
 from model.deeplab_single_add_edge import Res_Deeplab as Res_Deeplab_Edge
+from model.deeplab_single_add_edge_v2 import Res_Deeplab as Res_Deeplab_Edge_v2
+
 from model.deeplav_v3_xception import DeepLabv3_plus
 import model.fc_densenet as fc_densenet
 from model.sp_discriminator import SP_FCDiscriminator
@@ -49,23 +51,30 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         assert hyperparameters["model"] == 'DeepLabEdge', True
 
         # init G
-        if hyperparameters["model"] == 'DeepLab':
-            self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
-        elif hyperparameters["model"] == 'FC-DenseNet':
-            self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
-            print("use fc densenet model")
-        elif hyperparameters["model"] == 'DeepLabEdge':
-            self.model = Res_Deeplab_Edge(num_classes=hyperparameters["num_classes"])
-            print("use DeepLabEdge model")
-        elif hyperparameters["model"] == 'DeepLab_v3_plus':
-            self.model = DeepLabv3_plus(nInputChannels=3,
-                                        n_classes=hyperparameters['num_classes'],
-                                        pretrained=True,
-                                        _print=True)
-            print("use DeepLab_v3_plus model")
+        # if hyperparameters["model"] == 'DeepLab':
+        #     self.model = Res_Deeplab(num_classes=hyperparameters["num_classes"])
+        # elif hyperparameters["model"] == 'FC-DenseNet':
+        #     self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
+        #     print("use fc densenet model")
+        # elif hyperparameters["model"] == 'DeepLabEdge':
+        # self.model = Res_Deeplab_Edge(num_classes=hyperparameters["num_classes"])
+        self.model = Res_Deeplab_Edge_v2(num_classes=hyperparameters["num_classes"])
+        print("use DeepLabEdge v2 model")
+        print("use DeepLabEdge v2 model")
+        print("use DeepLabEdge v2 model")
+
+        # print("use DeepLabEdge model")
+        # elif hyperparameters["model"] == 'DeepLab_v3_plus':
+        #     self.model = DeepLabv3_plus(nInputChannels=3,
+        #                                 n_classes=hyperparameters['num_classes'],
+        #                                 pretrained=True,
+        #                                 _print=True)
+        #     print("use DeepLab_v3_plus model")
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+
         # self.model_D = SP_ASPP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
         # self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])

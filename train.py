@@ -56,13 +56,15 @@ def main():
     # CONFIG_PATH = "./configs/default_edge_bce_lambda2.yaml"
     # CONFIG_PATH = "./configs/multi-edge-hinge.yaml"
     # CONFIG_PATH = "./configs/triple-edge-hinge-TTUR.yaml"
-    CONFIG_PATH = "./configs/triple-edge-hinge-lambda.yaml"
+    # CONFIG_PATH = "./configs/triple-edge-hinge-lambda.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_PSPNet_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR_D_beta.yaml"
     # CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
+    CONFIG_PATH = "./configs/edge_TTUR.yaml"
+
     # CONFIG_PATH = "./configs/default_DUC_decay_beta.yaml"
     # CONFIG_PATH = "./configs/Deeplab_v3_plus.yaml"
     # CONFIG_PATH = "./configs/Deeplab_v3_plus_v4.yaml"
@@ -158,7 +160,7 @@ def main():
         trainer = AdaptSeg_Trainer(config)
 
     # todo: remove this line without dev version
-    assert config["model"] == "DeepLabEdgeTriple"
+    assert config["model"] == "DeepLabEdge"
     # assert config["model"] == "DeepLabEdge"
     # assert config["model"] == "DeepLabv3+"
 
@@ -277,17 +279,17 @@ def main():
                     target_input_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_input.png' % i_iter)
                     target_output_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s.png' % i_iter)
                     target_edge_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_edge.png' % i_iter)
-                    source_last_output_path = os.path.join(checkoutput_dir, "Image_source_domain_last_seg",
-                                                     '%s.png' % i_iter)
-                    target_last_output_path = os.path.join(checkoutput_dir, "Image_target_domain_last_seg", '%s.png' % i_iter)
+                    # source_last_output_path = os.path.join(checkoutput_dir, "Image_source_domain_last_seg",
+                    #                                  '%s.png' % i_iter)
+                    # target_last_output_path = os.path.join(checkoutput_dir, "Image_target_domain_last_seg", '%s.png' % i_iter)
 
                     visuals = OrderedDict([('source_input', source_input_path),
                                            ('source_label', source_label_path),
-                                           ('source_last_output', source_last_output_path),
+                                           # ('source_last_output', source_last_output_path),
                                            ('source_output', source_output_path),
                                            ('source_edge', source_edge_path),
                                            ('target_input', target_input_path),
-                                           ('targer_last_output', target_last_output_path),
+                                           # ('targer_last_output', target_last_output_path),
                                            ('target_output', target_output_path),
                                            ('target_edge', target_edge_path)
                                            ])
