@@ -154,7 +154,9 @@ class ResNet(nn.Module):
         # self.attn2 = Self_Attn(19, 'relu')
         self.layer6 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
         # self.layer6 = self._make_pred_layer(Classifier_Module, 2049, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
-        self.edge = nn.Sequential(spectral_norm(nn.Conv2d(num_classes, 1, kernel_size=3, stride=1, padding=1)))
+        # self.edge = nn.Sequential(spectral_norm(nn.Conv2d(num_classes, 1, kernel_size=3, stride=1, padding=1)))
+        self.edge = self._make_pred_layer(Classifier_Module, num_classes, [3, 5], [3, 5], 1)
+
         #
         # self.edge = nn.Sequential(Self_Attn(num_classes, 'relu'),
         #                           spectral_norm(nn.Conv2d(num_classes, 1, kernel_size=1, stride=1, padding=0)))

@@ -12,8 +12,9 @@ from torch.utils import data, model_zoo
 # from model.deeplab_multi import Res_Deeplab
 # from model.deeplab_single import Res_Deeplab
 # from model.deeplab_single_add_edge import Res_Deeplab
+from model.deeplab_single_add_edge_v2 import Res_Deeplab
 # from model.deeplab_v3_resnet_add_edge import DeepLabv3_plus_edge
-from model.deeplab_multi_add_edge import Res_Deeplab
+# from model.deeplab_multi_add_edge import Res_Deeplab
 # from model.deeplab_single_attention import Res_Deeplab
 from dataset.cityscapes_dataset import cityscapesDataSet
 from collections import OrderedDict
