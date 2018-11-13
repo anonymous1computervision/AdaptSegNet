@@ -18,9 +18,9 @@ decay_power: 0.9
 random_seed: 1234
 momentum: 0.9
 weight_decay: 0.0005          # weight decay
-beta1: 0                    # Adam parameter
+beta1: 0.                    # Adam parameter
 beta2: 0.999                  # Adam parameter
-D_beta1: 0                   # Adam parameter
+D_beta1: 0                    # Adam parameter
 D_beta2: 0.999                  # Adam parameter
 lr_g: 0.00025                    # initial learning rate SGD
 lr_d: 0.001                    # initial learning rate Adam
@@ -38,13 +38,13 @@ gen:
   lambda_seg: 1
   lambda_adv_edge: 0.1
   lambda_adv_target: 0.001
-  lambda_adv_foreground: 2
-  
-
-
+  lambda_adv_foreground: 1
 
 dis:
-  adv_loss_opt: hinge  # [wgan-gp / hinge / bce]  
+  adv_loss_opt: bce  # [wgan-gp / hinge / bce]
+  lambda_attn: 0
+
+  
 
 # data options
 img_mean_r: 104.00698793                               # dataset img mean R
