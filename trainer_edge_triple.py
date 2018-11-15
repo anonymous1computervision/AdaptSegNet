@@ -338,10 +338,14 @@ class AdaptSeg_Edge_Aux_Triple_Trainer(nn.Module):
         # adv_loss = self.loss_hinge_gen(d_out_fake)
 
         # loss_adv_foreground = self.loss_hinge_gen(d_out_foreground_fake)
-
-        loss_adv_last = self._compute_adv_loss_real(d_out_fake_last)
-        loss_adv_final = self._compute_adv_loss_real(d_out_fake)
-        loss_adv_foreground = self._compute_adv_loss_real(d_out_fake_foreground)
+        if self.adv_loss_opt == "hinge":
+            loss_adv_last = self.loss_hinge_gen(d_out_fake_last)
+            loss_adv_final = self.loss_hinge_gen(d_out_fake)
+            loss_adv_foreground = self.loss_hinge_gen(d_out_fake_foreground)
+        else:
+            loss_adv_last = self._compute_adv_loss_real(d_out_fake_last)
+            loss_adv_final = self._compute_adv_loss_real(d_out_fake)
+            loss_adv_foreground = self._compute_adv_loss_real(d_out_fake_foreground)
 
         # loss_adv_foreground = self._compute_adv_loss_real(d_out_foreground_fake)
 

@@ -56,7 +56,7 @@ def main():
     # CONFIG_PATH = "./configs/default_edge_bce_lambda2.yaml"
     # CONFIG_PATH = "./configs/multi-edge-hinge.yaml"
     # CONFIG_PATH = "./configs/triple-edge-hinge-TTUR.yaml"
-    # CONFIG_PATH = "./configs/triple-edge-hinge-lambda.yaml"
+    CONFIG_PATH = "./configs/triple-edge-hinge-TTUR.yaml"
 
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
@@ -64,7 +64,7 @@ def main():
     # CONFIG_PATH = "./configs/default_edge_TTUR_D_beta.yaml"
     # CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR_v2.yaml"
-    CONFIG_PATH = "./configs/edge_TTUR-stable.yaml"
+    # CONFIG_PATH = "./configs/edge_TTUR-stable.yaml"
     # CONFIG_PATH = "./configs/default_DUC_decay_beta.yaml"
     # CONFIG_PATH = "./configs/Deeplab_v3_plus.yaml"
     # CONFIG_PATH = "./configs/Deeplab_v3_plus_v4.yaml"
@@ -160,7 +160,9 @@ def main():
         trainer = AdaptSeg_Trainer(config)
 
     # todo: remove this line without dev version
-    assert config["model"] == "DeepLabEdge"
+    assert config["model"] == "DeepLabEdgeTriple"
+
+    # assert config["model"] == "DeepLabEdge"
     # assert config["model"] == "DeepLabEdge"
     # assert config["model"] == "DeepLabv3+"
 
