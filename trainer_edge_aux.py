@@ -339,7 +339,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         if self.adv_loss_opt == "hinge":
             loss_adv = self.loss_hinge_gen(d_out_fake)
-            loss_adv_foreground = self.loss_hinge_gen(d_out_fake)
+            loss_adv_foreground = self.loss_hinge_gen(d_out_foreground_fake)
         else:
             loss_adv = self._compute_adv_loss_real(d_out_fake)
             loss_adv_foreground = self._compute_adv_loss_real(d_out_foreground_fake)
