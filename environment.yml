@@ -1,0 +1,12 @@
+name: Gated-AdaptSeg
+channels:
+  - pytorch
+  - defaults
+dependencies:
+  - cuda92=1.0=0
+  - pytorch=0.4.1=py36_cuda92_cudnn7he774522_1
+  - torchvision
+  - scipy
+  - matplotlib
+  - pillow
+  - pyyaml

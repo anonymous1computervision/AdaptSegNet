@@ -171,8 +171,14 @@ def main():
     print("config[model]  =", config["model"])
 
     checkpoint_iter = 0
-    if config["restore"] and config["restore_from"] != "None" and config["model"] != "DeepLabv3+":
-        trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
+    # if config["restore"] and config["restore_from"] != "None" and config["model"] != "DeepLabv3+":
+    #     trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
+    restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_30000_trainer_all.pth"
+    # print(str(trainer.state_dict())[:100])
+    saved_state_dict = torch.load(restore_from)
+    trainer.load_state_dict(saved_state_dict)
+    checkpoint_iter = 30001
+    del saved_state_dict
     # if config["model"] == "DeepLabv3+":
     #     saved_state_dict = torch.load(os.path.join("Deeplabv3_pth", "GTA2Cityscapes_multi", "GTA5_10000_trainer_all.pth"))
     #     trainer.load_state_dict(saved_state_dict)
@@ -187,10 +193,8 @@ def main():
     #     print(" in restore deeplab v3")
     #     trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
 
-    # restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_14000_trainer_all.pth"
-    # print(str(trainer.state_dict())[:100])
-    # saved_state_dict = torch.load(restore_from)
-    # trainer.load_state_dict(saved_state_dict)
+
+
     # print("after model load")
 
     # todo:next time need to remove
