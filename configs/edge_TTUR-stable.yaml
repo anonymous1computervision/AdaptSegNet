@@ -41,7 +41,7 @@ gen:
   lambda_adv_foreground: 1
 
 dis:
-  adv_loss_opt: bce  # [wgan-gp / hinge / bce]
+  adv_loss_opt: hinge  # [wgan-gp / hinge / bce]
   lambda_attn: 0
 
   

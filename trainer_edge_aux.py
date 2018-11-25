@@ -57,11 +57,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         #     self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
         #     print("use fc densenet model")
         # elif hyperparameters["model"] == 'DeepLabEdge':
-        # self.model = Res_Deeplab_Edge(num_classes=hyperparameters["num_classes"])
-        self.model = Res_Deeplab_Edge_v2(num_classes=hyperparameters["num_classes"])
-        print("use DeepLabEdge v2 model")
-        print("use DeepLabEdge v2 model")
-        print("use DeepLabEdge v2 model")
+        self.model = Res_Deeplab_Edge(num_classes=hyperparameters["num_classes"])
+        # self.model = Res_Deeplab_Edge_v2(num_classes=hyperparameters["num_classes"])
+        # print("use DeepLabEdge v2 model")
+        # print("use DeepLabEdge v2 model")
+        # print("use DeepLabEdge v2 model")
 
         # print("use DeepLabEdge model")
         # elif hyperparameters["model"] == 'DeepLab_v3_plus':
@@ -569,7 +569,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # ignore background label include 255-ignore label
         # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 255]
-        foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
+
         # foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
 
         # foreground_map = [1, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]

@@ -56,7 +56,11 @@ def main():
     # CONFIG_PATH = "./configs/default_edge_bce_lambda2.yaml"
     # CONFIG_PATH = "./configs/multi-edge-hinge.yaml"
     # CONFIG_PATH = "./configs/triple-edge-hinge-TTUR.yaml"
-    CONFIG_PATH = "./configs/triple-edge-hinge-TTUR.yaml"
+    # CONFIG_PATH = "./configs/triple-edge-hinge-TTUR.yaml"
+    # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
+    # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2-finegrained.yaml"
+    CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
+
 
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR.yaml"
@@ -160,9 +164,9 @@ def main():
         trainer = AdaptSeg_Trainer(config)
 
     # todo: remove this line without dev version
-    assert config["model"] == "DeepLabEdgeTriple"
+    # assert config["model"] == "DeepLabEdgeTriple"
 
-    # assert config["model"] == "DeepLabEdge"
+    assert config["model"] == "DeepLabEdge"
     # assert config["model"] == "DeepLabEdge"
     # assert config["model"] == "DeepLabv3+"
 
@@ -171,14 +175,17 @@ def main():
     print("config[model]  =", config["model"])
 
     checkpoint_iter = 0
-    # if config["restore"] and config["restore_from"] != "None" and config["model"] != "DeepLabv3+":
-    #     trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
-    restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_30000_trainer_all.pth"
+    if config["restore"] and config["restore_from"] != "None" and config["model"] != "DeepLabv3+":
+        trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
+    # restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_30000_trainer_all.pth"
+    # restore_from = ".\GTA5_250000_trainer_all.pth"
+
+
     # print(str(trainer.state_dict())[:100])
-    saved_state_dict = torch.load(restore_from)
-    trainer.load_state_dict(saved_state_dict)
-    checkpoint_iter = 30001
-    del saved_state_dict
+    # saved_state_dict = torch.load(restore_from)
+    # trainer.load_state_dict(saved_state_dict)
+    checkpoint_iter = 0
+    # del saved_state_dict
     # if config["model"] == "DeepLabv3+":
     #     saved_state_dict = torch.load(os.path.join("Deeplabv3_pth", "GTA2Cityscapes_multi", "GTA5_10000_trainer_all.pth"))
     #     trainer.load_state_dict(saved_state_dict)
@@ -253,7 +260,7 @@ def main():
             trainer.dis_update(labels=labels)
             # trainer.dis_foreground_update(labels=labels)
 
-            torch.cuda.empty_cache()
+            # torch.cuda.empty_cache()
 
             # train G use weakly label
             # trainer.gen_weakly_update(target_images, target_name)
