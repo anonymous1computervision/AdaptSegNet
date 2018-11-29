@@ -17,6 +17,8 @@ from PIL import Image
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
 from model.deeplab_single_add_edge import Res_Deeplab as Res_Deeplab_Edge
+from model.deeplab_single_add_edge_fuse import Res_Deeplab as Res_Deeplab_Edge_Fuse
+
 from model.deeplab_single_add_edge_v2 import Res_Deeplab as Res_Deeplab_Edge_v2
 
 from model.deeplav_v3_xception import DeepLabv3_plus
@@ -57,7 +59,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         #     self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
         #     print("use fc densenet model")
         # elif hyperparameters["model"] == 'DeepLabEdge':
-        self.model = Res_Deeplab_Edge(num_classes=hyperparameters["num_classes"])
+        # self.model = Res_Deeplab_Edge(num_classes=hyperparameters["num_classes"])
+        self.model = Res_Deeplab_Edge_Fuse(num_classes=hyperparameters["num_classes"])
+
         # self.model = Res_Deeplab_Edge_v2(num_classes=hyperparameters["num_classes"])
         # print("use DeepLabEdge v2 model")
         # print("use DeepLabEdge v2 model")
