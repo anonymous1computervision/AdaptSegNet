@@ -25,6 +25,8 @@ from model.deeplav_v3_xception import DeepLabv3_plus
 import model.fc_densenet as fc_densenet
 from model.sp_discriminator import SP_FCDiscriminator
 from model.gated_discriminator import Gated_Discriminator
+from model.gated_first2layer_discriminator import Gated_First2Layer_Discriminator
+
 from model.sp_aspp_discriminator import SP_ASPP_FCDiscriminator
 
 from util.loss import CrossEntropy2d
@@ -87,7 +89,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        self.model_D_foreground = Gated_First2Layer_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+
         # self.model_D_foreground = Gated_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
 
         # self.model_D_foreground = Partial_Discriminator(num_classes=hyperparameters['num_classes'])
@@ -573,8 +577,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # ignore background label include 255-ignore label
         # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 255]
-        # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
-        foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
+        foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        # foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
 
         # foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
 
