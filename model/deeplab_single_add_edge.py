@@ -260,6 +260,7 @@ class ResNet(nn.Module):
 
 
 def Res_Deeplab(num_classes=21):
+    print("model use Res_Deeplab_Edge")
     model = ResNet(Bottleneck, [3, 4, 23, 3], num_classes)
     return model
 

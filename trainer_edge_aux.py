@@ -17,7 +17,7 @@ from PIL import Image
 # from model.deeplab_multi import Res_Deeplab
 from model.deeplab_single import Res_Deeplab
 from model.deeplab_single_add_edge import Res_Deeplab as Res_Deeplab_Edge
-from model.deeplab_single_add_edge_fuse import Res_Deeplab as Res_Deeplab_Edge_Fuse
+# from model.deeplab_single_add_edge_fuse import Res_Deeplab as Res_Deeplab_Edge_Fuse
 
 from model.deeplab_single_add_edge_v2 import Res_Deeplab as Res_Deeplab_Edge_v2
 
@@ -25,8 +25,8 @@ from model.deeplav_v3_xception import DeepLabv3_plus
 import model.fc_densenet as fc_densenet
 from model.sp_discriminator import SP_FCDiscriminator
 from model.gated_discriminator import Gated_Discriminator
-from model.gated_first2layer_discriminator import Gated_First2Layer_Discriminator
-from model.gated_first2layer_hinge_discriminator import Gated_First2Layer_Hinge_Discriminator
+# from model.gated_first2layer_discriminator import Gated_First2Layer_Discriminator
+from model.gated_first4layer_hinge_discriminator import Gated_First4Layer_Hinge_Discriminator
 
 from model.sp_aspp_discriminator import SP_ASPP_FCDiscriminator
 
@@ -62,8 +62,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         #     self.model = fc_densenet.FCDenseNet57(hyperparameters["num_classes"])
         #     print("use fc densenet model")
         # elif hyperparameters["model"] == 'DeepLabEdge':
-        # self.model = Res_Deeplab_Edge(num_classes=hyperparameters["num_classes"])
-        self.model = Res_Deeplab_Edge_Fuse(num_classes=hyperparameters["num_classes"])
+        self.model = Res_Deeplab_Edge(num_classes=hyperparameters["num_classes"])
+        # self.model = Res_Deeplab_Edge_Fuse(num_classes=hyperparameters["num_classes"])
 
         # self.model = Res_Deeplab_Edge_v2(num_classes=hyperparameters["num_classes"])
         # print("use DeepLabEdge v2 model")
@@ -91,7 +91,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
-        self.model_D_foreground = Gated_First2Layer_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        self.model_D_foreground = Gated_First4Layer_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
         # self.model_D_foreground = Gated_First2Layer_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
 
         # self.model_D_foreground = Gated_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)

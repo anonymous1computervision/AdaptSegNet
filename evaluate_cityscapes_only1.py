@@ -11,9 +11,9 @@ import torch.nn.functional as F
 from torch.utils import data, model_zoo
 # from model.deeplab_multi import Res_Deeplab
 # from model.deeplab_single import Res_Deeplab
-from model.deeplab_single_add_edge_fuse import Res_Deeplab
+# from model.deeplab_single_add_edge_fuse import Res_Deeplab
 
-# from model.deeplab_single_add_edge import Res_Deeplab
+from model.deeplab_single_add_edge import Res_Deeplab
 # from model.deeplab_single_add_edge_v2 import Res_Deeplab
 # from model.deeplab_multi_add_edge import Res_Deeplab
 
