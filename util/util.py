@@ -62,12 +62,17 @@ def get_all_data_loaders(conf):
     #                 crop_size=GTA_size,
     #                 scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN),
     #     batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+    # train_loader = data.DataLoader(
+    #     GTA5DataSet(conf['data_directory'], conf['data_list_path'], max_iters=num_steps * iter_size * batch_size,
+    #                 crop_size=GTA_size,
+    #                 scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN),
+    #     batch_size=batch_size, shuffle=True, pin_memory=True)
+    # todo: 1214 revise crop size for data augment
     train_loader = data.DataLoader(
         GTA5DataSet(conf['data_directory'], conf['data_list_path'], max_iters=num_steps * iter_size * batch_size,
-                    crop_size=GTA_size,
+                    crop_size=600,
                     scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN),
         batch_size=batch_size, shuffle=True, pin_memory=True)
-
     # target domain data
     # target_loader = data.DataLoader(
     #     cityscapesDataSet(conf['data_directory_target'], conf['data_list_path_target'],

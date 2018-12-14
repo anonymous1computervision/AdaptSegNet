@@ -24,7 +24,7 @@ class CrossEntropy2d(nn.Module):
         assert target.dim() == 3
         assert predict.size(0) == target.size(0), "{0} vs {1} ".format(predict.size(0), target.size(0))
         assert predict.size(2) == target.size(1), "{0} vs {1} ".format(predict.size(2), target.size(1))
-        assert predict.size(3) == target.size(2), "{0} vs {1} ".format(predict.size(3), target.size(3))
+        assert predict.size(3) == target.size(2), "{0} vs {1} ".format(predict.size(3), target.size(2))
         n, c, h, w = predict.size()
         target_mask = (target >= 0) * (target != self.ignore_label)
         target = target[target_mask]

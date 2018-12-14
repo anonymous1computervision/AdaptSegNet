@@ -90,8 +90,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
-        self.model_D_foreground = Gated_First4Layer_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        # self.model_D_foreground = Gated_First4Layer_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
         # self.model_D_foreground = Gated_First2Layer_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
 
         # self.model_D_foreground = Gated_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
@@ -242,7 +242,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         pred_source_real, pred_source_edge = self.model(images)
 
         # resize to source size
-        interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
+        # interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
+        interp = nn.Upsample(size=(600, 600), align_corners=False, mode='bilinear')
 
 
         # old version
@@ -779,9 +780,12 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             os.makedirs(os.path.join(dir_name, "Image_target_domain_seg"))
 
         # save GT edge
+        interp = nn.Upsample(size=(1024, 2048), align_corners=False, mode='bilinear')
+
         # if no use is not None will be ambiguous
         if labels is not None:
             labels = labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2])
+            labels = interp(labels)
             self.tensor_to_PIL(self.label_get_edges(labels.cuda())).save(
                 'check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
             # self.tensor_to_PIL(self.get_foreground_attention(labels.cuda())).save('check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
@@ -789,6 +793,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # save output image
         if src_save:
             # record edge attn
+            self.saliency_mask = interp(self.saliency_mask)
+            self.pred_real_edge = interp(self.pred_real_edge)
+
             self.tensor_to_PIL(self.saliency_mask).save(
                 'check_output/Image_source_domain_seg/%s_compute_attn.png' % self.i_iter)
 
