@@ -6,15 +6,15 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 from PIL import Image
 import yaml
 import numpy as np
-from torch.utils.serialization import load_lua
-from torch.utils.data import DataLoader
-from torch.autograd import Variable
+# from torch.utils.serialization import load_lua
+# from torch.utils.data import DataLoader
+# from torch.autograd import Variable
 from torch.optim import lr_scheduler
-from torchvision import transforms
+# from torchvision import transforms
 import torch
 import os
 import math
-import torchvision.utils as vutils
+# import torchvision.utils as vutils
 import torch.nn as nn
 import torch.nn.init as init
 from torch.utils import data

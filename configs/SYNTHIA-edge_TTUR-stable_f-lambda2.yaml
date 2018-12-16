@@ -51,7 +51,7 @@ img_mean_r: 104.00698793                               # dataset img mean R
 img_mean_g: 116.66876762                              # dataset img mean G
 img_mean_b: 122.67891434                               # dataset img mean B
 ignore_label: 255             # ignore nonclass color BLACK
-num_classes: 13
+num_classes: 19
 num_workers: 4                             # number of data loading threads
 random_mirror: true
 random_scale: true                         # Whether to randomly mirror the inputs during the training.

@@ -30,9 +30,12 @@ class SYNYHIADataSet(data.Dataset):
         #                       19: 6, 20: 7, 21: 8, 22: 9, 23: 10, 24: 11, 25: 12,
         #                       26: 13, 27: 14, 28: 15, 31: 16, 32: 17, 33: 18}
         # Total 13 classes similar AdaptSegNet expreiment
-        self.id_to_trainid = {3: 0, 4: 1, 2: 2, 15: 6, 9: 7,
-                              6: 8, 1: 10, 10:11, 17:12, 8:13,
-                              19: 15, 12: 17, 11: 18}
+        # self.id_to_trainid = {3: 0, 4: 1, 2: 2, 15: 6, 9: 7,
+        #                       6: 8, 1: 10, 10:11, 17:12, 8:13,
+        #                       19: 15, 12: 17, 11: 18}
+        self.id_to_trainid = {3: 0, 4: 1, 2: 2, 21: 3, 5: 4, 7:5, 15: 6, 9: 7,
+                              6: 8, 16: 9, 1: 10, 10: 11, 17: 12, 8: 13,
+                              18: 14, 19: 15, 20: 16, 12: 17, 11: 18}
         # for split in ["train", "trainval", "val"]:
         for name in self.img_ids:
             img_file = osp.join(self.root, "images/%s" % name)
