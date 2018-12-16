@@ -750,12 +750,13 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         if src_save:
             # save image
-            label_name = os.path.join("data", "GTA5", "images", self.source_label_path[0])
+            dataset_name = self.hyperparameters["source_dataset"]
+            input_image_name = os.path.join("data", dataset_name, "images", self.source_label_path[0])
             save_name = os.path.join(dir_name, "Image_source_domain_seg", '%s_input.png' % self.i_iter)
-            shutil.copyfile(label_name, save_name)
+            shutil.copyfile(input_image_name, save_name)
 
             # save label
-            label_name = os.path.join("data", "GTA5", "labels", self.source_label_path[0])
+            label_name = os.path.join("data", dataset_name, "labels", self.source_label_path[0])
             save_name = os.path.join(dir_name, "Image_source_domain_seg", '%s_label.png' % self.i_iter)
             shutil.copyfile(label_name, save_name)
 
@@ -849,10 +850,30 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         if restore_from[:4] == 'http':
             saved_state_dict = model_zoo.load_url(restore_from)
             new_params = self.model.state_dict().copy()
+            # print("new_params", new_params)
+            # if num_classes != 19:
+            #     # print("saved_state_dict =", saved_state_dict)
+            #     for name, param in saved_state_dict.items():
+            #         name_parts = name.split('.')
+            #         name = '.'.join(name_parts[1:])
+            #         if name not in new_params:
+            #             continue
+            #         print("replace")
+            #         param = param.data
+            #         new_params[name].copy_(param)
+            #     print("before model load")
+            #     print("self.model.state_dict()")
+            #     print(str(self.model.state_dict())[:100])
+            #     self.model.load_state_dict(new_params)
+            #     print("after model load")
+            #     print("self.model.state_dict()")
+            #     print(str(self.model.state_dict())[:100])
+            # else:
             for i in saved_state_dict:
                 # Scale.layer5.conv2d_list.3.weight
                 i_parts = i.split('.')
-                if not num_classes == 19 or not i_parts[1] == 'layer5':
+                # if not num_classes == 19 or not i_parts[1] == 'layer5':
+                if not i_parts[1] == 'layer5':
                     new_params['.'.join(i_parts[1:])] = saved_state_dict[i]
             # new_params = saved_state_dict
             print("before model load")

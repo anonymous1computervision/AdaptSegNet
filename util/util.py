@@ -20,6 +20,7 @@ import torch.nn.init as init
 from torch.utils import data
 
 from dataset.gta5_dataset import GTA5DataSet
+from dataset.synthia_dataset import SYNYHIADataSet
 from dataset.cityscapes_dataset import cityscapesDataSet
 
 # Methods
@@ -50,6 +51,7 @@ def get_all_data_loaders(conf):
     random_scale_opt = conf["random_scale"]
     mirror_opt = conf["random_mirror"]
     # image resize function (w, h)
+    dataset_name = conf["source_dataset"]
     GTA_size = (conf["input_size_w"], conf["input_size_h"])
     City_size = (conf["input_target_size_w"], conf["input_target_size_h"])
     IMG_MEAN = (conf["img_mean_r"], conf["img_mean_g"], conf["img_mean_b"])
@@ -62,11 +64,19 @@ def get_all_data_loaders(conf):
     #                 crop_size=GTA_size,
     #                 scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN),
     #     batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
-    train_loader = data.DataLoader(
-        GTA5DataSet(conf['data_directory'], conf['data_list_path'], max_iters=num_steps * iter_size * batch_size,
-                    crop_size=GTA_size,
-                    scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN),
-        batch_size=batch_size, shuffle=True, pin_memory=True)
+    assert dataset_name == "GTA5" or dataset_name == "SYNTHIA"
+    if dataset_name == "GTA5":
+        train_loader = data.DataLoader(
+            GTA5DataSet(conf['data_directory'], conf['data_list_path'], max_iters=num_steps * iter_size * batch_size,
+                        crop_size=GTA_size,
+                        scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN),
+            batch_size=batch_size, shuffle=True, pin_memory=True)
+    elif dataset_name == "SYNTHIA":
+        train_loader = data.DataLoader(
+            SYNYHIADataSet(conf['data_directory'], conf['data_list_path'], max_iters=num_steps * iter_size * batch_size,
+                        crop_size=GTA_size,
+                        scale=random_scale_opt, mirror=mirror_opt, mean=IMG_MEAN),
+            batch_size=batch_size, shuffle=True, pin_memory=True)
 
     # target domain data
     # target_loader = data.DataLoader(

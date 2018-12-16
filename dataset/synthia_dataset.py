@@ -8,10 +8,11 @@ import torch
 import torchvision
 from torch.utils import data
 from PIL import Image
-
+import cv2
 
 class SYNYHIADataSet(data.Dataset):
     def __init__(self, root, list_path, max_iters=None, crop_size=(321, 321), mean=(128, 128, 128), scale=True, mirror=True, ignore_label=255):
+        # todo:check mean
         self.root = root
         self.list_path = list_path
         self.crop_size = crop_size
@@ -28,9 +29,10 @@ class SYNYHIADataSet(data.Dataset):
         # self.id_to_trainid = {7: 0, 8: 1, 11: 2, 12: 3, 13: 4, 17: 5,
         #                       19: 6, 20: 7, 21: 8, 22: 9, 23: 10, 24: 11, 25: 12,
         #                       26: 13, 27: 14, 28: 15, 31: 16, 32: 17, 33: 18}
-        # self.id_to_trainid = {3: 0, 4: 1, 2: 2, 17: 5,
-        #                       19: 6, 20: 7, 21: 8, 22: 9, 23: 10, 24: 11, 25: 12,
-        #                       26: 13, 27: 14, 28: 15, 31: 16, 32: 17, 33: 18, 0:ignore_label}
+        # Total 13 classes similar AdaptSegNet expreiment
+        self.id_to_trainid = {3: 0, 4: 1, 2: 2, 15: 6, 9: 7,
+                              6: 8, 1: 10, 10:11, 17:12, 8:13,
+                              19: 15, 12: 17, 11: 18}
         # for split in ["train", "trainval", "val"]:
         for name in self.img_ids:
             img_file = osp.join(self.root, "images/%s" % name)
@@ -44,25 +46,82 @@ class SYNYHIADataSet(data.Dataset):
     def __len__(self):
         return len(self.files)
 
+    def convert(self, label):
+        labels = {(0, 0, 0): 0, (70, 130, 180): 1, (70, 70, 70): 2, (128, 64, 128): 3, (244, 35, 232): 4,
+                  (64, 64, 128): 5, (107, 142, 35): 6, (153, 153, 153): 7, (0, 0, 142): 8, (220, 220, 0): 9,
+                  (220, 20, 60): 10, (119, 11, 32): 11, (0, 0, 230): 12, (250, 170, 160): 13, (128, 64, 64): 14,
+                  (250, 170, 30): 15, (152, 251, 152): 16, (255, 0, 0): 17, (0, 0, 70): 18, (0, 60, 100): 19,
+                  (0, 80, 100): 20, (102, 102, 156): 21, (102, 102, 156): 22}
+
+        h, w, _ = label.shape
+        new_label = np.zeros((h, w))
+        # print(new_label.shape)
+        for i in range(h):
+            for j in range(w):
+                try:
+                    a = labels[(label[i, j][0], label[i, j][1], label[i, j][2])]
+                except KeyError:
+                    a = -100
+                new_label[i, j] = a
+        # print(np.unique(new_label))
+        return new_label
+    def color_code(self, image):
+        labels = {(0, 0, 0): 0, (70, 130, 180): 1, (70, 70, 70): 2, (128, 64, 128): 3, (244, 35, 232): 4,
+                  (64, 64, 128): 5, (107, 142, 35): 6, (153, 153, 153): 7, (0, 0, 142): 8, (220, 220, 0): 9,
+                  (220, 20, 60): 10, (119, 11, 32): 11, (0, 0, 230): 12, (250, 170, 160): 13, (128, 64, 64): 14,
+                  (250, 170, 30): 15, (152, 251, 152): 16, (255, 0, 0): 17, (0, 0, 70): 18, (0, 60, 100): 19,
+                  (0, 80, 100): 20, (102, 102, 156): 21, (102, 102, 156): 22}
+        labels = [list(k) for k, v in labels.items()]
+        # h, w, _ = label.shape
+        # new_label = np.zeros((h, w))
+        # # print(new_label.shape)
+        # for i in range(h):
+        #     for j in range(w):
+        #         try:
+        #             a = labels[(label[i, j][0], label[i, j][1], label[i, j][2])]
+        #         except KeyError:
+        #             a = -100
+        #         new_label[i, j] = a
+        # print(np.unique(new_label))
+
+        colour_codes = np.array(labels)
+        x = colour_codes[image.astype(int)]
+        print("color_code x =", x)
+        return x
 
     def __getitem__(self, index):
         datafiles = self.files[index]
 
         image = Image.open(datafiles["img"]).convert('RGB')
-        label = Image.open(datafiles["label"])
+        # label = Image.open(datafiles["label"])
+        label = cv2.imread(datafiles["label"], cv2.IMREAD_UNCHANGED)[:, :, 2]
+        # gt_lab = np.asarray(imageio.imread(gt_lab, format='PNG-FI'))
         name = datafiles["name"]
+
 
         # resize
         image = image.resize(self.crop_size, Image.BICUBIC)
-        label = label.resize(self.crop_size, Image.NEAREST)
+        # label = label.resize(self.crop_size, Image.NEAREST)
+        label = cv2.resize(label, self.crop_size, cv2.INTER_NEAREST)
+
+        # print("labels =", label)
 
         image = np.asarray(image, np.float32)
-        label = np.asarray(label, np.float32)
+        label = np.asarray(label, np.int32)
+        # label = self.convert(label)
+        # label = self.color_code(label)
+        #
+        # print("float32 labels =", label)
+        # print("float32 labels max=", np.max(label))
+        # print("float32 labels shape=", label.shape)
+
 
         # re-assign labels to match the format of Cityscapes
         label_copy = 255 * np.ones(label.shape, dtype=np.float32)
         for k, v in self.id_to_trainid.items():
             label_copy[label == k] = v
+        # print("label_copy =", label_copy)
+        # print("float32 label_copy max=", np.max(label_copy))
 
         size = image.shape
         image = image[:, :, ::-1]  # change to BGR
@@ -73,7 +132,7 @@ class SYNYHIADataSet(data.Dataset):
 
 
 if __name__ == '__main__':
-    dst = GTA5DataSet("./data", is_transform=True)
+    dst = SYNYHIADataSet("./data", is_transform=True)
     trainloader = data.DataLoader(dst, batch_size=4)
     for i, data in enumerate(trainloader):
         imgs, labels = data

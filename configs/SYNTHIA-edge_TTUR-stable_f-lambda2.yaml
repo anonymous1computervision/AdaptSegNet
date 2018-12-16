@@ -51,14 +51,14 @@ img_mean_r: 104.00698793                               # dataset img mean R
 img_mean_g: 116.66876762                              # dataset img mean G
 img_mean_b: 122.67891434                               # dataset img mean B
 ignore_label: 255             # ignore nonclass color BLACK
-num_classes: 19
+num_classes: 13
 num_workers: 4                             # number of data loading threads
 random_mirror: true
 random_scale: true                         # Whether to randomly mirror the inputs during the training.
-source_dataset: GTA5          # choose source dataset[GTA5/SYNTHIA]
-data_directory: ./data/GTA5                 # dataset folder location
-data_list_path: ./dataset/gta5_list/train.txt # dataset training txt location
-input_size_h: 720         # resize to the height of source image (GTA5)
+source_dataset: SYNTHIA # choose source dataset[GTA5/SYNTHIA]
+data_directory: ./data/SYNTHIA                 # dataset folder location
+data_list_path: ./dataset/synthia_list/train.txt # dataset training txt location
+input_size_h: 760         # resize to the height of source image (GTA5)
 input_size_w: 1280        # resize to the width of source image (GTA5)
 data_directory_target: ./data/Cityscapes/data
 data_list_path_target: ./dataset/cityscapes_list/train.txt

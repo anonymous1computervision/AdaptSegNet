@@ -59,7 +59,8 @@ def main():
     # CONFIG_PATH = "./configs/triple-edge-hinge-TTUR.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2-finegrained.yaml"
-    CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
+    # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
+    CONFIG_PATH = "./configs/SYNTHIA-edge_TTUR-stable_f-lambda2.yaml"
 
 
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
@@ -175,8 +176,12 @@ def main():
     print("config[model]  =", config["model"])
 
     checkpoint_iter = 0
-    if config["restore"] and config["restore_from"] != "None" and config["model"] != "DeepLabv3+":
+    if config["restore_from"] == "None":
+        print("# no pre-trained weight")
+        print("# trained from scratch")
+    elif config["restore"] and config["model"] != "DeepLabv3+":
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
+
     # restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_30000_trainer_all.pth"
     # restore_from = ".\GTA5_250000_trainer_all.pth"
 

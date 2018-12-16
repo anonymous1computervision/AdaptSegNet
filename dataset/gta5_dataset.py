@@ -48,6 +48,7 @@ class GTA5DataSet(data.Dataset):
 
         image = Image.open(datafiles["img"]).convert('RGB')
         label = Image.open(datafiles["label"])
+        # print("label filename =", datafiles["label"])
         name = datafiles["name"]
 
         # resize
@@ -56,7 +57,7 @@ class GTA5DataSet(data.Dataset):
 
         image = np.asarray(image, np.float32)
         label = np.asarray(label, np.float32)
-
+        # print("labels =", label)
         # re-assign labels to match the format of Cityscapes
         label_copy = 255 * np.ones(label.shape, dtype=np.float32)
         for k, v in self.id_to_trainid.items():
