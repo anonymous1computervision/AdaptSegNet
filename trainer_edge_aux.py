@@ -756,7 +756,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             shutil.copyfile(input_image_name, save_name)
 
             # save label
-            label_name = os.path.join("data", dataset_name, "labels", self.source_label_path[0])
+            if dataset_name == "SYNTHIA":
+                label_name = os.path.join("data", dataset_name, "labels-rgb", self.source_label_path[0])
+            else:
+                label_name = os.path.join("data", dataset_name, "labels", self.source_label_path[0])
             save_name = os.path.join(dir_name, "Image_source_domain_seg", '%s_label.png' % self.i_iter)
             shutil.copyfile(label_name, save_name)
 
