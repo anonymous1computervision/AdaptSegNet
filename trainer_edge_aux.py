@@ -883,9 +883,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             print("self.model.state_dict()")
             print(str(self.model.state_dict())[:100])
             self.model.load_state_dict(new_params)
+            del new_params
             print("after model load")
             print("self.model.state_dict()")
             print(str(self.model.state_dict())[:100])
+
         else:
             print("use own pre-trained")
             print("before model load")
