@@ -59,8 +59,8 @@ def main():
     # CONFIG_PATH = "./configs/triple-edge-hinge-TTUR.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2-finegrained.yaml"
-    # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
-    CONFIG_PATH = "./configs/SYNTHIA-edge_TTUR-stable_f-lambda2.yaml"
+    CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
+    # CONFIG_PATH = "./configs/SYNTHIA-edge_TTUR-stable_f-lambda2.yaml"
 
 
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
