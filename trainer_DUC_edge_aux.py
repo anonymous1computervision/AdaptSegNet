@@ -680,8 +680,8 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
 
     @property
     def discriminator_gamma(self):
-        # return float(self.model_D.gamma)
-        return 0
+        return float(self.model_D.gamma)
+        # return 0
 
     def snapshot_image_save(self, dir_name="check_output/", src_save=True, target_save=True):
         """

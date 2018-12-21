@@ -13,6 +13,9 @@ class SP_CGAN_FCDiscriminator(nn.Module):
 
 	def __init__(self, num_classes, ndf = 64):
 		super(SP_CGAN_FCDiscriminator, self).__init__()
+
+		self.gamma = nn.Parameter(torch.zeros(1))
+
 		self.conv1 = spectral_norm(nn.Conv2d(num_classes, ndf, kernel_size=4, stride=2, padding=1))
 		self.conv2 = spectral_norm(nn.Conv2d(ndf, ndf*2, kernel_size=4, stride=2, padding=1))
 		self.conv3 = spectral_norm(nn.Conv2d(ndf*2, ndf*4, kernel_size=4, stride=2, padding=1))
@@ -93,7 +96,9 @@ class SP_CGAN_FCDiscriminator(nn.Module):
 		x = torch.sum(x, dim=(2, 3))
 		x = self.fc(x)
 		# x = self.classifier(x)
-		x = x + proj
+		# x = x + proj
+		x += self.gamma * proj
+
 		#x = self.up_sample(x)
 		#x = self.sigmoid(x)
 
