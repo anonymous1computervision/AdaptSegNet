@@ -337,7 +337,7 @@ def main():
                     recording_total = f"Test summary = %s\n\n" \
                                       "========= Best score =========\n" \
                                       "best epoches = %s\n" \
-                                      "gamma = %.5f\n"\
+                                      "gamma = %s\n"\
                                       "%s\n\n" %(
                                         config["test_summary"],
                                         best_score_record["epochs"],
@@ -350,7 +350,7 @@ def main():
                     #                      recording_string)
                     currenet_result = f"\n========= Current score =========\n" \
                                       "epoches = % s\n" \
-                                      "gamma = %.5f\n" \
+                                      "gamma = %s\n" \
                                       "%s" \
                                       % (i_iter,
                                          trainer.discriminator_gamma,
@@ -360,7 +360,7 @@ def main():
 
                     if i_iter % 1000 == 0 or i_iter <= 1000:
                         record_each_epoch += f"\n========= epoch score  = % s =========\n" \
-                                         "gamma = %.5f\n" \
+                                         "gamma = %s\n" \
                                          "%s\n" \
                                           % (i_iter,
                                              trainer.discriminator_gamma,
