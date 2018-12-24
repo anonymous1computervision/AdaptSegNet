@@ -25,8 +25,11 @@ from model.deeplav_v3_xception import DeepLabv3_plus
 import model.fc_densenet as fc_densenet
 # from model.sp_discriminator import SP_FCDiscriminator
 from model.sp_cgan_discriminator import SP_CGAN_FCDiscriminator
+from model.sp_coord_discriminator import SP_Coord_FCDiscriminator
 
 from model.gated_discriminator import Gated_Discriminator
+from model.gated_coord_discriminator import Gated_Coord_Discriminator
+
 # from model.gated_first2layer_discriminator import Gated_First2Layer_Discriminator
 # from model.gated_first2layer_hinge_discriminator import Gated_First2Layer_Hinge_Discriminator
 
@@ -82,7 +85,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = SP_CGAN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = SP_CGAN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = SP_Coord_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
         # self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
@@ -95,7 +99,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
-        self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        self.model_D_foreground = Gated_Coord_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+
         # self.model_D_foreground = Gated_First2Layer_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
 
         # self.model_D_foreground = Gated_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
@@ -739,8 +745,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
     @property
     def discriminator_gamma(self):
-        return str(self.model_D.gamma.float())
-        # return 0
+        # return str(self.model_D.gamma.float())
+        return 0
 
     def snapshot_image_save(self, dir_name="check_output/", src_save=True, target_save=True):
         """

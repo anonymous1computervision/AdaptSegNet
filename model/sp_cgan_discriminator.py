@@ -108,7 +108,7 @@ class SP_CGAN_FCDiscriminator(nn.Module):
 		# proj = proj.float()
 		proj = proj * spatial_matrix
 		# print("proj shape =", proj.shape)
-		proj = torch.sum(proj, dim=(2, 3))
+		proj = torch.sum(proj, dim=(1, 2, 3))
 		# print("proj shape =", proj.shape)
 
 		# =================
@@ -124,7 +124,9 @@ class SP_CGAN_FCDiscriminator(nn.Module):
 
 		# print(" self.gamma=",  self.gamma.shape)
 		# print("proj shape=", proj.shape)
-		x = x + self.gamma * proj
+		# x = x + self.gamma * proj
+		x += proj
+
 		# print(" x.shape=",  x.shape)
 
 		#x = self.up_sample(x)
