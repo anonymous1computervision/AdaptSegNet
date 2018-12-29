@@ -60,6 +60,7 @@ class SP_CGAN_FCDiscriminator(nn.Module):
 		tensor_sprior = torch.tensor(sprior,
 									 dtype=torch.float64,
 									 device=torch.device('cuda:0')).float().cuda()
+		tensor_sprior = 1 + tensor_sprior
 		# tensor_sprior = tensor_sprior.double()
 		return tensor_sprior
 
@@ -124,8 +125,8 @@ class SP_CGAN_FCDiscriminator(nn.Module):
 
 		# print(" self.gamma=",  self.gamma.shape)
 		# print("proj shape=", proj.shape)
-		# x = x + self.gamma * proj
-		x += proj
+		x = x + self.gamma * proj
+		# x += proj
 
 		# print(" x.shape=",  x.shape)
 

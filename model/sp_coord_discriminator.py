@@ -59,3 +59,4 @@ class SP_Coord_FCDiscriminator(nn.Module):
 		#x = self.sigmoid(x)
 
 		return x, None
+#
