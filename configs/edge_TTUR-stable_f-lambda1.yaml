@@ -38,7 +38,7 @@ gen:
   lambda_seg: 1
   lambda_adv_edge: 0.1
   lambda_adv_target: 0.001
-  lambda_adv_foreground: 2
+  lambda_adv_foreground: 1
 
 dis:
   adv_loss_opt: hinge  # [wgan-gp / hinge / bce]
@@ -55,11 +55,11 @@ num_classes: 19
 num_workers: 4                             # number of data loading threads
 random_mirror: true
 random_scale: true                         # Whether to randomly mirror the inputs during the training.
-source_dataset: SYNTHIA # choose source dataset[GTA5/SYNTHIA]
-data_directory: ./data/SYNTHIA                 # dataset folder location
-data_list_path: ./dataset/synthia_list/train.txt # dataset training txt location
-input_size_h: 760         # resize to the height of source image (SYNTHIA)
-input_size_w: 1280        # resize to the width of source image (SYNTHIA)
+source_dataset: GTA5          # choose source dataset[GTA5/SYNTHIA]
+data_directory: ./data/GTA5                 # dataset folder location
+data_list_path: ./dataset/gta5_list/train.txt # dataset training txt location
+input_size_h: 720         # resize to the height of source image (GTA5)
+input_size_w: 1280        # resize to the width of source image (GTA5)
 data_directory_target: ./data/Cityscapes/data
 data_list_path_target: ./dataset/cityscapes_list/train.txt
 input_target_size_h: 512  # resize to the height of target image (CityScapes)

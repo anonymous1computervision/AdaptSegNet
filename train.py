@@ -59,10 +59,12 @@ def main():
     # CONFIG_PATH = "./configs/triple-edge-hinge-TTUR.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2-finegrained.yaml"
-    CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
+    # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda10.yaml"
+    # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda1.yaml"
 
-    # CONFIG_PATH = "./configs/SYNTHIA-edge_TTUR-stable_f-lambda2.yaml"
+
+    CONFIG_PATH = "./configs/SYNTHIA-edge_TTUR-stable_f-lambda2.yaml"
 
 
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
@@ -230,7 +232,6 @@ def main():
             src_images = Variable(src_images).cuda(gpu)
             trainer.gen_source_update(src_images, labels, names)
             # del src_images
-            # torch.cuda.empty_cache()
 
             # train G use target image
             target_images, _, _, target_name = target_batch
