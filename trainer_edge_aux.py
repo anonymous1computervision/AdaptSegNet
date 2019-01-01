@@ -86,7 +86,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         #     print("use DeepLab_v3_plus model")
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_CGAN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Coord_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
@@ -96,7 +96,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
-        self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
+        # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
