@@ -33,6 +33,7 @@ from trainer_edge_aux_deeplab_v3 import AdaptSeg_Deeplabv3_Edge_Aux_Trainer
 from trainer_edge_triple import AdaptSeg_Edge_Aux_Triple_Trainer
 from trainer_PSP_edge_aux import AdaptSeg_PSP_Edge_Aux_Trainer
 from trainer_DUC_edge_aux import AdaptSeg_DUC_Edge_Aux_Trainer
+from trainer_multi import AdaptSeg_Multi_Trainer
 from util.util import get_all_data_loaders, get_config, tensor2im, paint_predict_image, paint_predict_image_np
 from util.visualizer import Visualizer
 from test_iou import output_to_image, compute_mIoU, get_test_mini_set
@@ -62,9 +63,9 @@ def main():
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda2.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda10.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda1.yaml"
+    CONFIG_PATH = "./configs/Multi-TTUR.yaml"
 
-
-    CONFIG_PATH = "./configs/SYNTHIA-edge_TTUR-stable_f-lambda2.yaml"
+    # CONFIG_PATH = "./configs/SYNTHIA-edge_TTUR-stable_f-lambda2.yaml"
 
 
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
@@ -135,13 +136,19 @@ def main():
         print("use DeepLabEdgeTriple")
         print("use DeepLabEdgeTriple")
         print("use DeepLabEdgeTriple")
-        
+
     elif config["model"] == "DeepLabEdge":
         trainer = AdaptSeg_Edge_Aux_Trainer(config)
         # trainer = DeepLab_Scratch_Trainer(config)
         print("use DeepLabEdge")
         print("use DeepLabEdge")
         print("use DeepLabEdge")
+    elif config["model"] == "DeepLabMulti":
+        trainer = AdaptSeg_Multi_Trainer(config)
+        # trainer = DeepLab_Scratch_Trainer(config)
+        print("use DeepLabMulti")
+        print("use DeepLabMulti")
+        print("use DeepLabMulti")
 
     elif config["model"] == "DeepLabEdgeSN":
         trainer = AdaptSeg_Edge_Aux_SN_Trainer(config)
@@ -171,7 +178,7 @@ def main():
     # todo: remove this line without dev version
     # assert config["model"] == "DeepLabEdgeTriple"
 
-    assert config["model"] == "DeepLabEdge"
+    assert config["model"] == "DeepLabMulti"
     # assert config["model"] == "DeepLabEdge"
     # assert config["model"] == "DeepLabv3+"
 
@@ -267,7 +274,7 @@ def main():
             if i_iter % image_save_iter == 0:
                 print("image_save_dir", image_save_dir)
                 trainer.snapshot_image_save(dir_name=image_save_dir)
-                trainer.snapshot_edge_save(dir_name=image_save_dir, labels=labels)
+                # trainer.snapshot_edge_save(dir_name=image_save_dir, labels=labels)
 
                 if config["visualizer"]:
                     # tf_board loss visualization
@@ -278,10 +285,12 @@ def main():
                     source_input_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_input.png' % i_iter)
                     source_label_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_label.png' % i_iter)
                     source_output_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s.png' % i_iter)
-                    source_edge_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_edge.png' % i_iter)
+                    source_output_path_l2 = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_l2.png' % i_iter)
+                    # source_edge_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_edge.png' % i_iter)
                     target_input_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_input.png' % i_iter)
                     target_output_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s.png' % i_iter)
-                    target_edge_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_edge.png' % i_iter)
+                    target_output_path_l2 = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_l2.png' % i_iter)
+                    # target_edge_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_edge.png' % i_iter)
                     # source_last_output_path = os.path.join(checkoutput_dir, "Image_source_domain_last_seg",
                     #                                  '%s.png' % i_iter)
                     # target_last_output_path = os.path.join(checkoutput_dir, "Image_target_domain_last_seg", '%s.png' % i_iter)
@@ -290,11 +299,13 @@ def main():
                                            ('source_label', source_label_path),
                                            # ('source_last_output', source_last_output_path),
                                            ('source_output', source_output_path),
-                                           ('source_edge', source_edge_path),
+                                           # ('source_output_l2', source_output_path_l2),
+                                           # ('source_edge', source_edge_path),
                                            ('target_input', target_input_path),
                                            # ('targer_last_output', target_last_output_path),
                                            ('target_output', target_output_path),
-                                           ('target_edge', target_edge_path)
+                                           ('target_output_l2', target_output_path_l2),
+                                           # ('target_edge', target_edge_path)
                                            ])
                     visualizer.display_current_results_by_path(visuals, i_iter, step=image_save_iter)
 
