@@ -54,9 +54,9 @@ class AdaptSeg_Multi_Trainer(nn.Module):
         # training setting
         self.num_steps = hyperparameters["num_steps"]
 
-        self.foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
-        n = len(self.foreground_map)
-        self.spatial_matrix = self.get_spatial_matrix()
+        # self.foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        # n = len(self.foreground_map)
+        # self.spatial_matrix = self.get_spatial_matrix()
 
         # log setting
         # configure(hyperparameters['config_path'])
@@ -344,7 +344,7 @@ class AdaptSeg_Multi_Trainer(nn.Module):
 
         self.loss_dict['Global_GAN_adv'] += loss_adv.data.cpu().numpy()
         self.loss_dict['Foreground_GAN_adv'] += loss_adv_foreground.data.cpu().numpy()
-
+        del loss
     def dis_update(self, labels=None):
         """
                 use [gen_source_update / gen_target_update]'s image to discriminator,
@@ -366,33 +366,35 @@ class AdaptSeg_Multi_Trainer(nn.Module):
         # compute adv loss function
 
         # cobime predict and use predict output get edge
-        net_input = F.softmax(self.source_image, dim=1)
-        d_out_real, _ = self.model_D(net_input, label=None)
+
         # resize to source size
         net_input = F.softmax(self.source_image_l2, dim=1)
         # d_out_foreground_real, _ = self.model_D_foreground(net_input, label=None)
-        d_out_foreground_real, _ = self.model_D_foreground(net_input, label=None)
+        d_out_real, _ = self.model_D_foreground(net_input, label=None)
 
         # cobime predict and use predict output get edge
-        net_input = F.softmax(self.target_image, dim=1)
-        d_out_fake, _ = self.model_D(net_input, label=None)
+
         net_input = F.softmax(self.target_image_l2, dim=1)
         # d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=self.target_spatial_info)
-        d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=None)
+        d_out_fake, _ = self.model_D_foreground(net_input, label=None)
 
         # foreground part
         if self.adv_loss_opt == "hinge":
-            loss = self.loss_hinge_dis(d_out_foreground_fake, d_out_foreground_real)
+            loss = self.loss_hinge_dis(d_out_fake, d_out_real)
             # print("fore loss=", loss)
             # print("hinge")
         else:
             # print("self.adv_loss_opt")
-            loss_fake = self._compute_adv_loss_fake(d_out_foreground_fake, self.adv_loss_opt)
-            loss_real = self._compute_adv_loss_real(d_out_foreground_real, self.adv_loss_opt)
+            loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+            loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
             loss = (loss_real + loss_fake) / 2
         loss.backward()
         self.loss_dict['Foreground_GAN_dis'] += loss.data.cpu().numpy()
 
+        net_input = F.softmax(self.source_image, dim=1)
+        d_out_real, _ = self.model_D(net_input, label=None)
+        net_input = F.softmax(self.target_image, dim=1)
+        d_out_fake, _ = self.model_D(net_input, label=None)
         # global part
         if self.adv_loss_opt == "hinge":
             loss = self.loss_hinge_dis(d_out_fake, d_out_real)
@@ -407,6 +409,7 @@ class AdaptSeg_Multi_Trainer(nn.Module):
         # update loss
         self.optimizer_D.step()
         self.optimizer_D_foreground.step()
+        del loss
 
     def loss_hinge_dis(self, dis_fake, dis_real):
         loss = torch.mean(F.relu(1. - dis_real))
