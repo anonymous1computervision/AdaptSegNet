@@ -131,7 +131,9 @@ class SP_CGAN_FCDiscriminator(nn.Module):
 
 		# spatial_matrix = spatial_matrix.double()
 		# proj = proj.float()
-		spatial_info = (1 + spatial_matrix) * input_foreground_resize
+		# spatial_info = (1 + spatial_matrix) * input_foreground_resize
+		spatial_info = spatial_matrix + input_foreground_resize
+
 		proj = proj * spatial_info
 		# proj = proj * spatial_matrix
 		# print("proj shape =", proj.shape)

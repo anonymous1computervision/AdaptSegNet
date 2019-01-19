@@ -64,8 +64,8 @@ def main():
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda10.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda1.yaml"
     # CONFIG_PATH = "./configs/Multi-TTUR.yaml"
-    CONFIG_PATH = "./configs/Multi-default.yaml"
-
+    # CONFIG_PATH = "./configs/Multi-default.yaml"
+    CONFIG_PATH = "./configs/Multi-TTUR-v1.yaml"
     # CONFIG_PATH = "./configs/SYNTHIA-edge_TTUR-stable_f-lambda2.yaml"
 
 
