@@ -315,22 +315,29 @@ class AdaptSeg_Multi_Trainer(nn.Module):
         # net_input = torch.cat((F.softmax(pred_target_fake), pred_target_edge), dim=1)
         net_input = F.softmax(pred_target_fake, dim=1)
         d_out_fake, _ = self.model_D(net_input, label=None)
+        # todo:20190119 add check performance
+        d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=None)
 
         net_input = F.softmax(pred_target_fake_l2, dim=1)
         # self.target_spatial_info = interp_target(self.spatial_matrix)
         # self.target_spatial_info[net_input > 0.8] = 1
         # self.target_spatial_info[net_input < 0.2] = 0
         # d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=self.target_spatial_info)
-        d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=None)
+        d_out_foreground_fake_2, _ = self.model_D_foreground(net_input, label=None)
 
         if self.adv_loss_opt == "hinge":
             loss_adv = self.loss_hinge_gen(d_out_fake)
+            loss_adv_foreground_2 = self.loss_hinge_gen(d_out_foreground_fake_2)
             loss_adv_foreground = self.loss_hinge_gen(d_out_foreground_fake)
+
         else:
             loss_adv = self._compute_adv_loss_real(d_out_fake)
+            loss_adv_foreground_2 = self._compute_adv_loss_real(d_out_foreground_fake_2)
             loss_adv_foreground = self._compute_adv_loss_real(d_out_foreground_fake)
 
-        loss = loss_adv + self.lambda_adv_foreground * loss_adv_foreground
+        loss = loss_adv + \
+                self.lambda_adv_foreground * loss_adv_foreground + \
+                self.lambda_adv_foreground * loss_adv_foreground_2
         loss = self.lambda_adv_target * loss
         loss.backward()
 
@@ -375,6 +382,30 @@ class AdaptSeg_Multi_Trainer(nn.Module):
         # cobime predict and use predict output get edge
 
         net_input = F.softmax(self.target_image_l2, dim=1)
+        # d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=self.target_spatial_info)
+        d_out_fake, _ = self.model_D_foreground(net_input, label=None)
+
+        # foreground part
+        if self.adv_loss_opt == "hinge":
+            loss = self.loss_hinge_dis(d_out_fake, d_out_real)
+            # print("fore loss=", loss)
+            # print("hinge")
+        else:
+            # print("self.adv_loss_opt")
+            loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
+            loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
+            loss = (loss_real + loss_fake) / 2
+        loss.backward()
+        self.loss_dict['Foreground_GAN_dis'] += loss.data.cpu().numpy()
+
+        # todo:20190119 add check performance
+        # resize to source size
+        net_input = F.softmax(self.source_image, dim=1)
+        # d_out_foreground_real, _ = self.model_D_foreground(net_input, label=None)
+        d_out_real, _ = self.model_D_foreground(net_input, label=None)
+
+        # cobime predict and use predict output get edge
+        net_input = F.softmax(self.target_image, dim=1)
         # d_out_foreground_fake, _ = self.model_D_foreground(net_input, label=self.target_spatial_info)
         d_out_fake, _ = self.model_D_foreground(net_input, label=None)
 
