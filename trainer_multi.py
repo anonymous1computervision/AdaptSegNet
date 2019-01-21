@@ -350,7 +350,8 @@ class AdaptSeg_Multi_Trainer(nn.Module):
         self.target_input_image = images.detach()
 
         self.loss_dict['Global_GAN_adv'] += loss_adv.data.cpu().numpy()
-        self.loss_dict['Foreground_GAN_adv'] += loss_adv_foreground.data.cpu().numpy()
+        self.loss_dict['Foreground_GAN_adv'] += loss_adv_foreground.data.cpu().numpy() +\
+                                                loss_adv_foreground_2.data.cpu().numpy()
         del loss
     def dis_update(self, labels=None):
         """
