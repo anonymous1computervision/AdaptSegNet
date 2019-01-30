@@ -284,9 +284,12 @@ def main():
 
                     checkoutput_dir = config["image_save_dir"]
                     source_input_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_input.png' % i_iter)
-                    source_label_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_label.png' % i_iter)
+                    source_output_path_l2 = os.path.join(checkoutput_dir, "Image_source_domain_seg",
+                                                         '%s_l2.png' % i_iter)
                     source_output_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s.png' % i_iter)
-                    source_output_path_l2 = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_l2.png' % i_iter)
+                    source_label_path = os.path.join(checkoutput_dir, "Image_source_domain_seg",
+                                                     '%s_label.png' % i_iter)
+
                     # source_edge_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_edge.png' % i_iter)
                     target_input_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_input.png' % i_iter)
                     target_output_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s.png' % i_iter)
@@ -297,10 +300,10 @@ def main():
                     # target_last_output_path = os.path.join(checkoutput_dir, "Image_target_domain_last_seg", '%s.png' % i_iter)
 
                     visuals = OrderedDict([('source_input', source_input_path),
-                                           ('source_last_output', source_last_output_path),
+                                           # ('source_last_output', source_last_output_path),
+                                           # ('source_output_l2', source_output_path_l2),
                                            ('source_output', source_output_path),
                                            ('source_label', source_label_path),
-                                           # ('source_output_l2', source_output_path_l2),
                                            # ('source_edge', source_edge_path),
                                            ('target_input', target_input_path),
                                            # ('targer_last_output', target_last_output_path),
