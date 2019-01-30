@@ -15,7 +15,9 @@ import numpy as np
 from PIL import Image
 import scipy.io as sio
 
-from model.deeplab_multi import Res_Deeplab
+# from model.deeplab_multi import Res_Deeplab
+from model.deeplab_multi_ocn import Res_Deeplab
+
 # from model.deeplab_single import Res_Deeplab
 from model.deeplab_single_add_edge import Res_Deeplab as Res_Deeplab_Edge
 # from model.deeplab_single_add_edge_fuse import Res_Deeplab as Res_Deeplab_Edge_Fuse
@@ -89,6 +91,8 @@ class AdaptSeg_Multi_Trainer(nn.Module):
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
+        self.model_D_foreground = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+
         # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
         # self.model_D_foreground = Gated_CGAN_FCDiscriminator(num_classes=hyperparameters['num_classes'] + 1)
 
@@ -97,7 +101,7 @@ class AdaptSeg_Multi_Trainer(nn.Module):
         # self.model_D_foreground = Gated_Coord_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
 
         # self.model_D_foreground = Gated_First2Layer_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
-        self.model_D_foreground = SP_CGAN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D_foreground = SP_CGAN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
         # self.model_D_foreground = Gated_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
 
@@ -613,9 +617,9 @@ class AdaptSeg_Multi_Trainer(nn.Module):
     @property
     def discriminator_gamma(self):
         # return str(self.model_D.gamma.float())
-        return str(self.model_D_foreground.gamma.float())
+        # return str(self.model_D_foreground.gamma.float())
 
-        # return 0
+        return 0
 
     def snapshot_image_save(self, dir_name="check_output/", src_save=True, target_save=True):
         """

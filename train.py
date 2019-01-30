@@ -65,9 +65,8 @@ def main():
     # CONFIG_PATH = "./configs/edge_TTUR-stable_f-lambda1.yaml"
     # CONFIG_PATH = "./configs/Multi-TTUR.yaml"
     # CONFIG_PATH = "./configs/Multi-default.yaml"
-    # CONFIG_PATH = "./configs/Multi-TTUR-v1.yaml"
+    CONFIG_PATH = "./configs/Multi-TTUR-v1.yaml"
     # CONFIG_PATH = "./configs/SYNTHIA-edge_TTUR-stable_f-lambda2.yaml"
-    CONFIG_PATH = "./configs/Multi-default.yaml"
 
 
     # CONFIG_PATH = "./configs/default_edge_deeplabv3.yaml"
@@ -180,7 +179,7 @@ def main():
     # todo: remove this line without dev version
     # assert config["model"] == "DeepLabEdgeTriple"
 
-    # assert config["model"] == "DeepLabMulti"
+    assert config["model"] == "DeepLabMulti"
     # assert config["model"] == "DeepLabEdge"
     # assert config["model"] == "DeepLabv3+"
 
@@ -243,11 +242,11 @@ def main():
             # del src_images
 
             # train G use target image
-            # target_images, _, _, target_name = target_batch
-            # target_images = Variable(target_images).cuda(gpu)
+            target_images, _, _, target_name = target_batch
+            target_images = Variable(target_images).cuda(gpu)
             #trainer.gen_target_and_foreground_update(target_images, target_name)
 
-            # trainer.gen_target_update(target_images, target_name)
+            trainer.gen_target_update(target_images, target_name)
             # trainer.gen_target_update_clamp(target_images, target_name)
 
             # trainer.gen_target_foreground_update(target_images, target_name)
@@ -256,7 +255,7 @@ def main():
             # torch.cuda.empty_cache()
 
             # train discriminator use prior generator image
-            # trainer.dis_update(labels=labels)
+            trainer.dis_update(labels=labels)
             # trainer.dis_foreground_update(labels=labels)
 
             # torch.cuda.empty_cache()
@@ -274,42 +273,42 @@ def main():
 
             ### display output images
             if i_iter % image_save_iter == 0:
-                print("image_save_dir", image_save_dir)
-                trainer.snapshot_image_save(dir_name=image_save_dir, target_save=False)
+                # print("image_save_dir", image_save_dir)
+                trainer.snapshot_image_save(dir_name=image_save_dir)
                 # trainer.snapshot_edge_save(dir_name=image_save_dir, labels=labels)
 
-                # if config["visualizer"]:
-                #     # tf_board loss visualization
-                #     # visualizer.plot_current_errors(trainer.loss_dict, i_iter)
-                #     # tf_board loss visualization
-                #
-                #     checkoutput_dir = config["image_save_dir"]
-                #     source_input_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_input.png' % i_iter)
-                #     source_label_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_label.png' % i_iter)
-                #     source_output_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s.png' % i_iter)
-                #     source_output_path_l2 = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_l2.png' % i_iter)
-                #     # source_edge_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_edge.png' % i_iter)
-                #     target_input_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_input.png' % i_iter)
-                #     target_output_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s.png' % i_iter)
-                #     target_output_path_l2 = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_l2.png' % i_iter)
-                #     # target_edge_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_edge.png' % i_iter)
-                #     # source_last_output_path = os.path.join(checkoutput_dir, "Image_source_domain_last_seg",
-                #     #                                  '%s.png' % i_iter)
-                #     # target_last_output_path = os.path.join(checkoutput_dir, "Image_target_domain_last_seg", '%s.png' % i_iter)
-                #
-                #     visuals = OrderedDict([('source_input', source_input_path),
-                #                            ('source_label', source_label_path),
-                #                            # ('source_last_output', source_last_output_path),
-                #                            ('source_output', source_output_path),
-                #                            # ('source_output_l2', source_output_path_l2),
-                #                            # ('source_edge', source_edge_path),
-                #                            ('target_input', target_input_path),
-                #                            # ('targer_last_output', target_last_output_path),
-                #                            ('target_output', target_output_path),
-                #                            ('target_output_l2', target_output_path_l2),
-                #                            # ('target_edge', target_edge_path)
-                #                            ])
-                #     visualizer.display_current_results_by_path(visuals, i_iter, step=image_save_iter)
+                if config["visualizer"]:
+                    # tf_board loss visualization
+                    # visualizer.plot_current_errors(trainer.loss_dict, i_iter)
+                    # tf_board loss visualization
+
+                    checkoutput_dir = config["image_save_dir"]
+                    source_input_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_input.png' % i_iter)
+                    source_label_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_label.png' % i_iter)
+                    source_output_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s.png' % i_iter)
+                    source_output_path_l2 = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_l2.png' % i_iter)
+                    # source_edge_path = os.path.join(checkoutput_dir, "Image_source_domain_seg", '%s_edge.png' % i_iter)
+                    target_input_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_input.png' % i_iter)
+                    target_output_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s.png' % i_iter)
+                    target_output_path_l2 = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_l2.png' % i_iter)
+                    # target_edge_path = os.path.join(checkoutput_dir, "Image_target_domain_seg", '%s_edge.png' % i_iter)
+                    # source_last_output_path = os.path.join(checkoutput_dir, "Image_source_domain_last_seg",
+                    #                                  '%s.png' % i_iter)
+                    # target_last_output_path = os.path.join(checkoutput_dir, "Image_target_domain_last_seg", '%s.png' % i_iter)
+
+                    visuals = OrderedDict([('source_input', source_input_path),
+                                           ('source_last_output', source_last_output_path),
+                                           ('source_output', source_output_path),
+                                           ('source_label', source_label_path),
+                                           # ('source_output_l2', source_output_path_l2),
+                                           # ('source_edge', source_edge_path),
+                                           ('target_input', target_input_path),
+                                           # ('targer_last_output', target_last_output_path),
+                                           ('target_output_l2', target_output_path_l2),
+                                           ('target_output', target_output_path),
+                                           # ('target_edge', target_edge_path)
+                                           ])
+                    visualizer.display_current_results_by_path(visuals, i_iter, step=image_save_iter)
 
             # save checkpoint .pth
             if i_iter % snapshot_save_iter == 0:
