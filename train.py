@@ -81,7 +81,7 @@ def main():
     # CONFIG_PATH = "./configs/default_DUC_decay_beta.yaml"
     # CONFIG_PATH = "./configs/Deeplab_v3_plus.yaml"
     # CONFIG_PATH = "./configs/Deeplab_v3_plus_v4.yaml"
-    CONFIG_PATH = "./configs/SYNTHIA-edge-f-lambda05.yaml"
+    CONFIG_PATH = "./configs/SYNTHIA-edge-f-low-lr-lambda2.yaml"
     # CONFIG_PATH = "./configs/Deeplab_v3_plus_10000.yaml"
     # CONFIG_PATH = "./configs/default_DUC.yaml"
 
@@ -241,7 +241,7 @@ def main():
             # print("get source labels shape", labels.shape)
             src_images = Variable(src_images).cuda(gpu)
             trainer.gen_source_update(src_images, labels, names)
-            # del src_images
+            del src_images
 
             # train G use target image
             target_images, _, _, target_name = target_batch
@@ -250,11 +250,12 @@ def main():
 
             trainer.gen_target_update(target_images, target_name)
             # trainer.gen_target_update_clamp(target_images, target_name)
+            del target_images
 
             # trainer.gen_target_foreground_update(target_images, target_name)
 
             # del target_images
-            # torch.cuda.empty_cache()
+            torch.cuda.empty_cache()
 
             # train discriminator use prior generator image
             trainer.dis_update(labels=labels)

@@ -46,7 +46,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         super(AdaptSeg_Edge_Aux_Trainer, self).__init__()
         self.hyperparameters = hyperparameters
         # input size setting
-        self.input_size = (hyperparameters["input_size_h"], hyperparameters["input_size_w"])
+        # self.input_size = (hyperparameters["input_size_h"], hyperparameters["input_size_w"])
+        self.input_size = (760, 760)
+
         self.input_size_target = (hyperparameters["input_target_size_h"], hyperparameters["input_target_size_w"])
 
         # training setting

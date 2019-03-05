@@ -9,6 +9,8 @@ import torchvision
 from torch.utils import data
 from PIL import Image
 import cv2
+# from scipy.misc import imread, imresize
+
 
 class SYNYHIADataSet(data.Dataset):
     def __init__(self, root, list_path, max_iters=None, crop_size=(321, 321), mean=(128, 128, 128), scale=True, mirror=True, ignore_label=255):
@@ -92,6 +94,31 @@ class SYNYHIADataSet(data.Dataset):
         print("color_code x =", x)
         return x
 
+    def _scale(self, img, seg):
+        h_s, w_s = 760, 1280
+        # h_s, w_s = 720, 1312
+        img_scale = img.resize((h_s, w_s), Image.BICUBIC)
+        seg = (seg + 1).astype(np.uint8)
+        seg_scale = cv2.resize(seg, (h_s, w_s), cv2.INTER_NEAREST)
+        seg_scale = seg_scale.astype(np.int) - 1
+
+        return img_scale, seg_scale
+
+    def _crop(self, img, seg, cropSize=760, is_train=False):
+        h_s, w_s = 760, 1280
+        if is_train:
+            # random crop
+            x1 = random.randint(0, w_s - cropSize)
+            y1 = random.randint(0, h_s - cropSize)
+            img_crop = img[y1: y1 + cropSize, x1: x1 + cropSize, :]
+            seg_crop = seg[y1: y1 + cropSize, x1: x1 + cropSize]
+        else:
+            # no crop
+            img_crop = img
+            seg_crop = seg
+
+        return img_crop, seg_crop
+
     def _flip(self, img, seg):
         img_flip = img[:, ::-1, :].copy()
         seg_flip = seg[:, ::-1].copy()
@@ -109,13 +136,16 @@ class SYNYHIADataSet(data.Dataset):
 
         # resize
         image = image.resize(self.crop_size, Image.BICUBIC)
-        # label = label.resize(self.crop_size, Image.NEAREST)
         label = cv2.resize(label, self.crop_size, cv2.INTER_NEAREST)
-
-        # print("labels =", label)
-
+        # image, label = self._scale(image, label)
         image = np.asarray(image, np.float32)
         label = np.asarray(label, np.int32)
+        # random crop
+        image, label = self._crop(image, label, cropSize=760, is_train=self.is_mirror)
+        # print("labels =", label)
+
+        # image = np.asarray(image, np.float32)
+        # label = np.asarray(label, np.int32)
         # label = self.convert(label)
         # label = self.color_code(label)
         #
