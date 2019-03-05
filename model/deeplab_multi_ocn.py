@@ -3,6 +3,7 @@ import math
 import torch.utils.model_zoo as model_zoo
 import torch
 import numpy as np
+from torch.utils.checkpoint import checkpoint_sequential
 
 from model.base_oc_block import BaseOC_Module
 
@@ -130,9 +131,9 @@ class ResNet(nn.Module):
         for i in self.bn1.parameters():
             i.requires_grad = False
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1) # change
-        self.relu_add = nn.ReLU(inplace=True)  # change
-        self.maxpool_add = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True)  # change
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True) # change
+        # self.relu_add = nn.ReLU(inplace=True)  # change
+        # self.maxpool_add = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, ceil_mode=True)  # change
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=1, dilation=2)
@@ -140,13 +141,20 @@ class ResNet(nn.Module):
         # self.layer5 = self._make_pred_layer(Classifier_Module, 1024, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
         # self.layer6 = self._make_pred_layer(Classifier_Module, 2048, [6, 12, 18, 24], [6, 12, 18, 24], num_classes)
         # extra added layers
+        # self.context = nn.Sequential(
+        #     nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1),
+        #     # InPlaceABNSync(512),
+        #     BaseOC_Module(in_channels=512, out_channels=512, key_channels=256, value_channels=256,
+        #     dropout=0.05, sizes=([1]))
+        #     )
         self.context = nn.Sequential(
-            nn.Conv2d(2048, 512, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(2048, 256, kernel_size=3, stride=1, padding=1),
             # InPlaceABNSync(512),
-            BaseOC_Module(in_channels=512, out_channels=512, key_channels=256, value_channels=256,
+            BaseOC_Module(in_channels=256, out_channels=256, key_channels=128, value_channels=128,
             dropout=0.05, sizes=([1]))
             )
-        self.cls = nn.Conv2d(512, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
+        # self.cls = nn.Conv2d(512, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
+        self.cls = nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
         self.dsn  = nn.Sequential(
             nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
             # InPlaceABNSync(512),
@@ -188,8 +196,8 @@ class ResNet(nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
-        x = self.relu_add(x)
-        x = self.maxpool_add(x)
+        # x = self.relu_add(x)
+        # x = self.maxpool_add(x)
         x = self.layer1(x)
         x = self.layer2(x)
 
@@ -197,9 +205,9 @@ class ResNet(nn.Module):
         # print("layer 3 shape", x.shape)
         # x1 = self.layer5(x)
         x1 = self.dsn(x)
-
         x = self.layer4(x)
         # print("layer 4 shape", x.shape)
+        # memory save
         x = self.context(x)
         x = self.cls(x)
         # x2 = self.layer6(x)

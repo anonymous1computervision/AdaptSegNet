@@ -220,9 +220,9 @@ class ResNet(nn.Module):
             for i in b[j]:
                 yield i
 
-    def optim_parameters(self, args):
-        return [{'params': self.get_1x_lr_params_NOscale(), 'lr': args.learning_rate},
-                {'params': self.get_10x_lr_params(), 'lr': 10 * args.learning_rate}]
+    def optim_parameters(self, learning_rate):
+        return [{'params': self.get_1x_lr_params_NOscale(), 'lr': learning_rate},
+                {'params': self.get_10x_lr_params(), 'lr': 10 * learning_rate}]
 
 
 def Res_Deeplab(num_classes=21):

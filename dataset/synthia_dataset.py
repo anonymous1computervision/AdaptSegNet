@@ -92,6 +92,11 @@ class SYNYHIADataSet(data.Dataset):
         print("color_code x =", x)
         return x
 
+    def _flip(self, img, seg):
+        img_flip = img[:, ::-1, :].copy()
+        seg_flip = seg[:, ::-1].copy()
+        return img_flip, seg_flip
+
     def __getitem__(self, index):
         datafiles = self.files[index]
 
@@ -130,6 +135,11 @@ class SYNYHIADataSet(data.Dataset):
         image = image[:, :, ::-1]  # change to BGR
         image -= self.mean
         image = image.transpose((2, 0, 1))
+
+        # random flip
+        if self.is_mirror and random.choice([-1, 1]) > 0:
+            # print("random flip")
+            image, label_copy = self._flip(image, label_copy)
 
         return image.copy(), label_copy.copy(), np.array(size), name
 
