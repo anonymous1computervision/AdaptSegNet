@@ -46,8 +46,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         super(AdaptSeg_Edge_Aux_Trainer, self).__init__()
         self.hyperparameters = hyperparameters
         # input size setting
-        # self.input_size = (hyperparameters["input_size_h"], hyperparameters["input_size_w"])
-        self.input_size = (760, 760)
+        self.input_size = (hyperparameters["input_size_h"], hyperparameters["input_size_w"])
+        # self.input_size = (760, 760)
 
         self.input_size_target = (hyperparameters["input_target_size_h"], hyperparameters["input_target_size_w"])
 
@@ -166,8 +166,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self.init_opt()
 
         # for [log / check output]
-        self.loss_d_value = 0
-        self.loss_d_foreground_value = 0
+        # self.loss_d_value = 0
+        # self.loss_d_foreground_value = 0
         self.loss_source_value = 0
         self.loss_target_value = 0
         self.loss_edge_value = 0
@@ -214,7 +214,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         #                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
         #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
-        # self.optimizer_G.zero_grad()
+        self.optimizer_G.zero_grad()
         self._adjust_learning_rate_G(self.optimizer_G, 0)
 
         self.optimizer_D = optim.Adam([p for p in self.model_D.parameters() if p.requires_grad],
@@ -280,6 +280,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # in source domain compute edge loss
         # edge_loss = self._compute_edge_loss(pred_source_edge, labels)
+        # seg_loss = self.lambda_seg * seg_loss
+        # seg_loss.backward()
 
         bce_loss = nn.BCEWithLogitsLoss()
         # # Todo : here use softmax maybe wrong
@@ -288,10 +290,14 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         attn_loss = bce_loss(pred_source_edge,
                              self.get_foreground_attention(
                                  labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
+        # attn_loss = self.lambda_adv_edge * attn_loss
+        # attn_loss.backward()
         # proper normalization
-        seg_loss = self.lambda_seg * seg_loss + self.lambda_adv_edge * attn_loss
-        # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
+        # seg_loss = self.lambda_seg * seg_loss
+        seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*attn_loss
         seg_loss.backward()
+        # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
+        # seg_loss.backward()
 
         # update loss
         self.optimizer_G.step()
@@ -306,7 +312,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # record log
         self.loss_dict['Seg'] += seg_loss.data.cpu().numpy()
         self.loss_dict['Edge_Seg'] += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
-
+        del attn_loss, seg_loss
         # self.loss_source_value += seg_loss.data.cpu().numpy()
         # self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
         # self.loss_edge_value += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
@@ -415,6 +421,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         self.loss_dict['Global_GAN_adv'] += loss_adv.data.cpu().numpy()
         self.loss_dict['Foreground_GAN_adv'] += loss_adv_foreground.data.cpu().numpy()
+        del loss, loss_adv, loss_adv_foreground
 
     def dis_update(self, labels=None):
         """
@@ -483,8 +490,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             loss_fake = self._compute_adv_loss_fake(d_out_foreground_fake, self.adv_loss_opt)
             loss_real = self._compute_adv_loss_real(d_out_foreground_real, self.adv_loss_opt)
             loss = (loss_real + loss_fake)/2
+            del loss_fake, loss_real
         loss.backward()
-        self.loss_d_foreground_value += loss.data.cpu().numpy()
+        # self.loss_d_foreground_value += loss.data.cpu().numpy()
         self.loss_dict['Foreground_GAN_dis'] += loss.data.cpu().numpy()
 
         # global part
@@ -495,14 +503,15 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             loss_fake = self._compute_adv_loss_fake(d_out_fake, self.adv_loss_opt)
             loss_real = self._compute_adv_loss_real(d_out_real, self.adv_loss_opt)
             loss = (loss_real + loss_fake)/2
+            del loss_fake, loss_real
         loss.backward()
-        self.loss_d_value += loss.data.cpu().numpy()
+        # self.loss_d_value += loss.data.cpu().numpy()
         self.loss_dict['Global_GAN_dis'] += loss.data.cpu().numpy()
 
         # update loss
         self.optimizer_D.step()
         self.optimizer_D_foreground.step()
-
+        del loss
         # self.optimizer_Attn.step()
 
         # record log
@@ -714,12 +723,12 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
     def _adjust_learning_rate_G(self, optimizer, i_iter):
         lr = self._lr_poly(self.lr_g, i_iter, self.num_steps, self.decay_power)
-        # for i, group in enumerate(optimizer.param_groups):
-        #     optimizer.param_groups[i]['lr'] = lr
+        for i, group in enumerate(optimizer.param_groups):
+            optimizer.param_groups[i]['lr'] = lr
         # print("len(optimizer.param_groups)", len(optimizer.param_groups))
-        optimizer.param_groups[0]['lr'] = lr
-        if len(optimizer.param_groups) > 1:
-            optimizer.param_groups[1]['lr'] = lr * 10
+        # optimizer.param_groups[0]['lr'] = lr
+        # if len(optimizer.param_groups) > 1:
+        #     optimizer.param_groups[1]['lr'] = lr * 10
 
     def init_each_epoch(self, i_iter):
         self.i_iter = i_iter

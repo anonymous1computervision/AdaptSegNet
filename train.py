@@ -81,7 +81,8 @@ def main():
     # CONFIG_PATH = "./configs/default_DUC_decay_beta.yaml"
     # CONFIG_PATH = "./configs/Deeplab_v3_plus.yaml"
     # CONFIG_PATH = "./configs/Deeplab_v3_plus_v4.yaml"
-    CONFIG_PATH = "./configs/SYNTHIA-edge-f-low-lr-lambda2.yaml"
+    # CONFIG_PATH = "./configs/SYNTHIA-edge-f-low-lr-lambda2.yaml"
+    CONFIG_PATH = "./configs/SYNTHIA-edge-f-lambda05.yaml"
     # CONFIG_PATH = "./configs/Deeplab_v3_plus_10000.yaml"
     # CONFIG_PATH = "./configs/default_DUC.yaml"
 

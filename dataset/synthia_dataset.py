@@ -125,6 +125,7 @@ class SYNYHIADataSet(data.Dataset):
         return img_flip, seg_flip
 
     def __getitem__(self, index):
+
         datafiles = self.files[index]
 
         image = Image.open(datafiles["img"]).convert('RGB')
@@ -141,7 +142,7 @@ class SYNYHIADataSet(data.Dataset):
         image = np.asarray(image, np.float32)
         label = np.asarray(label, np.int32)
         # random crop
-        image, label = self._crop(image, label, cropSize=760, is_train=self.is_mirror)
+        # image, label = self._crop(image, label, cropSize=760, is_train=self.is_mirror)
         # print("labels =", label)
 
         # image = np.asarray(image, np.float32)

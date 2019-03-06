@@ -260,7 +260,7 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         # record log
         self.loss_dict['Seg'] += seg_loss.data.cpu().numpy()
         self.loss_dict['Edge_Seg'] += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
-
+        del seg_loss, attn_loss
         # self.loss_source_value += seg_loss.data.cpu().numpy()
         # self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
         # self.loss_edge_value += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
@@ -357,6 +357,7 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
 
         self.loss_dict['Global_GAN_adv'] += loss_adv_foreground.data.cpu().numpy()
         self.loss_dict['Foreground_GAN_adv'] += loss.data.cpu().numpy()
+        del loss, adv_loss, loss_adv_foreground
 
     def dis_update(self, labels=None):
         """
@@ -429,7 +430,7 @@ class AdaptSeg_DUC_Edge_Aux_Trainer(nn.Module):
         # update loss
         self.optimizer_D.step()
         self.optimizer_D_foreground.step()
-
+        del loss
         # self.optimizer_Attn.step()
 
         # record log
