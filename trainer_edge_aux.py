@@ -207,11 +207,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
     def init_opt(self):
 
         # todo: change to origin
-        self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
-                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        # self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
+        #                       lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         # self.optimizer_G.zero_grad()
-        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-        #                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+                                     lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
         #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
         self.optimizer_G.zero_grad()
@@ -228,10 +228,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         self._adjust_learning_rate_D(self.optimizer_D_foreground, 0)
 
     def forward(self, images):
-        # self.eval()
+        self.eval()
         # pdb.set_trace()
         predict_seg, _ = self.model(images)
-        # self.train()
+        self.train()
         return predict_seg
 
     def gen_source_update(self, images, labels, label_path=None):
@@ -287,6 +287,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # # Todo : here use softmax maybe wrong
         # edge_loss = bce_loss(pred_source_edge,
         #                       self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
+        # attn_loss = bce_loss(pred_source_edge,
+        #                      self.get_foreground_attention(
+        #                          labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
         attn_loss = bce_loss(pred_source_edge,
                              self.get_foreground_attention(
                                  labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
@@ -582,6 +585,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         return torch.cat(foreground_groups, dim=1)
 
     def get_foreground_attention(self, label):
+        # foreground_attn = torch.cuda.ByteTensor(label.size()).zero_()
         foreground_attn = torch.cuda.ByteTensor(label.size()).zero_()
         # choose which label be weakly supervised label
         # 0 > road: 87.89
@@ -606,7 +610,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # ignore background label include 255-ignore label
         # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 255]
-        foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        # todo:change foreground classes
+        foreground_map = [12, 13, 14, 15, 16, 17, 18]
+
         # foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
 
         # foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
@@ -620,7 +627,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         for value in foreground_map:
             # print(value)
             foreground_attn[label == value] = 1
-        self.saliency_mask = foreground_attn.float()
+        self.saliency_mask = foreground_attn.detach().float()
 
         return foreground_attn.float()
 
