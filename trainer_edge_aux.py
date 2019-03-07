@@ -258,71 +258,152 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
             param.requires_grad = False
 
         self.source_label_path = label_path
-
-        # print("images shape =", images.shape)
         # get predict output
-        pred_source_real, pred_source_edge = self.model(images)
+        pred_source_real, _ = self.model(images)
 
         # resize to source size
         interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
 
-
-        # old version
-        # interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
         pred_source_real = interp(pred_source_real)
-        # interp_source_mini = nn.Upsample(size=(int(self.input_size[0]/8), int(self.input_size[1]/8)), align_corners=False,
-        #                             mode='bilinear')
-        # interp_source_mini = nn.Upsample(
-        #     size=(int(self.input_size[0] / self.mini_factor_size), int(self.input_size[1] / self.mini_factor_size)),
-        #     align_corners=False,
-        #     mode='bilinear')
-        # self.pred_source_edge_mini = interp_source_mini(pred_source_edge).detach()
-        pred_source_edge = interp(pred_source_edge)
 
         # in source domain compute segmentation loss
         seg_loss = self._compute_seg_loss(pred_source_real, labels)
 
-        # in source domain compute edge loss
-        # edge_loss = self._compute_edge_loss(pred_source_edge, labels)
-        # seg_loss = self.lambda_seg * seg_loss
-        # seg_loss.backward()
-
-        bce_loss = nn.BCEWithLogitsLoss()
-        # # Todo : here use softmax maybe wrong
-        # edge_loss = bce_loss(pred_source_edge,
-        #                       self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
-        # attn_loss = bce_loss(pred_source_edge,
-        #                      self.get_foreground_attention(
-        #                          labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
-        attn_loss = bce_loss(pred_source_edge,
-                             self.get_foreground_attention(
-                                 labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
-        # attn_loss = self.lambda_adv_edge * attn_loss
-        # attn_loss.backward()
-        # proper normalization
-        # seg_loss = self.lambda_seg * seg_loss
-        seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*attn_loss
+        seg_loss = self.lambda_seg*seg_loss
         seg_loss.backward()
-        # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
-        # seg_loss.backward()
 
         # update loss
         self.optimizer_G.step()
 
-        # save image for discriminator use
         self.source_image = pred_source_real.detach()
-        self.pred_real_edge = nn.Sigmoid()(pred_source_edge).detach()
-        # self.pred_real_edge = pred_source_edge.detach()
 
         self.source_input_image = images.detach()
 
         # record log
         self.loss_dict['Seg'] += seg_loss.data.cpu().numpy()
+        del seg_loss
+        self._gen_source_attn(images, labels)
+
+    def _gen_source_attn(self, images, labels):
+        """
+                Input source domain image and compute segmentation loss.
+
+                :param images:
+                :param labels:
+                :param label_path: just for save path to record model predict, use in  snapshot_image_save function
+
+                :return:
+                """
+        self.optimizer_G.zero_grad()
+
+        _, pred_source_edge = self.model(images)
+
+        # resize to source size
+        interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
+        pred_source_edge = interp(pred_source_edge)
+
+        bce_loss = nn.BCEWithLogitsLoss()
+
+        attn_loss = bce_loss(pred_source_edge,
+                             self.get_foreground_attention(
+                                 labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
+        attn_loss = self.lambda_adv_edge*attn_loss
+        attn_loss.backward()
+
+        # update loss
+        self.optimizer_G.step()
+        self.pred_real_edge = nn.Sigmoid()(pred_source_edge).detach()
+
         self.loss_dict['Edge_Seg'] += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
-        del attn_loss, seg_loss
-        # self.loss_source_value += seg_loss.data.cpu().numpy()
-        # self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
-        # self.loss_edge_value += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
+        del attn_loss
+
+    # def gen_source_update(self, images, labels, label_path=None):
+    #     """
+    #             Input source domain image and compute segmentation loss.
+    #
+    #             :param images:
+    #             :param labels:
+    #             :param label_path: just for save path to record model predict, use in  snapshot_image_save function
+    #
+    #             :return:
+    #             """
+    #     self.optimizer_G.zero_grad()
+    #
+    #     # Disable D backpropgation, we only train G
+    #     for param in self.model_D.parameters():
+    #         param.requires_grad = False
+    #
+    #     for param in self.model_D_foreground.parameters():
+    #         param.requires_grad = False
+    #
+    #     self.source_label_path = label_path
+    #
+    #     # print("images shape =", images.shape)
+    #     # get predict output
+    #     pred_source_real, pred_source_edge = self.model(images)
+    #
+    #     # resize to source size
+    #     interp = nn.Upsample(size=self.input_size, align_corners=False, mode='bilinear')
+    #
+    #
+    #     # old version
+    #     # interp = nn.Upsample(size=self.input_size, align_corners=True, mode='bilinear')
+    #     pred_source_real = interp(pred_source_real)
+    #     # interp_source_mini = nn.Upsample(size=(int(self.input_size[0]/8), int(self.input_size[1]/8)), align_corners=False,
+    #     #                             mode='bilinear')
+    #     # interp_source_mini = nn.Upsample(
+    #     #     size=(int(self.input_size[0] / self.mini_factor_size), int(self.input_size[1] / self.mini_factor_size)),
+    #     #     align_corners=False,
+    #     #     mode='bilinear')
+    #     # self.pred_source_edge_mini = interp_source_mini(pred_source_edge).detach()
+    #     pred_source_edge = interp(pred_source_edge)
+    #
+    #     # in source domain compute segmentation loss
+    #     seg_loss = self._compute_seg_loss(pred_source_real, labels)
+    #
+    #     # in source domain compute edge loss
+    #     # edge_loss = self._compute_edge_loss(pred_source_edge, labels)
+    #     # seg_loss = self.lambda_seg * seg_loss
+    #     # seg_loss.backward()
+    #
+    #     bce_loss = nn.BCEWithLogitsLoss()
+    #     # # Todo : here use softmax maybe wrong
+    #     # edge_loss = bce_loss(pred_source_edge,
+    #     #                       self.label_get_edges(labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2]).cuda()))
+    #     # attn_loss = bce_loss(pred_source_edge,
+    #     #                      self.get_foreground_attention(
+    #     #                          labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
+    #     attn_loss = bce_loss(pred_source_edge,
+    #                          self.get_foreground_attention(
+    #                              labels.view(labels.shape[0], -1, labels.shape[1], labels.shape[2]).cuda()))
+    #     # attn_loss = self.lambda_adv_edge * attn_loss
+    #     # attn_loss.backward()
+    #     # proper normalization
+    #     # seg_loss = self.lambda_seg * seg_loss
+    #     seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*attn_loss
+    #     seg_loss.backward()
+    #     # seg_loss = self.lambda_seg*seg_loss + self.lambda_adv_edge*edge_loss
+    #     # seg_loss.backward()
+    #
+    #     # update loss
+    #     self.optimizer_G.step()
+    #
+    #     # save image for discriminator use
+    #     self.source_image = pred_source_real.detach()
+    #     self.pred_real_edge = nn.Sigmoid()(pred_source_edge).detach()
+    #     # self.pred_real_edge = pred_source_edge.detach()
+    #
+    #     self.source_input_image = images.detach()
+    #
+    #     # record log
+    #     self.loss_dict['Seg'] += seg_loss.data.cpu().numpy()
+    #     self.loss_dict['Edge_Seg'] += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
+    #     del attn_loss, seg_loss
+    #     # self.loss_source_value += seg_loss.data.cpu().numpy()
+    #     # self.loss_edge_value += self.lambda_adv_edge*edge_loss.data.cpu().numpy()
+    #     # self.loss_edge_value += self.lambda_adv_edge * attn_loss.data.cpu().numpy()
+
+
 
     def gen_target_update(self, images, image_path):
         """
