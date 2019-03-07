@@ -168,9 +168,9 @@ class SYNYHIADataSet(data.Dataset):
         image = image.transpose((2, 0, 1))
 
         # random flip
-        if self.is_mirror and random.choice([-1, 1]) > 0:
-            # print("random flip")
-            image, label_copy = self._flip(image, label_copy)
+        # if self.is_mirror and random.choice([-1, 1]) > 0:
+        #     # print("random flip")
+        #     image, label_copy = self._flip(image, label_copy)
 
         return image.copy(), label_copy.copy(), np.array(size), name
 

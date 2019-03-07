@@ -23,14 +23,16 @@ from model.deeplab_single_add_edge_v2 import Res_Deeplab as Res_Deeplab_Edge_v2
 
 from model.deeplav_v3_xception import DeepLabv3_plus
 import model.fc_densenet as fc_densenet
-# from model.sp_discriminator import SP_FCDiscriminator
-from model.sp_attn_discriminator import SP_ATTN_FCDiscriminator
+from model.sp_discriminator import SP_FCDiscriminator
+# from model.sp_attn_discriminator import SP_ATTN_FCDiscriminator
 
 from model.sp_cgan_discriminator import SP_CGAN_FCDiscriminator
 from model.sp_coord_discriminator import SP_Coord_FCDiscriminator
 from model.sp_feature_discriminator import SP_Feature_FCDiscriminator
 
-from model.gated_discriminator import Gated_Discriminator
+# from model.gated_discriminator import Gated_Discriminator
+from model.gated_sa_discriminator import Gated_Self_Attn_Discriminator
+
 from model.gated_coord_discriminator import Gated_Coord_Discriminator
 from model.gated_coord_hinge_discriminator import Gated_Coord_Hinge_Discriminator
 
@@ -90,11 +92,11 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         #     print("use DeepLab_v3_plus model")
         # init D
         # self.model_D = FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        # self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = SP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_CGAN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Coord_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
-        self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
         # self.model_D = SP_ASPP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
@@ -104,7 +106,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes']+1)
         # self.model_D = SP_Feature_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+        self.model_D_foreground = Gated_Self_Attn_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
+
         # self.model_D_foreground = Gated_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
         # self.model_D_foreground = Gated_Coord_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
         # self.model_D_foreground = Gated_Coord_Hinge_Discriminator(num_classes=hyperparameters['num_classes'] + 1)
@@ -610,9 +614,9 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # ignore background label include 255-ignore label
         # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 255]
-        # foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
         # todo:change foreground classes
-        foreground_map = [12, 13, 14, 15, 16, 17, 18]
+        # foreground_map = [12, 13, 14, 15, 16, 17, 18]
 
         # foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
 
@@ -818,10 +822,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
 
         # save GT edge
         # if no use is not None will be ambiguous
-        if labels is not None:
-            labels = labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2])
-            self.tensor_to_PIL(self.label_get_edges(labels.cuda())).save(
-                'check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
+        # if labels is not None:
+        #     labels = labels.view(labels.shape[0], 1, labels.shape[1], labels.shape[2])
+        #     self.tensor_to_PIL(self.label_get_edges(labels.cuda())).save(
+        #         'check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
             # self.tensor_to_PIL(self.get_foreground_attention(labels.cuda())).save('check_output/Image_source_domain_seg/%s_edge_label.png' % self.i_iter)
 
         # save output image
