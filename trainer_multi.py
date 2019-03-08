@@ -552,12 +552,12 @@ class AdaptSeg_Multi_Trainer(nn.Module):
 
     def _adjust_learning_rate_G(self, optimizer, i_iter):
         lr = self._lr_poly(self.lr_g, i_iter, self.num_steps, self.decay_power)
-        # for i, group in enumerate(optimizer.param_groups):
-        #     optimizer.param_groups[i]['lr'] = lr
+        for i, group in enumerate(optimizer.param_groups):
+            optimizer.param_groups[i]['lr'] = lr
         # print("len(optimizer.param_groups)", len(optimizer.param_groups))
-        optimizer.param_groups[0]['lr'] = lr
-        if len(optimizer.param_groups) > 1:
-            optimizer.param_groups[1]['lr'] = lr * 10
+        # optimizer.param_groups[0]['lr'] = lr
+        # if len(optimizer.param_groups) > 1:
+        #     optimizer.param_groups[1]['lr'] = lr * 10
 
     def init_each_epoch(self, i_iter):
         self.i_iter = i_iter
