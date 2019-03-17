@@ -67,7 +67,7 @@ def main():
     # CONFIG_PATH = "./configs/Multi-default.yaml"
     # CONFIG_PATH = "./configs/Multi-Hinge.yaml"
 
-    CONFIG_PATH = "./configs/Multi-default.yaml"
+    # CONFIG_PATH = "./configs/Multi-default.yaml"
     # CONFIG_PATH = "./configs/SYNTHIA-edge_TTUR-stable_f-lambda2.yaml"
     # CONFIG_PATH = "./configs/SYNTHIA-edge_TTUR-stable_f-lambda2.yaml"
 
@@ -77,7 +77,7 @@ def main():
     # CONFIG_PATH = "./configs/default_PSPNet_edge_TTUR.yaml"
     # CONFIG_PATH = "./configs/default_edge_TTUR_D_beta.yaml"
     # CONFIG_PATH = "./configs/default__SA_TTUR_D_fore_beta.yaml"
-    # CONFIG_PATH = "./configs/edge_TTUR-v1.yaml"
+    CONFIG_PATH = "./configs/edge_TTUR-v1.yaml"
     # CONFIG_PATH = "./configs/edge_TTUR-stable.yaml"
     # CONFIG_PATH = "./configs/default_DUC_decay_beta.yaml"
     # CONFIG_PATH = "./configs/Deeplab_v3_plus.yaml"
@@ -184,8 +184,8 @@ def main():
     # todo: remove this line without dev version
     # assert config["model"] == "DeepLabEdgeTriple"
 
-    assert config["model"] == "DeepLabMulti"
-    # assert config["model"] == "DeepLabEdge"
+    # assert config["model"] == "DeepLabMulti"
+    assert config["model"] == "DeepLabEdge"
     # assert config["model"] == "DeepLabv3+"
 
     # trainer.cuda(gpu)
@@ -199,7 +199,7 @@ def main():
     elif config["restore"] and config["model"] != "DeepLabv3+":
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
 
-    # restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_30000_trainer_all.pth"
+    restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_10000_trainer_all.pth"
     # restore_from = ".\GTA5_250000_trainer_all.pth"
 
     # restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_150000_trainer_all.pth"
@@ -207,7 +207,7 @@ def main():
     # print(str(trainer.state_dict())[:100])
     # saved_state_dict = torch.load(restore_from)
     # trainer.load_state_dict(saved_state_dict)
-    # checkpoint_iter = 30001
+    # checkpoint_iter = 10001
     # del saved_state_dict
 
 

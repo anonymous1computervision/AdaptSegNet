@@ -8,7 +8,7 @@ from torch.nn.utils import spectral_norm
 class Gated_Discriminator(nn.Module):
 
 	def __init__(self, num_classes, ndf = 64):
-		super(Gated_Discriminator, self).__Sinit__()
+		super(Gated_Discriminator, self).__init__()
 		# self.conv1 = Gated_conv(num_classes, ndf, kernel_size=5, stride=1, padding=2)
 		# self.conv2 = Gated_conv(ndf, ndf * 2, kernel_size=5, stride=2, padding=2)
 		# self.conv3 = Gated_conv(ndf * 2, ndf * 4, kernel_size=5, stride=2, padding=2)
