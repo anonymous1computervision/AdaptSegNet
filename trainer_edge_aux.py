@@ -24,7 +24,7 @@ from model.deeplab_single_add_edge_v2 import Res_Deeplab as Res_Deeplab_Edge_v2
 from model.deeplav_v3_xception import DeepLabv3_plus
 import model.fc_densenet as fc_densenet
 from model.sp_discriminator import SP_FCDiscriminator
-# from model.sp_attn_discriminator import SP_ATTN_FCDiscriminator
+from model.sp_attn_discriminator import SP_ATTN_FCDiscriminator
 from model.sp_one_attn_discriminator import SP_One_ATTN_FCDiscriminator
 from model.sp_cgan_discriminator import SP_CGAN_FCDiscriminator
 from model.sp_coord_discriminator import SP_Coord_FCDiscriminator
@@ -96,8 +96,8 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.model_D = SP_CGAN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
         # self.model_D = SP_Coord_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
-        # self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
-        self.model_D = SP_One_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        self.model_D = SP_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
+        # self.model_D = SP_One_ATTN_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
         # self.model_D = SP_ASPP_FCDiscriminator(num_classes=hyperparameters['num_classes'])
 
