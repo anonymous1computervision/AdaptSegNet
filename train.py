@@ -199,16 +199,16 @@ def main():
     elif config["restore"] and config["model"] != "DeepLabv3+":
         trainer.restore(model_name=config["model"], num_classes=config["num_classes"], restore_from=config["restore_from"])
 
-    restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_150000_trainer_all.pth"
+    # restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_150000_trainer_all.pth"
     # restore_from = ".\GTA5_250000_trainer_all.pth"
 
     # restore_from = ".\snapshots\GTA2Cityscapes_multi\GTA5_150000_trainer_all.pth"
 
-    print(str(trainer.state_dict())[:100])
-    saved_state_dict = torch.load(restore_from)
-    trainer.load_state_dict(saved_state_dict)
-    checkpoint_iter = 150001
-    del saved_state_dict
+    # print(str(trainer.state_dict())[:100])
+    # saved_state_dict = torch.load(restore_from)
+    # trainer.load_state_dict(saved_state_dict)
+    # checkpoint_iter = 150001
+    # del saved_state_dict
 
 
     record_each_epoch = ""

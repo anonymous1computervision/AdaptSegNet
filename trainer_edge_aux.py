@@ -215,10 +215,10 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # self.optimizer_G = optim.SGD(self.model.optim_parameters_lr(self.lr_g),
         #                       lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         # self.optimizer_G.zero_grad()
-        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-        #                              lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
         self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
-                                     lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
+                                     lr=self.lr_g, momentum=self.momentum, weight_decay=self.weight_decay)
+        # self.optimizer_G = optim.SGD([p for p in self.model.parameters() if p.requires_grad],
+        #                              lr=self.lr_g, momentum=momentum, weight_decay=weight_decay)
         self.optimizer_G.zero_grad()
         self._adjust_learning_rate_G(self.optimizer_G, 0)
 
