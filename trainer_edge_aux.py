@@ -705,7 +705,7 @@ class AdaptSeg_Edge_Aux_Trainer(nn.Module):
         # foreground_map = [11, 12, 13, 14, 15, 16, 17, 18]
 
         # foreground_map = [1, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
-        foreground_map = [6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
+        foreground_map = [5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
         # foreground_map = [6, 7, 11, 12, 13, 14, 15, 16, 17, 18]
 
         # choose which label be weakly supervised label
